@@ -15,7 +15,7 @@ using TuringSmartScreenLib;
 using TuringSmartScreenLib.Helpers;
 
 // Load RGB565 bytes
-var bytes = BitmapLoader.Load(File.OpenRead("test.png"), 0, 0, 320, 480);
+var bytes = BitmapLoader.Load(File.OpenRead("genbaneko.png"), 0, 0, 320, 480);
 
 // Display bitmap
 using var screen = new TuringSmartScreen("COM10");
