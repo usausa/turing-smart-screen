@@ -23,4 +23,4 @@ screen.Open();
 screen.DisplayBitmap(0, 0, 320, 480, bytes);
 ```
 
-<img src="Images/image.jpg" width="75%" title="image">
+<img src="Images/image.jpg" width="50%" title="image">
