@@ -22,3 +22,5 @@ using var screen = new TuringSmartScreen("COM10");
 screen.Open();
 screen.DisplayBitmap(0, 0, 320, 480, bytes);
 ```
+
+<img src="Images/image.png" width="75%" title="image">
