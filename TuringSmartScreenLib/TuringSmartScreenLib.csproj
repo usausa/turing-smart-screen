@@ -10,7 +10,7 @@
     <Title>TuringSmartScreenLib</Title>
     <Description>Turing Smart Screen controller.</Description>
     <Summary>Turing Smart Screen controller</Summary>
-    <PackageTags>hardware serial port</PackageTags>
+    <PackageTags>turing-smart-screen hardware serial port</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
