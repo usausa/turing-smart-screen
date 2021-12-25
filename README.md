@@ -1,1 +1,1 @@
-# turing-smart-screen
+# TuringSmartScreenLib

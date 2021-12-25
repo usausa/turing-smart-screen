@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RuleSet Name="Analyzers Rules" Description="Analyzers Rules" ToolsVersion="16.0">
+  <IncludeAll Action="Warning" />
+  <Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">
+    <Rule Id="SA1005" Action="Hidden" />
+    <Rule Id="SA1101" Action="Hidden" />
+    <Rule Id="SA1121" Action="Hidden" />
+    <Rule Id="SA1201" Action="Hidden" />
+    <Rule Id="SA1202" Action="Hidden" />
+    <Rule Id="SA1204" Action="Hidden" />
+    <Rule Id="SA1210" Action="Hidden" />
+    <Rule Id="SA1214" Action="Hidden" />
+    <Rule Id="SA1402" Action="Hidden" />
+    <Rule Id="SA1413" Action="Hidden" />
+    <Rule Id="SA1512" Action="Hidden" />
+    <Rule Id="SA1513" Action="Hidden" />
+    <Rule Id="SA1515" Action="Hidden" />
+    <Rule Id="SA1516" Action="Hidden" />
+    <Rule Id="SA1600" Action="Hidden" />
+    <Rule Id="SA1601" Action="Hidden" />
+    <Rule Id="SA1602" Action="Hidden" />
+    <Rule Id="SA1633" Action="Hidden" />
+    <Rule Id="SA1649" Action="Hidden" />
+  </Rules>
+  <Rules AnalyzerId="Microsoft.CodeQuality.Analyzers" RuleNamespace="Microsoft.CodeQuality.Analyzers">
+    <Rule Id="CA1002" Action="Hidden" />
+    <Rule Id="CA1014" Action="Hidden" />
+    <Rule Id="CA1028" Action="Hidden" />
+    <Rule Id="CA1062" Action="Hidden" />
+    <Rule Id="CA1305" Action="Hidden" />
+    <Rule Id="CA1716" Action="Hidden" />
+    <Rule Id="CA1721" Action="Hidden" />
+    <Rule Id="CA1724" Action="Hidden" />
+    <Rule Id="CA2007" Action="Hidden" />
+  </Rules>
+</RuleSet>
