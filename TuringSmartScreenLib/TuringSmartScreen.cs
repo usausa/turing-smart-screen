@@ -78,8 +78,6 @@ public sealed class TuringSmartScreen : IDisposable
 
     public void SetBrightness(int level) => WriteCommand(110, level);
 
-    public void DisplayBitmap(int x, int y, int width, int height, byte[] bitmap)
-    {
+    public void DisplayBitmap(int x, int y, int width, int height, byte[] bitmap) =>
         WriteCommand(197, x, y, x + width - 1, y + height - 1, bitmap);
-    }
 }
