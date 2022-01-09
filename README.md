@@ -1,6 +1,9 @@
 # TuringSmartScreenLib
 
-[![NuGet Badge](https://buildstats.info/nuget/TuringSmartScreenLib)](https://www.nuget.org/packages/TuringSmartScreenLib/)
+| Package | Info | Description |
+|-|-|-|
+| TuringSmartScreenLib | [![NuGet Badge](https://buildstats.info/nuget/TuringSmartScreenLib)](https://www.nuget.org/packages/TuringSmartScreenLib/) | Core |
+| TuringSmartScreenLib.Helpers | [![NuGet Badge](https://buildstats.info/nuget/TuringSmartScreenLib.Helpers)](https://www.nuget.org/packages/TuringSmartScreenLib.Helpers/) | Helpers |
 
 ## What is this?
 
