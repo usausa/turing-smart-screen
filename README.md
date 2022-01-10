@@ -28,17 +28,17 @@ screen.DisplayBitmap(0, 0, 320, 480, bytes);
 
 <img src="Images/image.jpg" width="50%" title="image">
 
-## TuringSmartScreenTool
+# TuringSmartScreenTool
 
 Command line tool.
 
-### Install
+## Install
 
 ```
 > dotnet tool install -g TuringSmartScreenTool
 ```
 
-### Usage
+## Usage
 
 ```
 > tsstool reset -p COM10
