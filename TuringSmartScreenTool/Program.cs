@@ -8,6 +8,8 @@ using SixLabors.ImageSharp.PixelFormats;
 
 using TuringSmartScreenLib;
 
+#pragma warning disable CA1812
+
 var portOption = new Option<string>(new[] { "--port", "-p" }, "Port") { IsRequired = true };
 
 var root = new RootCommand("Turing Smart Screen tool");
