@@ -27,3 +27,24 @@ screen.DisplayBitmap(0, 0, 320, 480, bytes);
 ```
 
 <img src="Images/image.jpg" width="50%" title="image">
+
+## TuringSmartScreenTool
+
+Command line tool.
+
+### Install
+
+```
+> dotnet tool install -g TuringSmartScreenTool
+```
+
+### Usage
+
+```
+> tsstool reset -p COM10
+> tsstool clear -p COM10
+> tsstool on -p COM10
+> tsstool off -p COM10
+> tsstool bright -p COM10 -l 192
+> tsstool display -p COM10 -f genbaneko.png
+```
