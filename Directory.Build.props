@@ -17,7 +17,7 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <MinClientVersion>2.12</MinClientVersion>
     <Authors>machi_pon</Authors>
-    <Copyright>Copyright (c) 2021 machi_pon</Copyright>
+    <Copyright>Copyright (c) 2022 machi_pon</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/usausa/Smart-Net</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
