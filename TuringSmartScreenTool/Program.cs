@@ -12,7 +12,7 @@ using TuringSmartScreenLib;
 
 var portOption = new Option<string>(new[] { "--port", "-p" }, "Port") { IsRequired = true };
 
-var root = new RootCommand("Turing Smart Screen tool");
+var rootCommand = new rootCommandCommand("Turing Smart Screen tool");
 
 // Reset
 var resetCommand = new Command("reset", "Reset screen");
@@ -30,7 +30,7 @@ resetCommand.Handler = CommandHandler.Create((string port) =>
         // Do Nothing
     }
 });
-root.Add(resetCommand);
+rootCommand.Add(resetCommand);
 
 // Clear
 var clearCommand = new Command("clear", "Clear screen");
@@ -41,7 +41,7 @@ clearCommand.Handler = CommandHandler.Create((string port) =>
     screen.Open();
     screen.Clear();
 });
-root.Add(clearCommand);
+rootCommand.Add(clearCommand);
 
 // ON
 var onCommand = new Command("on", "Screen ON");
@@ -52,7 +52,7 @@ onCommand.Handler = CommandHandler.Create((string port) =>
     screen.Open();
     screen.ScreenOn();
 });
-root.Add(onCommand);
+rootCommand.Add(onCommand);
 
 // Off
 var offCommand = new Command("off", "Screen OFF");
@@ -63,7 +63,7 @@ offCommand.Handler = CommandHandler.Create((string port) =>
     screen.Open();
     screen.ScreenOff();
 });
-root.Add(offCommand);
+rootCommand.Add(offCommand);
 
 // Brightness
 var brightCommand = new Command("bright", "Set brightness");
@@ -75,7 +75,7 @@ brightCommand.Handler = CommandHandler.Create((string port, int level) =>
     screen.Open();
     screen.SetBrightness(level);
 });
-root.Add(brightCommand);
+rootCommand.Add(brightCommand);
 
 // Display
 var displayCommand = new Command("display", "Display image");
@@ -111,6 +111,6 @@ displayCommand.Handler = CommandHandler.Create((string port, string file, int sx
     screen.Open();
     screen.DisplayBitmap(x, y, width, height, bytes);
 });
-root.Add(displayCommand);
+rootCommand.Add(displayCommand);
 
-return root.Invoke(args);
+return rootCommand.Invoke(args);
