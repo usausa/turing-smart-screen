@@ -12,7 +12,7 @@ using TuringSmartScreenLib;
 
 var portOption = new Option<string>(new[] { "--port", "-p" }, "Port") { IsRequired = true };
 
-var rootCommand = new rootCommandCommand("Turing Smart Screen tool");
+var rootCommand = new RootCommand("Turing Smart Screen tool");
 
 // Reset
 var resetCommand = new Command("reset", "Reset screen");
