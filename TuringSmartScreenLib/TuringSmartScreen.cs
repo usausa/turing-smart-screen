@@ -1,6 +1,5 @@
 namespace TuringSmartScreenLib;
 
-using System;
 using System.IO.Ports;
 
 public sealed class TuringSmartScreen : IDisposable

@@ -3,6 +3,7 @@
   <PropertyGroup>
     <LangVersion>10.0</LangVersion>
     <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
     <Deterministic>true</Deterministic>
     <NoWarn>$(NoWarn),1573,1591,1712</NoWarn>
     <MSBuildWarningsAsMessages>SA0001</MSBuildWarningsAsMessages>

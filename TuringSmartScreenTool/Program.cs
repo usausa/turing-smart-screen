@@ -1,7 +1,5 @@
-using System;
 using System.CommandLine;
 using System.CommandLine.NamingConventionBinder;
-using System.IO;
 
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -83,8 +81,8 @@ displayCommand.AddOption(portOption);
 displayCommand.AddOption(new Option<string>(new[] { "--file", "-f" }, "Filename") { IsRequired = true });
 displayCommand.AddOption(new Option<int>(new[] { "-sx" }, "Source x"));
 displayCommand.AddOption(new Option<int>(new[] { "-sy" }, "Source y"));
-displayCommand.AddOption(new Option<int>(new[] { "-sw" }, () => 320, "Source width"));
-displayCommand.AddOption(new Option<int>(new[] { "-sh" }, () => 480, "Source height"));
+displayCommand.AddOption(new Option<int>(new[] { "-sw" }, static () => 320, "Source width"));
+displayCommand.AddOption(new Option<int>(new[] { "-sh" }, static () => 480, "Source height"));
 displayCommand.AddOption(new Option<int>(new[] { "-x" }, "Screen x"));
 displayCommand.AddOption(new Option<int>(new[] { "-y" }, "Screen y"));
 displayCommand.Handler = CommandHandler.Create((string port, string file, int sx, int sy, int sw, int sh, int x, int y) =>
