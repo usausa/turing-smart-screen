@@ -33,6 +33,8 @@ indent_size = 4
 indent_style = space
 tab_width = 4
 
+dotnet_diagnostic.IDE0055.severity = warning
+
 ###############################
 # .NET Coding Conventions     #
 ###############################
