@@ -19,7 +19,7 @@ resetCommand.Handler = CommandHandler.Create((string port) =>
 {
     try
     {
-        using var screen = new TuringSmartScreen(port);
+        using var screen = new TuringSmartScreenRevisionA(port);
         screen.Open();
         screen.Reset();
     }
@@ -35,7 +35,7 @@ var clearCommand = new Command("clear", "Clear screen");
 clearCommand.AddOption(portOption);
 clearCommand.Handler = CommandHandler.Create((string port) =>
 {
-    using var screen = new TuringSmartScreen(port);
+    using var screen = new TuringSmartScreenRevisionA(port);
     screen.Open();
     screen.Clear();
 });
@@ -46,7 +46,7 @@ var onCommand = new Command("on", "Screen ON");
 onCommand.AddOption(portOption);
 onCommand.Handler = CommandHandler.Create((string port) =>
 {
-    using var screen = new TuringSmartScreen(port);
+    using var screen = new TuringSmartScreenRevisionA(port);
     screen.Open();
     screen.ScreenOn();
 });
@@ -57,7 +57,7 @@ var offCommand = new Command("off", "Screen OFF");
 offCommand.AddOption(portOption);
 offCommand.Handler = CommandHandler.Create((string port) =>
 {
-    using var screen = new TuringSmartScreen(port);
+    using var screen = new TuringSmartScreenRevisionA(port);
     screen.Open();
     screen.ScreenOff();
 });
@@ -69,7 +69,7 @@ brightCommand.AddOption(portOption);
 brightCommand.AddOption(new Option<int>(new[] { "--level", "-l" }, "Level") { IsRequired = true });
 brightCommand.Handler = CommandHandler.Create((string port, int level) =>
 {
-    using var screen = new TuringSmartScreen(port);
+    using var screen = new TuringSmartScreenRevisionA(port);
     screen.Open();
     screen.SetBrightness(level);
 });
@@ -105,7 +105,7 @@ displayCommand.Handler = CommandHandler.Create((string port, string file, int sx
         }
     }
 
-    using var screen = new TuringSmartScreen(port);
+    using var screen = new TuringSmartScreenRevisionA(port);
     screen.Open();
     screen.DisplayBitmap(x, y, width, height, bytes);
 });

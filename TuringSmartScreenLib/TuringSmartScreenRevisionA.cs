@@ -2,12 +2,19 @@ namespace TuringSmartScreenLib;
 
 using System.IO.Ports;
 
-[Obsolete("Use TuringSmartScreenRevisionA")]
-public sealed class TuringSmartScreen : IDisposable
+public sealed class TuringSmartScreenRevisionA : IDisposable
 {
+    public enum Orientation : byte
+    {
+        Portrait = 0,
+        ReversePortrait = 1,
+        Landscape = 2,
+        ReverseLandscape = 3
+    }
+
     private readonly SerialPort port;
 
-    public TuringSmartScreen(string name)
+    public TuringSmartScreenRevisionA(string name)
     {
         port = new SerialPort(name)
         {
@@ -43,7 +50,7 @@ public sealed class TuringSmartScreen : IDisposable
     {
         var buffer = new byte[6];
         buffer[5] = command;
-        port.Write(buffer, 0, 6);
+        port.Write(buffer, 0, buffer.Length);
     }
 
     private void WriteCommand(byte command, int level)
@@ -52,11 +59,21 @@ public sealed class TuringSmartScreen : IDisposable
         buffer[0] = (byte)(level >> 2);
         buffer[1] = (byte)((level & 3) << 6);
         buffer[5] = command;
-        port.Write(buffer, 0, 6);
+        port.Write(buffer, 0, buffer.Length);
     }
 
-    private void WriteCommand(byte command, int x, int y, int ex, int ey, byte[] data)
+    private void WriteCommand(byte command, byte orientation)
     {
+        var buffer = new byte[7];
+        buffer[5] = command;
+        buffer[6] = orientation;
+        port.Write(buffer, 0, buffer.Length);
+    }
+
+    private void WriteCommand(byte command, int x, int y, int width, int height, byte[] data)
+    {
+        var ex = x + width - 1;
+        var ey = y + height - 1;
         var buffer = new byte[6];
         buffer[0] = (byte)(x >> 2);
         buffer[1] = (byte)(((x & 3) << 6) + (y >> 4));
@@ -64,7 +81,7 @@ public sealed class TuringSmartScreen : IDisposable
         buffer[3] = (byte)(((ex & 63) << 2) + (ey >> 8));
         buffer[4] = (byte)(ey & 255);
         buffer[5] = command;
-        port.Write(buffer, 0, 6);
+        port.Write(buffer, 0, buffer.Length);
         port.Write(data, 0, data.Length);
     }
 
@@ -78,6 +95,8 @@ public sealed class TuringSmartScreen : IDisposable
 
     public void SetBrightness(int level) => WriteCommand(110, level);
 
+    public void SetOrientation(Orientation orientation) => WriteCommand(121, (byte)orientation);
+
     public void DisplayBitmap(int x, int y, int width, int height, byte[] bitmap) =>
-        WriteCommand(197, x, y, x + width - 1, y + height - 1, bitmap);
+        WriteCommand(197, x, y, width, height, bitmap);
 }
