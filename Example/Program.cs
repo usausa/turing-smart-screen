@@ -59,9 +59,6 @@ public static class Program
 
             var text = $"{i}";
 
-            var rect = default(SKRect);
-            paint.MeasureText(text, ref rect);
-
             canvas.DrawText(text, Margin, imageHeight - Margin, paint);
             canvas.Flush();
 
