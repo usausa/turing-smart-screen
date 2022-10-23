@@ -37,10 +37,8 @@ public static class Program
         var imageHeight = 0;
         for (var i = 0; i < 10; i++)
         {
-            var text = $"{i}";
-
             var rect = default(SKRect);
-            paint.MeasureText(text, ref rect);
+            paint.MeasureText($"{i}", ref rect);
 
             imageWidth = Math.Max(imageWidth, (int)Math.Floor(rect.Width));
             imageHeight = Math.Max(imageHeight, (int)Math.Floor(rect.Height));
@@ -57,9 +55,7 @@ public static class Program
             using var canvas = new SKCanvas(bitmap);
             canvas.Clear(SKColors.White);
 
-            var text = $"{i}";
-
-            canvas.DrawText(text, Margin, imageHeight - Margin, paint);
+            canvas.DrawText($"{i}", Margin, imageHeight - Margin, paint);
             canvas.Flush();
 
             var buffer = screen.CreateBuffer(imageWidth, imageHeight);
