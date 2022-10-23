@@ -54,7 +54,6 @@ public static class Program
             using var bitmap = new SKBitmap(imageWidth, imageHeight);
             using var canvas = new SKCanvas(bitmap);
             canvas.Clear(SKColors.White);
-
             canvas.DrawText($"{i}", Margin, imageHeight - Margin, paint);
             canvas.Flush();
 
