@@ -17,22 +17,23 @@ public static class Program
     // ReSharper disable FunctionNeverReturns
     public static void Main()
     {
-        // B
-        using var screen = new TuringSmartScreenRevisionB("COM10");
-        screen.Open();
-        screen.SetBrightness(255);
-        screen.SetOrientation(TuringSmartScreenRevisionB.Orientation.Landscape);
+        // Create screen
+        using var screen = ScreenFactory.Create(ScreenType.RevisionB, "COM10");
+        screen.SetBrightness(100);
+        screen.SetOrientation(ScreenOrientation.Landscape);
 
+        // Clear dummy
         screen.DisplayBitmap(0, 0, Width, Height, new byte[Width * Height * 2]);
 
+        // Paint
         using var paint = new SKPaint();
         paint.IsAntialias = true;
         paint.TextSize = 96;
         paint.Color = SKColors.Red;
 
-        // 領域計算
-        var bufferWidth = 0;
-        var bufferHeight = 0;
+        // Calc image size
+        var imageWidth = 0;
+        var imageHeight = 0;
         for (var i = 0; i < 10; i++)
         {
             var text = $"{i}";
@@ -40,18 +41,18 @@ public static class Program
             var rect = default(SKRect);
             paint.MeasureText(text, ref rect);
 
-            bufferWidth = Math.Max(bufferWidth, (int)Math.Floor(rect.Width));
-            bufferHeight = Math.Max(bufferHeight, (int)Math.Floor(rect.Height));
+            imageWidth = Math.Max(imageWidth, (int)Math.Floor(rect.Width));
+            imageHeight = Math.Max(imageHeight, (int)Math.Floor(rect.Height));
         }
 
-        bufferWidth += Margin * 2;
-        bufferHeight += Margin * 2;
+        imageWidth += Margin * 2;
+        imageHeight += Margin * 2;
 
-        // 元イメージ作成
-        var numbers = new TuringSmartScreenBufferB[10];
+        // Create digit image
+        var digitImages = new IScreenBuffer[10];
         for (var i = 0; i < 10; i++)
         {
-            using var bitmap = new SKBitmap(bufferWidth, bufferHeight);
+            using var bitmap = new SKBitmap(imageWidth, imageHeight);
             using var canvas = new SKCanvas(bitmap);
             canvas.Clear(SKColors.White);
 
@@ -60,16 +61,17 @@ public static class Program
             var rect = default(SKRect);
             paint.MeasureText(text, ref rect);
 
-            canvas.DrawText(text, Margin, bufferHeight - Margin, paint);
+            canvas.DrawText(text, Margin, imageHeight - Margin, paint);
             canvas.Flush();
 
-            var buffer = new TuringSmartScreenBufferB(bufferWidth, bufferHeight);
-            buffer.ReadFrom(bitmap, 0, 0, bufferWidth, bufferHeight);
-            numbers[i] = buffer;
+            var buffer = screen.CreateBuffer(imageWidth, imageHeight);
+            buffer.ReadFrom(bitmap, 0, 0, imageWidth, imageHeight);
+            digitImages[i] = buffer;
         }
 
-        var baseX = (Width - (bufferWidth * Digits)) / 2;
-        var baseY = (Height / 2) - (bufferHeight / 2);
+        // Prepare display setting
+        var baseX = (Width - (imageWidth * Digits)) / 2;
+        var baseY = (Height / 2) - (imageHeight / 2);
 
         var previousValues = new int[Digits];
         for (var i = 0; i < previousValues.Length; i++)
@@ -77,6 +79,7 @@ public static class Program
             previousValues[i] = Int32.MinValue;
         }
 
+        // Display loop
         var counter = 0;
         while (true)
         {
@@ -86,7 +89,7 @@ public static class Program
                 var v = value % 10;
                 if (previousValues[i] != v)
                 {
-                    screen.DisplayBitmap(baseX + (bufferWidth * i), baseY, bufferWidth, bufferHeight, numbers[v].Buffer);
+                    screen.DisplayBitmap(baseX + (imageWidth * i), baseY, imageWidth, imageHeight, digitImages[v].Buffer);
                     previousValues[i] = v;
                 }
 

@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 #pragma warning disable CA1819
 #pragma warning disable IDE0032
 // ReSharper disable ConvertToAutoProperty
-public sealed class TuringSmartScreenBufferA
+public sealed class TuringSmartScreenBufferA : IScreenBuffer
 {
     private readonly int width;
 
