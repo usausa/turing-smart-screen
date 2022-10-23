@@ -12,18 +12,21 @@
 ## Usage
 
 ```csharp
-using System.IO;
+using SkiaSharp;
 
 using TuringSmartScreenLib;
-using TuringSmartScreenLib.Helpers;
+using TuringSmartScreenLib.Helpers.SkiaSharp;
 
-// Load RGB565 bytes
-var bytes = BitmapLoader.Load(File.OpenRead("genbaneko.png"), 0, 0, 320, 480);
+using var screen = ScreenFactory.Create(ScreenType.RevisionB, "COM10");
+screen.SetBrightness(100);
+screen.SetOrientation(ScreenOrientation.Landscape);
 
-// Display bitmap
-using var screen = new TuringSmartScreen("COM10");
-screen.Open();
-screen.DisplayBitmap(0, 0, 320, 480, bytes);
+var buffer = screen.CreateBuffer(480, 320);
+
+var bitmap = SKBitmap.Decode(File.OpenRead("genbaneko.png"));
+buffer.ReadFrom(bitmap);
+
+screen.DisplayBuffer(0, 0, buffer);
 ```
 
 <img src="Images/image.jpg" width="50%" title="image">
