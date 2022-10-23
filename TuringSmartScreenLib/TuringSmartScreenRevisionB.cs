@@ -91,7 +91,7 @@ public sealed class TuringSmartScreenRevisionB : IDisposable
         buffer[8] = (byte)(ey & 0xFF);
         buffer[9] = command;
         port.Write(buffer, 0, buffer.Length);
-        port.Write(data, 0, data.Length);
+        port.Write(data, 0, width * height * 2);
     }
 
     public void SetBrightness(byte level) => WriteCommand(0xCE, level);

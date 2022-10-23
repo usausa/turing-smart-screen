@@ -82,7 +82,7 @@ public sealed class TuringSmartScreenRevisionA : IDisposable
         buffer[4] = (byte)(ey & 255);
         buffer[5] = command;
         port.Write(buffer, 0, buffer.Length);
-        port.Write(data, 0, data.Length);
+        port.Write(data, 0, width * height * 2);
     }
 
     public void Reset() => WriteCommand(101);

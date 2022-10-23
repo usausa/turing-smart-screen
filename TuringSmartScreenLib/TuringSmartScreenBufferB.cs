@@ -2,33 +2,28 @@ namespace TuringSmartScreenLib;
 
 using System.Runtime.CompilerServices;
 
-public sealed class TuringSmartScreenCanvasB
+#pragma warning disable CA1819
+#pragma warning disable IDE0032
+// ReSharper disable ConvertToAutoProperty
+public sealed class TuringSmartScreenBufferB
 {
-    private readonly TuringSmartScreenRevisionB screen;
-
-    private readonly int top;
-
-    private readonly int left;
-
     private readonly int width;
 
     private readonly int height;
 
     private readonly byte[] buffer;
 
-    public TuringSmartScreenCanvasB(TuringSmartScreenRevisionB screen, int top, int left, int width, int height)
+    public int Width => width;
+
+    public int Height => height;
+
+    public byte[] Buffer => buffer;
+
+    public TuringSmartScreenBufferB(int width, int height)
     {
-        this.screen = screen;
-        this.top = top;
-        this.left = left;
         this.width = width;
         this.height = height;
         buffer = new byte[width * height * 2];
-    }
-
-    public void Write()
-    {
-        screen.DisplayBitmap(top, left, width, height, buffer);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -40,3 +35,6 @@ public sealed class TuringSmartScreenCanvasB
         buffer[offset + 1] = (byte)(rgb & 0xFF);
     }
 }
+// ReSharper restore ConvertToAutoProperty
+#pragma warning restore IDE0032
+#pragma warning restore CA1819
