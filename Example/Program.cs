@@ -81,6 +81,7 @@ public static class Program
         }
 
         // Display loop
+        var max = Math.Pow(10, Digits);
         var counter = 0;
         while (true)
         {
@@ -98,7 +99,7 @@ public static class Program
             }
 
             counter++;
-            if (counter > 9999)
+            if (counter >= max)
             {
                 counter = 0;
             }
