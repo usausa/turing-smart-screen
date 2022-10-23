@@ -31,8 +31,8 @@ public sealed class TuringSmartScreenBufferA : IScreenBuffer
     {
         var rgb = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
         var offset = ((y * width) + x) * 2;
-        buffer[offset] = (byte)((rgb >> 8) & 0xFF);
-        buffer[offset + 1] = (byte)(rgb & 0xFF);
+        buffer[offset] = (byte)(rgb & 0xFF);
+        buffer[offset + 1] = (byte)((rgb >> 8) & 0xFF);
     }
 }
 // ReSharper restore ConvertToAutoProperty
