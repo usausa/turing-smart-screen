@@ -4,6 +4,9 @@ using global::SkiaSharp;
 
 public static class Extensions
 {
+    public static void ReadFrom(this IScreenBuffer buffer, SKBitmap bitmap) =>
+        buffer.ReadFrom(bitmap, 0, 0, bitmap.Width, bitmap.Height);
+
     public static void ReadFrom(this IScreenBuffer buffer, SKBitmap bitmap, int sx, int sy, int sw, int sh)
     {
         if (buffer is TuringSmartScreenBufferB bufferB)
@@ -27,6 +30,9 @@ public static class Extensions
         }
     }
 
+    public static void ReadFrom(this TuringSmartScreenBufferA buffer, SKBitmap bitmap) =>
+        buffer.ReadFrom(bitmap, 0, 0, bitmap.Width, bitmap.Height);
+
     public static void ReadFrom(this TuringSmartScreenBufferA buffer, SKBitmap bitmap, int sx, int sy, int sw, int sh)
     {
         for (var y = sy; y < sy + sh; y++)
@@ -38,6 +44,9 @@ public static class Extensions
             }
         }
     }
+
+    public static void ReadFrom(this TuringSmartScreenBufferB buffer, SKBitmap bitmap) =>
+        buffer.ReadFrom(bitmap, 0, 0, bitmap.Width, bitmap.Height);
 
     public static void ReadFrom(this TuringSmartScreenBufferB buffer, SKBitmap bitmap, int sx, int sy, int sw, int sh)
     {
