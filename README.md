@@ -23,7 +23,7 @@ screen.SetOrientation(ScreenOrientation.Landscape);
 
 var buffer = screen.CreateBuffer(480, 320);
 
-var bitmap = SKBitmap.Decode(File.OpenRead("genbaneko.png"));
+using var bitmap = SKBitmap.Decode(File.OpenRead("genbaneko.png"));
 buffer.ReadFrom(bitmap);
 
 screen.DisplayBuffer(0, 0, buffer);

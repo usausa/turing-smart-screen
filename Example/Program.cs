@@ -12,7 +12,7 @@ public static class Program
 
     private const int Margin = 2;
 
-    private const int Digits = 4;
+    private const int Digits = 6;
 
     // ReSharper disable FunctionNeverReturns
     public static void Main()
@@ -25,7 +25,7 @@ public static class Program
 
         // Clear
         var clearBuffer = screen.CreateBuffer(Width, Height);
-        clearBuffer.Clear();
+        clearBuffer.Clear(255, 255, 255);
         screen.DisplayBuffer(clearBuffer);
 
         // Paint
@@ -85,7 +85,7 @@ public static class Program
                 var number = value % 10;
                 if (previousValues[i] != number)
                 {
-                    screen.DisplayBitmap(baseX + (imageWidth * i), baseY, imageWidth, imageHeight, digitImages[number].Buffer);
+                    screen.DisplayBuffer(baseX + (imageWidth * i), baseY, digitImages[number]);
                     previousValues[i] = number;
                 }
 
@@ -97,6 +97,8 @@ public static class Program
             {
                 counter = 0;
             }
+
+            Thread.Sleep(50);
         }
     }
     // ReSharper restore FunctionNeverReturns
