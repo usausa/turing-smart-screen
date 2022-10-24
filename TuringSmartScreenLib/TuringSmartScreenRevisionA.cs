@@ -36,6 +36,8 @@ public sealed class TuringSmartScreenRevisionA : IDisposable
     public void Open()
     {
         port.Open();
+        port.DiscardInBuffer();
+        port.DiscardOutBuffer();
     }
 
     public void Close()

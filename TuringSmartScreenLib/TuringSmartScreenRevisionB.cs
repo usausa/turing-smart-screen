@@ -36,6 +36,8 @@ public sealed class TuringSmartScreenRevisionB : IDisposable
     public void Open()
     {
         port.Open();
+        port.DiscardInBuffer();
+        port.DiscardOutBuffer();
 
         var hello = new byte[] { 0xCA, (byte)'H', (byte)'E', (byte)'L', (byte)'L', (byte)'O', 0, 0, 0, 0xCA };
         port.Write(hello, 0, hello.Length);

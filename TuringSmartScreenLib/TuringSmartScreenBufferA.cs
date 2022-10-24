@@ -1,5 +1,6 @@
 namespace TuringSmartScreenLib;
 
+using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 
 #pragma warning disable CA1819
@@ -31,8 +32,16 @@ public sealed class TuringSmartScreenBufferA : IScreenBuffer
     {
         var rgb = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
         var offset = ((y * width) + x) * 2;
-        buffer[offset] = (byte)(rgb & 0xFF);
-        buffer[offset + 1] = (byte)((rgb >> 8) & 0xFF);
+        BinaryPrimitives.WriteInt16LittleEndian(buffer.AsSpan(offset), (short)rgb);
+    }
+
+    public void Clear(byte r = 0, byte g = 0, byte b = 0)
+    {
+        var rgb = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
+        for (var offset = 0; offset < buffer.Length; offset += 2)
+        {
+            BinaryPrimitives.WriteInt16LittleEndian(buffer.AsSpan(offset), (short)rgb);
+        }
     }
 }
 // ReSharper restore ConvertToAutoProperty

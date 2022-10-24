@@ -23,8 +23,10 @@ public static class Program
         screen.SetBrightness(100);
         screen.SetOrientation(ScreenOrientation.Landscape);
 
-        // Clear dummy
-        screen.DisplayBitmap(0, 0, Width, Height, new byte[Width * Height * 2]);
+        // Clear
+        var clearBuffer = screen.CreateBuffer(Width, Height);
+        clearBuffer.Clear();
+        screen.DisplayBuffer(clearBuffer);
 
         // Paint
         using var paint = new SKPaint();
