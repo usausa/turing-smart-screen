@@ -82,11 +82,11 @@ public static class Program
             var value = counter;
             for (var i = Digits - 1; i >= 0; i--)
             {
-                var v = value % 10;
-                if (previousValues[i] != v)
+                var number = value % 10;
+                if (previousValues[i] != number)
                 {
-                    screen.DisplayBitmap(baseX + (imageWidth * i), baseY, imageWidth, imageHeight, digitImages[v].Buffer);
-                    previousValues[i] = v;
+                    screen.DisplayBitmap(baseX + (imageWidth * i), baseY, imageWidth, imageHeight, digitImages[number].Buffer);
+                    previousValues[i] = number;
                 }
 
                 value /= 10;
