@@ -1,9 +1,6 @@
 using System.CommandLine;
 using System.CommandLine.NamingConventionBinder;
 
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
-
 using TuringSmartScreenLib;
 
 #pragma warning disable CA1812
@@ -11,6 +8,8 @@ using TuringSmartScreenLib;
 var portOption = new Option<string>(new[] { "--port", "-p" }, "Port") { IsRequired = true };
 
 var rootCommand = new RootCommand("Turing Smart Screen tool");
+
+// TODO factory & type
 
 // Reset
 var resetCommand = new Command("reset", "Reset screen");
@@ -75,6 +74,7 @@ brightCommand.Handler = CommandHandler.Create((string port, int level) =>
 });
 rootCommand.Add(brightCommand);
 
+// TODO image
 // Display
 var displayCommand = new Command("display", "Display image");
 displayCommand.AddOption(portOption);
@@ -87,28 +87,31 @@ displayCommand.AddOption(new Option<int>(new[] { "-x" }, "Screen x"));
 displayCommand.AddOption(new Option<int>(new[] { "-y" }, "Screen y"));
 displayCommand.Handler = CommandHandler.Create((string port, string file, int sx, int sy, int sw, int sh, int x, int y) =>
 {
-    using var image = Image.Load<Rgb24>(File.OpenRead(file));
+    // TODO
+    //using var image = Image.Load<Rgb24>(File.OpenRead(file));
 
-    var width = Math.Min(Math.Min(sw, image.Width - sx), 320 - x);
-    var height = Math.Min(Math.Min(sh, image.Height - sy), 480 - y);
+    //var width = Math.Min(Math.Min(sw, image.Width - sx), 320 - x);
+    //var height = Math.Min(Math.Min(sh, image.Height - sy), 480 - y);
 
-    var bytes = new byte[width * height * 2];
-    for (var i = 0; i < height; i++)
-    {
-        for (var j = 0; j < width; j++)
-        {
-            var color = image[sx + j, sy + i];
-            var rgb = ((color.R >> 3) << 11) | ((color.G >> 2) << 5) | (color.B >> 3);
-            var offset = ((i * width) + j) * 2;
-            bytes[offset] = (byte)(rgb & 0xFF);
-            bytes[offset + 1] = (byte)((rgb >> 8) & 0xFF);
-        }
-    }
+    //var bytes = new byte[width * height * 2];
+    //for (var i = 0; i < height; i++)
+    //{
+    //    for (var j = 0; j < width; j++)
+    //    {
+    //        var color = image[sx + j, sy + i];
+    //        var rgb = ((color.R >> 3) << 11) | ((color.G >> 2) << 5) | (color.B >> 3);
+    //        var offset = ((i * width) + j) * 2;
+    //        bytes[offset] = (byte)(rgb & 0xFF);
+    //        bytes[offset + 1] = (byte)((rgb >> 8) & 0xFF);
+    //    }
+    //}
 
-    using var screen = new TuringSmartScreenRevisionA(port);
-    screen.Open();
-    screen.DisplayBitmap(x, y, width, height, bytes);
+    //using var screen = new TuringSmartScreenRevisionA(port);
+    //screen.Open();
+    //screen.DisplayBitmap(x, y, width, height, bytes);
 });
 rootCommand.Add(displayCommand);
+
+// TODO text
 
 return rootCommand.Invoke(args);
