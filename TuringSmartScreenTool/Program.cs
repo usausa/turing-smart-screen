@@ -1,25 +1,32 @@
 using System.CommandLine;
 using System.CommandLine.NamingConventionBinder;
 
+using SkiaSharp;
+
 using TuringSmartScreenLib;
+using TuringSmartScreenLib.Helpers.SkiaSharp;
 
 #pragma warning disable CA1812
 
+var revisionOption = new Option<string>(new[] { "--revision", "-r" }, static () => "b", "Revision");
 var portOption = new Option<string>(new[] { "--port", "-p" }, "Port") { IsRequired = true };
 
 var rootCommand = new RootCommand("Turing Smart Screen tool");
 
-// TODO factory & type
+static ScreenType GetScreenType(string revision) =>
+    String.Equals(revision, "a", StringComparison.OrdinalIgnoreCase)
+        ? ScreenType.RevisionA
+        : ScreenType.RevisionB;
 
 // Reset
 var resetCommand = new Command("reset", "Reset screen");
+resetCommand.AddOption(revisionOption);
 resetCommand.AddOption(portOption);
-resetCommand.Handler = CommandHandler.Create((string port) =>
+resetCommand.Handler = CommandHandler.Create((string revision, string port) =>
 {
     try
     {
-        using var screen = new TuringSmartScreenRevisionA(port);
-        screen.Open();
+        using var screen = ScreenFactory.Create(GetScreenType(revision), port);
         screen.Reset();
     }
     catch (IOException)
@@ -31,86 +38,107 @@ rootCommand.Add(resetCommand);
 
 // Clear
 var clearCommand = new Command("clear", "Clear screen");
+clearCommand.AddOption(revisionOption);
 clearCommand.AddOption(portOption);
-clearCommand.Handler = CommandHandler.Create((string port) =>
+clearCommand.Handler = CommandHandler.Create((string revision, string port) =>
 {
-    using var screen = new TuringSmartScreenRevisionA(port);
-    screen.Open();
+    // [MEMO] Type b not supported
+    using var screen = ScreenFactory.Create(GetScreenType(revision), port);
     screen.Clear();
 });
 rootCommand.Add(clearCommand);
 
 // ON
 var onCommand = new Command("on", "Screen ON");
+onCommand.AddOption(revisionOption);
 onCommand.AddOption(portOption);
-onCommand.Handler = CommandHandler.Create((string port) =>
+onCommand.Handler = CommandHandler.Create((string revision, string port) =>
 {
-    using var screen = new TuringSmartScreenRevisionA(port);
-    screen.Open();
+    using var screen = ScreenFactory.Create(GetScreenType(revision), port);
     screen.ScreenOn();
 });
 rootCommand.Add(onCommand);
 
 // Off
 var offCommand = new Command("off", "Screen OFF");
+offCommand.AddOption(revisionOption);
 offCommand.AddOption(portOption);
-offCommand.Handler = CommandHandler.Create((string port) =>
+offCommand.Handler = CommandHandler.Create((string revision, string port) =>
 {
-    using var screen = new TuringSmartScreenRevisionA(port);
-    screen.Open();
+    using var screen = ScreenFactory.Create(GetScreenType(revision), port);
     screen.ScreenOff();
 });
 rootCommand.Add(offCommand);
 
 // Brightness
 var brightCommand = new Command("bright", "Set brightness");
+brightCommand.AddOption(revisionOption);
 brightCommand.AddOption(portOption);
-brightCommand.AddOption(new Option<int>(new[] { "--level", "-l" }, "Level") { IsRequired = true });
-brightCommand.Handler = CommandHandler.Create((string port, int level) =>
+brightCommand.AddOption(new Option<byte>(new[] { "--level", "-l" }, "Level") { IsRequired = true });
+brightCommand.Handler = CommandHandler.Create((string revision, string port, byte level) =>
 {
-    using var screen = new TuringSmartScreenRevisionA(port);
-    screen.Open();
+    using var screen = ScreenFactory.Create(GetScreenType(revision), port);
     screen.SetBrightness(level);
 });
 rootCommand.Add(brightCommand);
 
-// TODO image
-// Display
-var displayCommand = new Command("display", "Display image");
-displayCommand.AddOption(portOption);
-displayCommand.AddOption(new Option<string>(new[] { "--file", "-f" }, "Filename") { IsRequired = true });
-displayCommand.AddOption(new Option<int>(new[] { "-sx" }, "Source x"));
-displayCommand.AddOption(new Option<int>(new[] { "-sy" }, "Source y"));
-displayCommand.AddOption(new Option<int>(new[] { "-sw" }, static () => 320, "Source width"));
-displayCommand.AddOption(new Option<int>(new[] { "-sh" }, static () => 480, "Source height"));
-displayCommand.AddOption(new Option<int>(new[] { "-x" }, "Screen x"));
-displayCommand.AddOption(new Option<int>(new[] { "-y" }, "Screen y"));
-displayCommand.Handler = CommandHandler.Create((string port, string file, int sx, int sy, int sw, int sh, int x, int y) =>
+// Orientation
+var orientationCommand = new Command("orientation", "Set orientation");
+orientationCommand.AddOption(revisionOption);
+orientationCommand.AddOption(portOption);
+orientationCommand.AddOption(new Option<string>(new[] { "--mode", "-m" }, "Mode (l or p)"));
+orientationCommand.Handler = CommandHandler.Create((string revision, string port, string mode) =>
 {
-    // TODO
-    //using var image = Image.Load<Rgb24>(File.OpenRead(file));
-
-    //var width = Math.Min(Math.Min(sw, image.Width - sx), 320 - x);
-    //var height = Math.Min(Math.Min(sh, image.Height - sy), 480 - y);
-
-    //var bytes = new byte[width * height * 2];
-    //for (var i = 0; i < height; i++)
-    //{
-    //    for (var j = 0; j < width; j++)
-    //    {
-    //        var color = image[sx + j, sy + i];
-    //        var rgb = ((color.R >> 3) << 11) | ((color.G >> 2) << 5) | (color.B >> 3);
-    //        var offset = ((i * width) + j) * 2;
-    //        bytes[offset] = (byte)(rgb & 0xFF);
-    //        bytes[offset + 1] = (byte)((rgb >> 8) & 0xFF);
-    //    }
-    //}
-
-    //using var screen = new TuringSmartScreenRevisionA(port);
-    //screen.Open();
-    //screen.DisplayBitmap(x, y, width, height, bytes);
+    using var screen = ScreenFactory.Create(GetScreenType(revision), port);
+    switch (mode)
+    {
+        case "l":
+        case "landscape":
+            screen.SetOrientation(ScreenOrientation.Landscape);
+            break;
+        case "p":
+        case "portrait":
+            screen.SetOrientation(ScreenOrientation.Portrait);
+            break;
+    }
 });
-rootCommand.Add(displayCommand);
+rootCommand.Add(orientationCommand);
+
+// Image
+var imageCommand = new Command("image", "Display image");
+imageCommand.AddOption(revisionOption);
+imageCommand.AddOption(portOption);
+imageCommand.AddOption(new Option<string>(new[] { "--file", "-f" }, "Filename") { IsRequired = true });
+imageCommand.AddOption(new Option<int>(new[] { "-x" }, static () => 0, "Position x"));
+imageCommand.AddOption(new Option<int>(new[] { "-y" }, static () => 0, "Position y"));
+imageCommand.Handler = CommandHandler.Create((string revision, string port, string file, int x, int y) =>
+{
+    using var bitmap = SKBitmap.Decode(File.OpenRead(file));
+
+    using var screen = ScreenFactory.Create(GetScreenType(revision), port);
+    var buffer = screen.CreateBuffer(bitmap.Width, bitmap.Height);
+    buffer.ReadFrom(bitmap);
+    screen.DisplayBuffer(x, y, buffer);
+});
+rootCommand.Add(imageCommand);
+
+var fillCommand = new Command("fill", "Fill screen");
+fillCommand.AddOption(revisionOption);
+fillCommand.AddOption(portOption);
+fillCommand.AddOption(new Option<string>(new[] { "--color", "-c" }, static () => "000000", "Color"));
+fillCommand.Handler = CommandHandler.Create((string revision, string port, string color) =>
+{
+    var c = Convert.ToInt32(color, 16);
+    var r = (byte)((c >> 16) & 0xff);
+    var g = (byte)((c >> 8) & 0xff);
+    var b = (byte)(c & 0xff);
+
+    using var screen = ScreenFactory.Create(GetScreenType(revision), port);
+    var buffer = screen.CreateBuffer(480, 320);
+    buffer.Clear(r, g, b);
+    screen.DisplayBuffer(buffer);
+});
+rootCommand.Add(fillCommand);
 
 // TODO text
 

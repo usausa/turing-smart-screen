@@ -23,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\TuringSmartScreenLib.Helpers.SkiaSharp\TuringSmartScreenLib.Helpers.SkiaSharp.csproj" />
     <ProjectReference Include="..\TuringSmartScreenLib\TuringSmartScreenLib.csproj" />
   </ItemGroup>
 
