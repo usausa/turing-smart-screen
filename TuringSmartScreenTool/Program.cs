@@ -122,24 +122,61 @@ imageCommand.Handler = CommandHandler.Create((string revision, string port, stri
 });
 rootCommand.Add(imageCommand);
 
+// Fill
 var fillCommand = new Command("fill", "Fill screen");
 fillCommand.AddOption(revisionOption);
 fillCommand.AddOption(portOption);
 fillCommand.AddOption(new Option<string>(new[] { "--color", "-c" }, static () => "000000", "Color"));
 fillCommand.Handler = CommandHandler.Create((string revision, string port, string color) =>
 {
-    var c = Convert.ToInt32(color, 16);
-    var r = (byte)((c >> 16) & 0xff);
-    var g = (byte)((c >> 8) & 0xff);
-    var b = (byte)(c & 0xff);
+    var c = SKColor.Parse(color);
 
     using var screen = ScreenFactory.Create(GetScreenType(revision), port);
     var buffer = screen.CreateBuffer(480, 320);
-    buffer.Clear(r, g, b);
+    buffer.Clear(c.Red, c.Green, c.Blue);
     screen.DisplayBuffer(buffer);
 });
 rootCommand.Add(fillCommand);
 
-// TODO text
+// Text
+var textCommand = new Command("text", "Display text");
+textCommand.AddOption(revisionOption);
+textCommand.AddOption(portOption);
+textCommand.AddOption(new Option<string>(new[] { "--text", "-t" }, "Text") { IsRequired = true });
+textCommand.AddOption(new Option<int>(new[] { "-x" }, static () => 0, "Position x"));
+textCommand.AddOption(new Option<int>(new[] { "-y" }, static () => 0, "Position y"));
+textCommand.AddOption(new Option<int>(new[] { "--size", "-s" }, static () => 0, "Size"));
+textCommand.AddOption(new Option<string>(new[] { "--font", "-f" }, static () => string.Empty, "Font"));
+textCommand.AddOption(new Option<string>(new[] { "--color", "-c" }, static () => "FFFFFF", "Color"));
+textCommand.AddOption(new Option<string>(new[] { "--background", "-b" }, static () => "000000", "Color"));
+textCommand.Handler = CommandHandler.Create((string revision, string port, string text, int x, int y, int size, string font, string color, string background) =>
+{
+    using var paint = new SKPaint();
+    paint.IsAntialias = true;
+    if (size > 0)
+    {
+        paint.TextSize = size;
+    }
+    if (!String.IsNullOrEmpty(font))
+    {
+        paint.Typeface = SKTypeface.FromFamilyName(font);
+    }
+    paint.Color = SKColor.Parse(color);
+
+    var rect = default(SKRect);
+    paint.MeasureText(text, ref rect);
+
+    using var bitmap = new SKBitmap((int)Math.Floor(rect.Width), (int)Math.Floor(rect.Height));
+    using var canvas = new SKCanvas(bitmap);
+    canvas.Clear(SKColor.Parse(background));
+    canvas.DrawText(text, 0, rect.Height, paint);
+    canvas.Flush();
+
+    using var screen = ScreenFactory.Create(GetScreenType(revision), port);
+    var buffer = screen.CreateBuffer(bitmap.Width, bitmap.Height);
+    buffer.ReadFrom(bitmap);
+    screen.DisplayBuffer(x, y, buffer);
+});
+rootCommand.Add(textCommand);
 
 return rootCommand.Invoke(args);
