@@ -33,7 +33,7 @@ screen.DisplayBuffer(0, 0, buffer);
 
 # TuringSmartScreenTool
 
-Command line tool.
+CLI for turing smart screen.
 
 ## Install
 
@@ -44,10 +44,12 @@ Command line tool.
 ## Usage
 
 ```
-> tsstool reset -p COM10
-> tsstool clear -p COM10
+> tsstool reset -r a -p COM9
+> tsstool clear -r a -p COM9
 > tsstool on -p COM10
 > tsstool off -p COM10
 > tsstool bright -p COM10 -l 192
-> tsstool display -p COM10 -f genbaneko.png
+> tsstool image -p COM10 -f genbaneko.png
+> tsstool fill -p COM10 -c ff0000
+> tsstool text -p COM10 -t TEST -x 80 -y 40 -s 96 -f Arial -c ff0000 -b 0000ff
 ```
