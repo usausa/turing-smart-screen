@@ -21,21 +21,21 @@ internal sealed class ScreenWrapperRevisionA : IScreen
 
     public void SetBrightness(byte level) => screen.SetBrightness(level);
 
-    public void SetOrientation(ScreenOrientation orientation)
+    public void SetOrientation(ScreenOrientation orientation, int width, int height)
     {
         switch (orientation)
         {
             case ScreenOrientation.Portrait:
-                screen.SetOrientation(TuringSmartScreenRevisionA.Orientation.Portrait);
+                screen.SetOrientation(TuringSmartScreenRevisionA.Orientation.Portrait, width, height);
                 break;
             case ScreenOrientation.ReversePortrait:
-                screen.SetOrientation(TuringSmartScreenRevisionA.Orientation.ReversePortrait);
+                screen.SetOrientation(TuringSmartScreenRevisionA.Orientation.ReversePortrait, width, height);
                 break;
             case ScreenOrientation.Landscape:
-                screen.SetOrientation(TuringSmartScreenRevisionA.Orientation.Landscape);
+                screen.SetOrientation(TuringSmartScreenRevisionA.Orientation.Landscape, width, height);
                 break;
             case ScreenOrientation.ReverseLandscape:
-                screen.SetOrientation(TuringSmartScreenRevisionA.Orientation.ReverseLandscape);
+                screen.SetOrientation(TuringSmartScreenRevisionA.Orientation.ReverseLandscape, width, height);
                 break;
         }
     }
@@ -81,19 +81,18 @@ internal abstract class ScreenWrapperRevisionB : IScreen
     public void SetBrightness(byte level) => screen.SetBrightness(CalcBrightness(level));
 
     protected abstract byte CalcBrightness(byte value);
-
-    public void SetOrientation(ScreenOrientation orientation)
+    public void SetOrientation(ScreenOrientation orientation, int width, int height)
     {
         switch (orientation)
         {
             case ScreenOrientation.Portrait:
-                screen.SetOrientation(TuringSmartScreenRevisionB.Orientation.Portrait);
+                screen.SetOrientation(TuringSmartScreenRevisionB.Orientation.Portrait, width, height);
                 break;
             case ScreenOrientation.ReversePortrait:
                 // TODO Emulation ?
                 break;
             case ScreenOrientation.Landscape:
-                screen.SetOrientation(TuringSmartScreenRevisionB.Orientation.Landscape);
+                screen.SetOrientation(TuringSmartScreenRevisionB.Orientation.Landscape, width, height);
                 break;
             case ScreenOrientation.ReverseLandscape:
                 // TODO Emulation ?

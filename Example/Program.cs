@@ -21,7 +21,7 @@ public static class Program
         using var screen = ScreenFactory.Create(ScreenType.RevisionB, "COM10");
         //using var screen = ScreenFactory.Create(ScreenType.RevisionA, "COM9");
         screen.SetBrightness(100);
-        screen.SetOrientation(ScreenOrientation.Landscape);
+        screen.SetOrientation(ScreenOrientation.Landscape, Width, Height);
 
         // Clear
         var clearBuffer = screen.CreateBuffer(Width, Height);

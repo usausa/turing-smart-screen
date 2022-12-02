@@ -13,7 +13,7 @@ public interface IScreen : IDisposable
 
     void SetBrightness(byte level);
 
-    void SetOrientation(ScreenOrientation orientation);
+    void SetOrientation(ScreenOrientation orientation, int width, int height);
 
     IScreenBuffer CreateBuffer(int width, int height);
 
