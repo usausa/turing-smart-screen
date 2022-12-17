@@ -21,7 +21,7 @@ using var screen = ScreenFactory.Create(ScreenType.RevisionB, "COM10");
 screen.SetBrightness(100);
 screen.SetOrientation(ScreenOrientation.Landscape);
 
-var buffer = screen.CreateBuffer(480, 320);
+var buffer = screen.CreateBuffer();
 
 using var bitmap = SKBitmap.Decode(File.OpenRead("genbaneko.png"));
 buffer.ReadFrom(bitmap);
