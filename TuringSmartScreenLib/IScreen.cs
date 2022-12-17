@@ -3,6 +3,12 @@ namespace TuringSmartScreenLib;
 #pragma warning disable CA1819
 public interface IScreen : IDisposable
 {
+    int Width { get; }
+
+    int Height { get; }
+
+    ScreenOrientation Orientation { get; set; }
+
     void Reset();
 
     void Clear();
@@ -12,8 +18,6 @@ public interface IScreen : IDisposable
     void ScreenOn();
 
     void SetBrightness(byte level);
-
-    void SetOrientation(ScreenOrientation orientation);
 
     IScreenBuffer CreateBuffer(int width, int height);
 

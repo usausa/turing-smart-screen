@@ -7,9 +7,6 @@ using TuringSmartScreenLib.Helpers.SkiaSharp;
 
 public static class Program
 {
-    private const int Width = 480;
-    private const int Height = 320;
-
     private const int Margin = 2;
 
     private const int Digits = 6;
@@ -21,10 +18,10 @@ public static class Program
         using var screen = ScreenFactory.Create(ScreenType.RevisionB, "COM10");
         //using var screen = ScreenFactory.Create(ScreenType.RevisionA, "COM9");
         screen.SetBrightness(100);
-        screen.SetOrientation(ScreenOrientation.Landscape);
+        screen.Orientation = ScreenOrientation.Landscape;
 
         // Clear
-        var clearBuffer = screen.CreateBuffer(Width, Height);
+        var clearBuffer = screen.CreateBuffer();
         clearBuffer.Clear(255, 255, 255);
         screen.DisplayBuffer(clearBuffer);
 
@@ -65,8 +62,8 @@ public static class Program
         }
 
         // Prepare display setting
-        var baseX = (Width - (imageWidth * Digits)) / 2;
-        var baseY = (Height / 2) - (imageHeight / 2);
+        var baseX = (screen.Width - (imageWidth * Digits)) / 2;
+        var baseY = (screen.Height / 2) - (imageHeight / 2);
 
         var previousValues = new int[Digits];
         for (var i = 0; i < previousValues.Length; i++)

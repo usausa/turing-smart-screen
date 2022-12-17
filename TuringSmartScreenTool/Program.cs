@@ -94,11 +94,11 @@ orientationCommand.Handler = CommandHandler.Create((string revision, string port
     {
         case "l":
         case "landscape":
-            screen.SetOrientation(ScreenOrientation.Landscape);
+            screen.Orientation = ScreenOrientation.Landscape;
             break;
         case "p":
         case "portrait":
-            screen.SetOrientation(ScreenOrientation.Portrait);
+            screen.Orientation = ScreenOrientation.Portrait;
             break;
     }
 });
