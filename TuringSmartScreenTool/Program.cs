@@ -5,13 +5,14 @@ using SkiaSharp;
 
 using TuringSmartScreenLib;
 using TuringSmartScreenLib.Helpers.SkiaSharp;
+// ReSharper disable UseObjectOrCollectionInitializer
+#pragma warning disable IDE0017
 
 #pragma warning disable CA1812
 
-var revisionOption = new Option<string>(new[] { "--revision", "-r" }, static () => "b", "Revision");
-var portOption = new Option<string>(new[] { "--port", "-p" }, "Port") { IsRequired = true };
-
 var rootCommand = new RootCommand("Turing Smart Screen tool");
+rootCommand.AddGlobalOption(new Option<string>(new[] { "--revision", "-r" }, static () => "b", "Revision"));
+rootCommand.AddGlobalOption(new Option<string>(new[] { "--port", "-p" }, "Port") { IsRequired = true });
 
 static ScreenType GetScreenType(string revision) =>
     String.Equals(revision, "a", StringComparison.OrdinalIgnoreCase)
@@ -20,8 +21,6 @@ static ScreenType GetScreenType(string revision) =>
 
 // Reset
 var resetCommand = new Command("reset", "Reset screen");
-resetCommand.AddOption(revisionOption);
-resetCommand.AddOption(portOption);
 resetCommand.Handler = CommandHandler.Create((string revision, string port) =>
 {
     try
@@ -38,8 +37,6 @@ rootCommand.Add(resetCommand);
 
 // Clear
 var clearCommand = new Command("clear", "Clear screen");
-clearCommand.AddOption(revisionOption);
-clearCommand.AddOption(portOption);
 clearCommand.Handler = CommandHandler.Create((string revision, string port) =>
 {
     // [MEMO] Type b not supported
@@ -50,8 +47,6 @@ rootCommand.Add(clearCommand);
 
 // ON
 var onCommand = new Command("on", "Screen ON");
-onCommand.AddOption(revisionOption);
-onCommand.AddOption(portOption);
 onCommand.Handler = CommandHandler.Create((string revision, string port) =>
 {
     using var screen = ScreenFactory.Create(GetScreenType(revision), port);
@@ -61,8 +56,6 @@ rootCommand.Add(onCommand);
 
 // Off
 var offCommand = new Command("off", "Screen OFF");
-offCommand.AddOption(revisionOption);
-offCommand.AddOption(portOption);
 offCommand.Handler = CommandHandler.Create((string revision, string port) =>
 {
     using var screen = ScreenFactory.Create(GetScreenType(revision), port);
@@ -72,8 +65,6 @@ rootCommand.Add(offCommand);
 
 // Brightness
 var brightCommand = new Command("bright", "Set brightness");
-brightCommand.AddOption(revisionOption);
-brightCommand.AddOption(portOption);
 brightCommand.AddOption(new Option<byte>(new[] { "--level", "-l" }, "Level") { IsRequired = true });
 brightCommand.Handler = CommandHandler.Create((string revision, string port, byte level) =>
 {
@@ -84,8 +75,6 @@ rootCommand.Add(brightCommand);
 
 // Orientation
 var orientationCommand = new Command("orientation", "Set orientation");
-orientationCommand.AddOption(revisionOption);
-orientationCommand.AddOption(portOption);
 orientationCommand.AddOption(new Option<string>(new[] { "--mode", "-m" }, "Mode (l or p)"));
 orientationCommand.Handler = CommandHandler.Create((string revision, string port, string mode) =>
 {
@@ -106,8 +95,6 @@ rootCommand.Add(orientationCommand);
 
 // Image
 var imageCommand = new Command("image", "Display image");
-imageCommand.AddOption(revisionOption);
-imageCommand.AddOption(portOption);
 imageCommand.AddOption(new Option<string>(new[] { "--file", "-f" }, "Filename") { IsRequired = true });
 imageCommand.AddOption(new Option<int>(new[] { "-x" }, static () => 0, "Position x"));
 imageCommand.AddOption(new Option<int>(new[] { "-y" }, static () => 0, "Position y"));
@@ -124,8 +111,6 @@ rootCommand.Add(imageCommand);
 
 // Fill
 var fillCommand = new Command("fill", "Fill screen");
-fillCommand.AddOption(revisionOption);
-fillCommand.AddOption(portOption);
 fillCommand.AddOption(new Option<string>(new[] { "--color", "-c" }, static () => "000000", "Color"));
 fillCommand.Handler = CommandHandler.Create((string revision, string port, string color) =>
 {
@@ -140,8 +125,6 @@ rootCommand.Add(fillCommand);
 
 // Text
 var textCommand = new Command("text", "Display text");
-textCommand.AddOption(revisionOption);
-textCommand.AddOption(portOption);
 textCommand.AddOption(new Option<string>(new[] { "--text", "-t" }, "Text") { IsRequired = true });
 textCommand.AddOption(new Option<int>(new[] { "-x" }, static () => 0, "Position x"));
 textCommand.AddOption(new Option<int>(new[] { "-y" }, static () => 0, "Position y"));
