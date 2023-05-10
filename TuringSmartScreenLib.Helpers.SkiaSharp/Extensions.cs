@@ -17,6 +17,10 @@ public static class Extensions
         {
             bufferA.ReadFrom(bitmap, sx, sy, sw, sh);
         }
+        else if (buffer is TuringSmartScreenBuffer5Inch buffer5)
+        {
+            buffer5.ReadFrom(bitmap, sx, sy, sw, sh);
+        }
         else
         {
             for (var y = sy; y < sy + sh; y++)
@@ -35,6 +39,22 @@ public static class Extensions
 
     public static void ReadFrom(this TuringSmartScreenBufferA buffer, SKBitmap bitmap, int sx, int sy, int sw, int sh)
     {
+        for (var y = sy; y < sy + sh; y++)
+        {
+            for (var x = sx; x < sx + sw; x++)
+            {
+                var color = bitmap.GetPixel(x, y);
+                buffer.SetPixel(x, y, color.Red, color.Green, color.Blue);
+            }
+        }
+    }
+
+    public static void ReadFrom(this TuringSmartScreenBuffer5Inch buffer, SKBitmap bitmap, int sx, int sy, int sw, int sh)
+    {
+        using var memStream = new MemoryStream();
+        using var wstream = new SKManagedWStream(memStream);
+        bitmap.Encode(wstream, SKEncodedImageFormat.Png, 100);
+        buffer.SetPNGData(memStream.ToArray(), sh, sw, sx, sy);
         for (var y = sy; y < sy + sh; y++)
         {
             for (var x = sx; x < sx + sw; x++)

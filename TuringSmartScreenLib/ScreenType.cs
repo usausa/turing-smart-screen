@@ -3,5 +3,6 @@ namespace TuringSmartScreenLib;
 public enum ScreenType
 {
     RevisionA,
-    RevisionB
+    RevisionB,
+    Large5Inch
 }

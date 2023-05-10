@@ -15,7 +15,7 @@ public static class Program
     public static void Main()
     {
         // Create screen
-        using var screen = ScreenFactory.Create(ScreenType.RevisionB, "COM10");
+        using var screen = ScreenFactory.Create(ScreenType.Large5Inch, "COM5");
         //using var screen = ScreenFactory.Create(ScreenType.RevisionA, "COM9");
         screen.SetBrightness(100);
         screen.Orientation = ScreenOrientation.Landscape;

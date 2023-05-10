@@ -20,6 +20,13 @@ public static class ScreenFactory
             return new ScreenWrapperRevisionA(screen, width ?? 320, height ?? 480);
         }
 
+        if (type == ScreenType.Large5Inch)
+        {
+            var screen = new TuringSmartScreen5Inch(name);
+            screen.Open();
+            return new ScreenWrapper5Inch(screen, width ?? 800, height ?? 480);
+        }
+
         throw new NotSupportedException("Unsupported type.");
     }
 }
