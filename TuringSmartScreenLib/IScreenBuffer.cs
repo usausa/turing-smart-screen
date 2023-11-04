@@ -7,7 +7,7 @@ public interface IScreenBuffer
 
     int Height { get; }
 
-    byte[] Buffer { get; }
+    //byte[] Buffer { get; }
 
     void SetPixel(int x, int y, byte r, byte g, byte b);
 

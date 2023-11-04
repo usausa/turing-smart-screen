@@ -49,18 +49,40 @@ public static class Extensions
         }
     }
 
+    public static bool IsFullScreen(int sx, int sy, int sw, int sh)
+    {
+        if (sx > 0 || sy > 0)
+        {
+            return false;
+        }
+
+        if (sw == TuringSmartScreen5Inch.WIDTH && sh == TuringSmartScreen5Inch.HEIGHT)
+        {
+            return true;
+        }
+
+        return sh == TuringSmartScreen5Inch.WIDTH && sw == TuringSmartScreen5Inch.HEIGHT;
+    }
+
     public static void ReadFrom(this TuringSmartScreenBuffer5Inch buffer, SKBitmap bitmap, int sx, int sy, int sw, int sh)
     {
         using var memStream = new MemoryStream();
         using var wstream = new SKManagedWStream(memStream);
         bitmap.Encode(wstream, SKEncodedImageFormat.Png, 100);
-        buffer.SetPNGData(memStream.ToArray(), sh, sw, sx, sy);
-        for (var y = sy; y < sy + sh; y++)
+        if (IsFullScreen(sx, sy, sw, sh))
         {
-            for (var x = sx; x < sx + sw; x++)
+            buffer.SetPNGData(memStream.ToArray(), sh, sw, sx, sy);
+        }
+        else
+        {
+            buffer.SetRGB(sw, sh);
+            for (var y = sy; y < sy + sh; y++)
             {
-                var color = bitmap.GetPixel(x, y);
-                buffer.SetPixel(x, y, color.Red, color.Green, color.Blue);
+                for (var x = sx; x < sx + sw; x++)
+                {
+                    var color = bitmap.GetPixel(x, y);
+                    buffer.SetPixel(x, y, color.Red, color.Green, color.Blue);
+                }
             }
         }
     }

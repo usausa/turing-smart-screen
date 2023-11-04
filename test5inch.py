@@ -53,7 +53,7 @@ def GenerateUpdateImage(Path, x, y):
     image = cv2.imread(Path, cv2.IMREAD_UNCHANGED)
     height, width, channels = image.shape 
     MSG = ''
-    for h in range(height):
+    for h in range(height): 
         MSG += f'{((x + h) * 800) + y:06x}'  + f'{width:04x}'       
         for w in range(width): MSG += f'{image[h][w][0]:02x}' + f'{image[h][w][1]:02x}' + f'{image[h][w][2]:02x}'
 

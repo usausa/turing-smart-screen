@@ -114,7 +114,7 @@ internal sealed class ScreenWrapperRevisionA : ScreenBase
 
     public override IScreenBuffer CreateBuffer(int width, int height) => new TuringSmartScreenBufferA(width, height);
 
-    public override void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, width, height, buffer.Buffer);
+    public override void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, width, height, ((TuringSmartScreenBufferA)buffer).Buffer);
 }
 
 internal sealed class ScreenWrapper5Inch : ScreenBase
@@ -226,7 +226,7 @@ internal abstract class ScreenWrapperRevisionB : ScreenBase
 
     public override IScreenBuffer CreateBuffer(int width, int height) => new TuringSmartScreenBufferB(width, height);
 
-    public override void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, width, height, buffer.Buffer);
+    public override void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, width, height, ((TuringSmartScreenBufferB)buffer).Buffer);
 }
 
 internal sealed class ScreenWrapperRevisionB0 : ScreenWrapperRevisionB

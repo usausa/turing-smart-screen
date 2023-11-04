@@ -131,17 +131,18 @@ public sealed class TuringSmartScreen5Inch : IDisposable
 
     public const int HEIGHT = 480;
     public const int WIDTH = 800;
-    public void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer bitmap)
+    public void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer)
     {
-        if (bitmap.Length == 0)
+        var cBuffer = (TuringSmartScreenBuffer5Inch)buffer;
+        if (cBuffer.IsEmpty())
         {
             ClearScreen();
         }
         else
         {
-            if (bitmap.Length < width * height * 2)
+            if (!cBuffer.IsPngFullscreen)
             {
-                DisplayPartialImage(x, y, width, height, bitmap);
+                DisplayPartialImage(x, y, width, height, cBuffer);
             }
             else
             {
@@ -153,9 +154,9 @@ public sealed class TuringSmartScreen5Inch : IDisposable
                 WriteCommand(DisplayFullIMAGE);
                 var blockSize = 249;
                 var currentPosition = 0;
-                while (currentPosition < bitmap.Length)
+                while (currentPosition < buffer.Length)
                 {
-                    var block = bitmap.Skip(currentPosition).Take(blockSize).ToArray();
+                    var block = buffer.Skip(currentPosition).Take(blockSize).ToArray();
                     WriteCommand(block);
                     currentPosition += blockSize;
                 }
@@ -167,7 +168,7 @@ public sealed class TuringSmartScreen5Inch : IDisposable
     private void ClearScreen() {
     }
 
-    private void DisplayPartialImage(int x, int y, int width, int height, byte[] bitmap)
+    private void DisplayPartialImage(int x, int y, int width, int height, TuringSmartScreenBuffer5Inch buffer)
     {        
         var msg = new List<byte>();
         var bitmapPosition = 0;
