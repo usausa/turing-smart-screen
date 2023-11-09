@@ -154,9 +154,9 @@ public sealed class TuringSmartScreen5Inch : IDisposable
                 WriteCommand(DisplayFullIMAGE);
                 var blockSize = 249;
                 var currentPosition = 0;
-                while (currentPosition < buffer.Length)
+                while (currentPosition < cBuffer.Length)
                 {
-                    var block = buffer.Skip(currentPosition).Take(blockSize).ToArray();
+                    var block = cBuffer.Skip(currentPosition).Take(blockSize).ToArray();
                     WriteCommand(block);
                     currentPosition += blockSize;
                 }
@@ -168,6 +168,14 @@ public sealed class TuringSmartScreen5Inch : IDisposable
     private void ClearScreen() {
     }
 
+    /// <summary>
+    /// See https://github.com/mathoudebine/turing-smart-screen-python/issues/90
+    /// </summary>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <param name="width"></param>
+    /// <param name="height"></param>
+    /// <param name="buffer"></param>
     private void DisplayPartialImage(int x, int y, int width, int height, TuringSmartScreenBuffer5Inch buffer)
     {        
         var msg = new List<byte>();
@@ -183,9 +191,10 @@ public sealed class TuringSmartScreen5Inch : IDisposable
             msg.AddRange(BitConverter.GetBytes(width).Reverse());
             for (int  w = 0; w < width; w++)
             {
-                msg.Add(bitmap[bitmapPosition++]);
-                msg.Add(bitmap[bitmapPosition++]);
-                msg.Add(bitmap[bitmapPosition++]);
+                //In the case of color images, the decoded images will have the channels stored in B G R order.
+                msg.Add(buffer.brg_buffer[bitmapPosition++]);
+                msg.Add(buffer.brg_buffer[bitmapPosition++]);
+                msg.Add(buffer.brg_buffer[bitmapPosition++]);
             }
             //UPD_Size = f'{int((len(MSG) / 2) + 2):04x}' #The +2 is for the "ef69" that will be added later
             //if len(MSG) > 500: MSG = '00'.join(MSG[i:i + 498] for i in range(0, len(MSG), 498))

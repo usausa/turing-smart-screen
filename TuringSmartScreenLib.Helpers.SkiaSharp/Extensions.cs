@@ -68,7 +68,9 @@ public static class Extensions
     {
         using var memStream = new MemoryStream();
         using var wstream = new SKManagedWStream(memStream);
-        bitmap.Encode(wstream, SKEncodedImageFormat.Png, 100);
+        //https://docs.opencv.org/3.4/d4/da8/group__imgcodecs.html
+        bitmap.Bytes
+        bitmap.Encode(wstream, SKEncodedImageFormat., 100);
         if (IsFullScreen(sx, sy, sw, sh))
         {
             buffer.SetPNGData(memStream.ToArray(), sh, sw, sx, sy);

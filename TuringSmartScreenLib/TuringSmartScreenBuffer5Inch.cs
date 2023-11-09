@@ -9,8 +9,7 @@ using System.Runtime.CompilerServices;
 public sealed class TuringSmartScreenBuffer5Inch : IScreenBuffer
 {
 
-    private byte[] pngBuffer = new byte[0];
-    private byte[] RGBBuffer = new byte[0];
+    internal byte[] brg_buffer = new byte[0];
     public int Width { get; private set; }
     public int SX { get; private set; }
     public int SY { get; private set; }
@@ -19,9 +18,11 @@ public sealed class TuringSmartScreenBuffer5Inch : IScreenBuffer
 
     public int Height { get; private set; }
 
+    public int Length => brg_buffer.Length;
+
     public void SetPNGData(byte[] bytes, int height, int width, int sx, int sy)
     {
-        pngBuffer = bytes;
+        brg_buffer = bytes;
         Height = height;
         Width = width;
         SX = sx;
@@ -30,20 +31,20 @@ public sealed class TuringSmartScreenBuffer5Inch : IScreenBuffer
     }
     public void SetPixel(int x, int y, byte r, byte g, byte b)
     {
-        RGBBuffer[(y * Width) + x] = r;
-        RGBBuffer[(y * Width) + x + 1] = g;
-        RGBBuffer[(y * Width) + x + 2] = b;
+        brg_buffer[(y * Width) + x] = r;
+        brg_buffer[(y * Width) + x + 1] = g;
+        brg_buffer[(y * Width) + x + 2] = b;
     }
     public void Clear(byte r = 0, byte g = 0, byte b = 0) => pngBuffer = new byte[0];
     public void SetRGB(int sw, int sh)
     {
         Width = sw;
         Height = sh;
-        RGBBuffer = new byte[sw * sh * 3];
+        brg_buffer = new byte[sw * sh * 3];
     }
 
     internal bool IsEmpty() {
-        return RGBBuffer.Length == 0 && pngBuffer.Length == 0;
+        return brg_buffer.Length == 0 && pngBuffer.Length == 0;
     }
 }
 #pragma warning restore IDE0032
