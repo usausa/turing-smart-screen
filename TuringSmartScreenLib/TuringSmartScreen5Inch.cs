@@ -67,7 +67,8 @@ public sealed class TuringSmartScreen5Inch : IDisposable
             throw new Exception($"Invalid response '{resp}' received from 5 Inch Turing Screen on init");
         }
         Console.WriteLine("StopVideo");
-        WriteCommand(StopVideo);        
+        WriteCommand(StopVideo);
+        Console.WriteLine("StopVideo Completed");
     }
 
     public void Close()
@@ -97,7 +98,11 @@ public sealed class TuringSmartScreen5Inch : IDisposable
     private string? ReadResponse()
     {
         var received = dataReceivedEvent.WaitOne(2000);
-        if (!received) throw new TimeoutException("No answer from device");
+        if (!received)
+        {
+            throw new TimeoutException("No answer from device");
+        }
+
         return currentResponse;
     }
 
@@ -140,7 +145,9 @@ public sealed class TuringSmartScreen5Inch : IDisposable
         }
         else
         {
-            if (!cBuffer.IsPngFullscreen)
+            var isFullScreen = height == HEIGHT && width == WIDTH;
+            var isRotated = width == HEIGHT && height == WIDTH;
+            if (!isFullScreen)
             {
                 DisplayPartialImage(x, y, width, height, cBuffer);
             }
@@ -156,7 +163,7 @@ public sealed class TuringSmartScreen5Inch : IDisposable
                 var currentPosition = 0;
                 while (currentPosition < cBuffer.Length)
                 {
-                    var block = cBuffer.Skip(currentPosition).Take(blockSize).ToArray();
+                    var block = cBuffer.img_buffer.Skip(currentPosition).Take(blockSize).ToArray();
                     WriteCommand(block);
                     currentPosition += blockSize;
                 }
@@ -192,9 +199,9 @@ public sealed class TuringSmartScreen5Inch : IDisposable
             for (int  w = 0; w < width; w++)
             {
                 //In the case of color images, the decoded images will have the channels stored in B G R order.
-                msg.Add(buffer.brg_buffer[bitmapPosition++]);
-                msg.Add(buffer.brg_buffer[bitmapPosition++]);
-                msg.Add(buffer.brg_buffer[bitmapPosition++]);
+                msg.Add(buffer.img_buffer[bitmapPosition++]);
+                msg.Add(buffer.img_buffer[bitmapPosition++]);
+                msg.Add(buffer.img_buffer[bitmapPosition++]);
             }
             //UPD_Size = f'{int((len(MSG) / 2) + 2):04x}' #The +2 is for the "ef69" that will be added later
             //if len(MSG) > 500: MSG = '00'.join(MSG[i:i + 498] for i in range(0, len(MSG), 498))
