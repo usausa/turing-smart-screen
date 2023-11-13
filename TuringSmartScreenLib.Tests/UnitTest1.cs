@@ -27,7 +27,7 @@ public class UnitTest1
     /// <param name="x"></param>
     /// <param name="y"></param>
     /// <param name="image"></param>
-    private static string GeneratePartialUpdateFromBufferPython(int height, int width, int x, int y, byte[,,] image)
+    private static (string,string) GeneratePartialUpdateFromBufferPython(int height, int width, int x, int y, byte[,,] image)
     {
         StringBuilder msg = new StringBuilder();
 
@@ -44,62 +44,17 @@ public class UnitTest1
 
         if (msg.Length > 500)
         {
-            msg = new StringBuilder(string.Join("00", Enumerable.Range(0, msg.Length)
+            var chunks = Enumerable.Range(0, msg.Length)
                 .Where(i => i % 498 == 0)
-                .Select(i => msg.ToString().Substring(i, Math.Min(498, msg.Length - i)))));
+                .Select(i => msg.ToString().Substring(i, Math.Min(498, msg.Length - i))).ToList();
+            var newStr = string.Join("00", chunks);
+            msg = new StringBuilder(newStr);            
         }
 
         msg.Append("ef69");
-        return msg.ToString();
+        return (msg.ToString(),UPD_Size);
     }
 
-    private static byte[] ConvertAndPad(int number, int fixedLength)
-    {
-        byte[] byteArray = BitConverter.GetBytes(number);
-        // Apply zero padding if necessary
-        Array.Resize(ref byteArray, fixedLength);
-        return byteArray;
-    }
-
-    /// <summary>
-    /// Code translated from Python
-    /// https://github.com/mathoudebine/turing-smart-screen-python/issues/90
-    /// </summary>
-    /// <param name="height"></param>
-    /// <param name="width"></param>
-    /// <param name="x"></param>
-    /// <param name="y"></param>
-    /// <param name="image"></param>
-    private static byte[] GeneratePartialUpdateFromBuffer(int height, int width, int x, int y, byte[,,] image)
-    {
-        var data = new List<byte>();
-
-        for (int h = 0; h < height; h++)
-        {
-            data.AddRange(ConvertAndPad(((x + h) * 800) + y, 6));
-            data.AddRange(ConvertAndPad(width, 4));
-            for (int w = 0; w < width; w++)
-            {
-                data.Add(image[h, w, 0]);
-                data.Add(image[h, w, 1]);
-                data.Add(image[h, w, 2]);
-            }
-        }
-
-        return data.ToArray();
-
-        //string UPD_Size = $"{(int)((msg.Length / 2) + 2):X4}";
-
-        //if (msg.Length > 500)
-        //{
-        //    msg = new StringBuilder(string.Join("00", Enumerable.Range(0, msg.Length)
-        //        .Where(i => i % 498 == 0)
-        //        .Select(i => msg.ToString().Substring(i, Math.Min(498, msg.Length - i)))));
-        //}
-
-        //msg.Append("ef69");
-        //return msg.ToString();
-    }
 
 
     [Fact]
@@ -109,25 +64,48 @@ public class UnitTest1
         int channelCount = 3; // Assuming RGB format
         var tdArray = ConvertTo3DArray(bitmap.Bytes, bitmap.Width, bitmap.Height, channelCount);
         var strUpdate = GeneratePartialUpdateFromBufferPython(bitmap.Height, bitmap.Width, 0, 0, tdArray);
+        
     }
 
     [Fact]
     public void Test2DArray()
     {
 
-        byte[] oneDimensionalArray = Enumerable.Range(1, 19).SelectMany(BitConverter.GetBytes).ToArray();
-
-        // Define the dimensions for the three-dimensional array
         int width = 2;
         int height = 3;
         int channelCount = 3; // Assuming RGB format
+
+        byte[] oneDimensionalArray = Enumerable.Range(1, (width * height * channelCount) + 1).SelectMany(BitConverter.GetBytes).ToArray();
+
+        // Define the dimensions for the three-dimensional array
         var tdArray = ConvertTo3DArray(oneDimensionalArray, width, height, channelCount);
-        var strUpdate = GeneratePartialUpdateFromBufferPython(height, width, 0, 0, tdArray);
-        var data = Convert.FromHexString(strUpdate);
+        var (strData, updMsg) = GeneratePartialUpdateFromBufferPython(height, width, 0, 0, tdArray);
 
-        var buffer2 = GeneratePartialUpdateFromBuffer(height, width, 0, 0, tdArray);
-
+        var (buffer2,updData) = TuringSmartScreen5Inch.GeneratePartialUpdateFromBuffer(height, width, 0, 0, oneDimensionalArray,3);
+        var toHex = Convert.ToHexString(buffer2);
+        Assert.Equal(strData, toHex, ignoreCase:true);
+        Assert.Equal(updMsg, Convert.ToHexString(updData), ignoreCase: true);
     }
+
+    [Fact]
+    public void Test2DArrayLong()
+    {
+        int width = 20;
+        int height = 30;
+        int channelCount = 3; // Assuming RGB format
+
+        byte[] oneDimensionalArray = Enumerable.Range(1, (width * height * channelCount) + 1).SelectMany(BitConverter.GetBytes).ToArray();
+
+        // Define the dimensions for the three-dimensional array
+        var tdArray = ConvertTo3DArray(oneDimensionalArray, width, height, channelCount);
+        var (strData, updMsg) = GeneratePartialUpdateFromBufferPython(height, width, 0, 0, tdArray);
+
+        var (buffer2, updData) = TuringSmartScreen5Inch.GeneratePartialUpdateFromBuffer(height, width, 0, 0, oneDimensionalArray,3);
+        var toHex = Convert.ToHexString(buffer2);
+        Assert.Equal(strData, toHex, ignoreCase: true);
+        Assert.Equal(updMsg, Convert.ToHexString(updData), ignoreCase: true);
+    }
+
 
     static byte[,,] ConvertTo3DArray(byte[] pixelData, int width, int height, int channelCount)
     {

@@ -1,3 +1,9 @@
+using SkiaSharp;
+using static System.Net.Mime.MediaTypeNames;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.IO;
+using System.Net.NetworkInformation;
+
 namespace Example;
 
 using SkiaSharp;
@@ -16,7 +22,7 @@ public static class Program
     public static void Main()
     {
         // Create screen
-        using var screen = ScreenFactory.Create(ScreenType.Large5Inch, "COM4");
+        using var screen = ScreenFactory.Create(ScreenType.Large5Inch, "COM9");
         //using var screen = ScreenFactory.Create(ScreenType.RevisionA, "COM9");
         screen.SetBrightness(100);
         screen.Orientation = ScreenOrientation.Landscape;
@@ -30,7 +36,7 @@ public static class Program
         screen.DisplayBuffer(0, 0, screenBuffer);
         using var bitmap2 = SKBitmap.Decode("test2-crop.png");
         screenBuffer.ReadFrom(bitmap2);
-        screen.DisplayBuffer(0, 0, screenBuffer);
+        screen.DisplayBuffer(30, 50, screenBuffer);
     }
     // ReSharper restore FunctionNeverReturns
 }

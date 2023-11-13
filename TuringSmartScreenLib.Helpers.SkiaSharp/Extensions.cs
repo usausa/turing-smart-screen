@@ -68,19 +68,8 @@ public static class Extensions
     {
         using var memStream = new MemoryStream();
         using var wstream = new SKManagedWStream(memStream);
-        //https://docs.opencv.org/3.4/d4/da8/group__imgcodecs.html
-        //bitmap.Encode(wstream, SKEncodedImageFormat., 100);
-
-
         buffer.SetRGB(sw, sh, bitmap.Bytes);
-        //for (var y = sy; y < sy + sh; y++)
-        //{
-        //    for (var x = sx; x < sx + sw; x++)
-        //    {
-        //        var color = bitmap.GetPixel(x, y);
-        //        buffer.SetPixel(x, y, color.Red, color.Green, color.Blue);
-        //    }
-        //}        
+  
     }
 
     public static void ReadFrom(this TuringSmartScreenBufferB buffer, SKBitmap bitmap) =>

@@ -6,16 +6,17 @@ using System.IO.Ports;
 public sealed class TuringSmartScreen5Inch : IDisposable
 {
 
+    //see https://github.com/mathoudebine/turing-smart-screen-python/blob/main/library/lcd/lcd_comm_rev_c.py for reference
     public static readonly byte[] GetDevice = { 0x01, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0xc5, 0xd3 };
     public static readonly byte[] UpdateIMG = { 0xcc, 0xef, 0x69, 0x00, 0x00 };
     public static readonly byte[] StopVideo = { 0x79, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
     public static readonly byte[] DisplayFullIMAGE = { 0xc8, 0xef, 0x69, 0x00, 0x17, 0x70 };
     public static readonly byte[] QueryRenderStatus = { 0xcf, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
-    public static readonly byte[] PreImgCMD = { 0x2c };
+    public static readonly byte[] StartDisplay = { 0x2c };
     public static readonly byte[] MediaStop = { 0x96, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
-    public static readonly byte[] PostImgCMD = { 0x86, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
+    public static readonly byte[] PreUpdateBitmap = { 0x86, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
     public static readonly byte[] OnExit = { 0x87, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
-
+    public static readonly byte[] Restart = { 0x84, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
     public enum Orientation : byte
     {
         Portrait = 0,
@@ -25,11 +26,12 @@ public sealed class TuringSmartScreen5Inch : IDisposable
     }
 
     private readonly SerialPort port;
+    private readonly bool debugOutput;
     private Orientation currentOrientation;
     private string? currentResponse;
     private AutoResetEvent dataReceivedEvent = new(false);
 
-    public TuringSmartScreen5Inch(string name)
+    public TuringSmartScreen5Inch(string name, bool debugOutput = false)
     {
         port = new SerialPort(name)
         {
@@ -41,6 +43,7 @@ public sealed class TuringSmartScreen5Inch : IDisposable
             StopBits = StopBits.One,
             Parity = Parity.None
         };
+        this.debugOutput = debugOutput;
     }
 
     public void Dispose()
@@ -56,19 +59,20 @@ public sealed class TuringSmartScreen5Inch : IDisposable
         port.DataReceived += (sender, e) =>
         {
             currentResponse = port.ReadExisting();
-            Console.WriteLine($"Received:'{currentResponse}'");
+            if (debugOutput)
+            {
+                Console.WriteLine($"Received:'{currentResponse}'");
+            }
+
             dataReceivedEvent.Set();
         };
-        Console.WriteLine("GetDevice");
         WriteCommand(GetDevice);
         var resp = ReadResponse();
         if (resp is null || !resp.StartsWith("chs_5inch"))
         {
             throw new Exception($"Invalid response '{resp}' received from 5 Inch Turing Screen on init");
         }
-        Console.WriteLine("StopVideo");
         WriteCommand(StopVideo);
-        Console.WriteLine("StopVideo Completed");
     }
 
     public void Close()
@@ -150,6 +154,13 @@ public sealed class TuringSmartScreen5Inch : IDisposable
             if (!isFullScreen)
             {
                 DisplayPartialImage(x, y, width, height, cBuffer);
+                WriteCommand(QueryRenderStatus);
+                var resp = ReadResponse();
+                if (resp?.Contains("needReSend:1") ??false)
+                {
+                    DisplayPartialImage(x, y, width, height, cBuffer);
+                    WriteCommand(QueryRenderStatus);
+                }
             }
             else
             {
@@ -157,7 +168,7 @@ public sealed class TuringSmartScreen5Inch : IDisposable
                 {
                     throw new Exception("Invalid parameters for full screen image");
                 }
-                WriteCommand(PreImgCMD, 0x2c);
+                WriteCommand(StartDisplay, 0x2c);
                 WriteCommand(DisplayFullIMAGE);
                 var blockSize = 249;
                 var currentPosition = 0;
@@ -167,7 +178,11 @@ public sealed class TuringSmartScreen5Inch : IDisposable
                     WriteCommand(block);
                     currentPosition += blockSize;
                 }
-                WriteCommand(PostImgCMD);
+                WriteCommand(PreUpdateBitmap);
+                ReadResponse();
+                WriteCommand(QueryRenderStatus);
+                ReadResponse();
+
             }
         }
     }
@@ -175,51 +190,63 @@ public sealed class TuringSmartScreen5Inch : IDisposable
     private void ClearScreen() {
     }
 
-    /// <summary>
-    /// See https://github.com/mathoudebine/turing-smart-screen-python/issues/90
-    /// </summary>
-    /// <param name="x"></param>
-    /// <param name="y"></param>
-    /// <param name="width"></param>
-    /// <param name="height"></param>
-    /// <param name="buffer"></param>
-    private void DisplayPartialImage(int x, int y, int width, int height, TuringSmartScreenBuffer5Inch buffer)
-    {        
-        var msg = new List<byte>();
-        var bitmapPosition = 0;
+    private static byte[] ConvertAndPad(int number, int fixedLength)
+    {
+        byte[] byteArray = BitConverter.GetBytes(number);
+        // Apply zero padding if necessary
+        Array.Resize(ref byteArray, fixedLength);
+        Array.Reverse(byteArray);
+        return byteArray;
+    }
+
+    internal static (byte[], byte[]) GeneratePartialUpdateFromBuffer(int height, int width, int x, int y, byte[] image, int channelCount = 4)
+    {
+        var data = new List<byte>();
+
         for (int h = 0; h < height; h++)
         {
-            //MSG += f'{((x + h) * 800) + y:06x}'  + f'{width:04x}'   
-            int v = ((x + h) * 800) +y;
-            var array4 = BitConverter.GetBytes(v).Reverse();
-            msg.Add(0);
-            msg.Add(0);
-            msg.AddRange(array4);
-            msg.AddRange(BitConverter.GetBytes(width).Reverse());
-            for (int  w = 0; w < width; w++)
+            data.AddRange(ConvertAndPad(((x + h) * 800) + y, 3));
+            data.AddRange(ConvertAndPad(width, 2));
+            for (int w = 0; w < width; w++)
             {
-                //In the case of color images, the decoded images will have the channels stored in B G R order.
-                msg.Add(buffer.img_buffer[bitmapPosition++]);
-                msg.Add(buffer.img_buffer[bitmapPosition++]);
-                msg.Add(buffer.img_buffer[bitmapPosition++]);
+                int indexR = ((h * width) + w) * channelCount;
+                data.Add(image[indexR]);
+                int indexG = ((h * width) + w) * channelCount + 1;
+                data.Add(image[indexG]);
+                int indexB = ((h * width) + w) * channelCount + 2;
+                data.Add(image[indexB]);
+
             }
-            //UPD_Size = f'{int((len(MSG) / 2) + 2):04x}' #The +2 is for the "ef69" that will be added later
-            //if len(MSG) > 500: MSG = '00'.join(MSG[i:i + 498] for i in range(0, len(MSG), 498))
         }
-        var updSize = (msg.Count / 2) + 2;
-        if (msg.Count > 500)
+        var updSize = ConvertAndPad(data.Count + 2, 2);
+        if (data.Count > 250)
         {
-            for (int s = 0; s < (msg.Count / 500); s++)
+            var newMsg = new List<byte> { };
+            for (var i = 0; i <= data.Count; i++)
             {
-                msg.Insert((s + 1) * 498, 0);
+                if (i % 249 == 0)
+                {
+                    newMsg.AddRange(data.GetRange(i, Math.Min(249, data.Count - i)));
+                    newMsg.Add(0);
+                }
             }
+            //remove last padding 0
+            newMsg.RemoveAt(newMsg.Count - 1);
+            data = newMsg;
         }
-        msg.Add(0xef);
-        msg.Add(0x69);
+
+        data.Add(0xef);
+        data.Add(0x69);
+        return (data.ToArray(), updSize);
+    }
+
+    private void DisplayPartialImage(int x, int y, int width, int height, TuringSmartScreenBuffer5Inch buffer)
+    {
+        var (data, updSize) = GeneratePartialUpdateFromBuffer(height, width, x, y, buffer.img_buffer);
         var cmd = new List<byte>(UpdateIMG);
-        cmd.AddRange(BitConverter.GetBytes(updSize).Reverse());
+        cmd.AddRange(updSize);
         WriteCommand(cmd);
-        WriteCommand(msg);
+        WriteCommand(data);
 
     }
 }
