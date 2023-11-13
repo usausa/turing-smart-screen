@@ -28,6 +28,9 @@ public static class Program
         using var bitmap = SKBitmap.Decode("test1.png");
         screenBuffer.ReadFrom(bitmap);
         screen.DisplayBuffer(0, 0, screenBuffer);
+        using var bitmap2 = SKBitmap.Decode("test2-crop.png");
+        screenBuffer.ReadFrom(bitmap2);
+        screen.DisplayBuffer(0, 0, screenBuffer);
     }
     // ReSharper restore FunctionNeverReturns
 }

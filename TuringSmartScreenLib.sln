@@ -24,7 +24,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TuringSmartScreenLib.Helper
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Example", "Example\Example.csproj", "{41A8F25D-E756-4ED3-B641-CFC5A4049E6B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Example2", "Example2\Example2.csproj", "{BC1B38D1-65E9-4D75-AC14-129C16705DC2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Example2", "Example2\Example2.csproj", "{BC1B38D1-65E9-4D75-AC14-129C16705DC2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TuringSmartScreenLib.Tests", "TuringSmartScreenLib.Tests\TuringSmartScreenLib.Tests.csproj", "{9F435D89-11AA-4E29-972C-16D1848E454B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -52,6 +54,10 @@ Global
 		{BC1B38D1-65E9-4D75-AC14-129C16705DC2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BC1B38D1-65E9-4D75-AC14-129C16705DC2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BC1B38D1-65E9-4D75-AC14-129C16705DC2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9F435D89-11AA-4E29-972C-16D1848E454B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9F435D89-11AA-4E29-972C-16D1848E454B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9F435D89-11AA-4E29-972C-16D1848E454B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9F435D89-11AA-4E29-972C-16D1848E454B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
