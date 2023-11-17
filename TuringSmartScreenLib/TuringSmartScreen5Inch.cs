@@ -147,10 +147,15 @@ public sealed class TuringSmartScreen5Inch : IDisposable
         //nothing to do
     }
 
-    public void ScreenOff() => WriteCommand(OnExit);
+    public void ScreenOff() {
+        WriteCommand(STOP_VIDEO);
+        WriteCommand(STOP_MEDIA);
+        WriteCommand(TURNOFF);
+    }
 
     public void ScreenOn() {
-        //nothing to do
+        WriteCommand(STOP_VIDEO);
+        WriteCommand(STOP_MEDIA);
     }
 
     public void SetBrightness(int level)
