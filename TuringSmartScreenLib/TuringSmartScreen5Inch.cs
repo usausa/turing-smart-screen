@@ -7,16 +7,38 @@ public sealed class TuringSmartScreen5Inch : IDisposable
 {
 
     //see https://github.com/mathoudebine/turing-smart-screen-python/blob/main/library/lcd/lcd_comm_rev_c.py for reference
-    public static readonly byte[] GetDevice = { 0x01, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0xc5, 0xd3 };
-    public static readonly byte[] UpdateIMG = { 0xcc, 0xef, 0x69, 0x00, 0x00 };
-    public static readonly byte[] StopVideo = { 0x79, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
-    public static readonly byte[] DisplayFullIMAGE = { 0xc8, 0xef, 0x69, 0x00, 0x17, 0x70 };
-    public static readonly byte[] QueryRenderStatus = { 0xcf, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
-    public static readonly byte[] StartDisplay = { 0x2c };
-    public static readonly byte[] MediaStop = { 0x96, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
-    public static readonly byte[] PreUpdateBitmap = { 0x86, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
     public static readonly byte[] OnExit = { 0x87, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
-    public static readonly byte[] Restart = { 0x84, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
+
+    public static readonly byte[] HELLO = { 0x01, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0xc5, 0xd3 };
+    public static readonly byte[] OPTIONS = { 0x7d, 0xef, 0x69, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x2d };
+    public static readonly byte[] RESTART = { 0x84, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
+    public static readonly byte[] TURNOFF = { 0x83, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
+    public static readonly byte[] TURNON = { 0x83, 0xef, 0x69, 0x00, 0x00, 0x00, 0x00 };
+
+    public static readonly byte[] SET_BRIGHTNESS = { 0x7b, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
+
+    // STOP COMMANDS
+    public static readonly byte[] STOP_VIDEO = { 0x79, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
+    public static readonly byte[] STOP_MEDIA = { 0x96, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
+
+    // IMAGE QUERY STATUS
+    public static readonly byte[] QUERY_STATUS = { 0xcf, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
+
+    // STATIC IMAGE
+    public static readonly byte[] START_DISPLAY_BITMAP = { 0x2c };
+    public static readonly byte[] PRE_UPDATE_BITMAP = { 0x86, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
+    public static readonly byte[] UPDATE_BITMAP = { 0xcc, 0xef, 0x69, 0x00, 0x00 };
+
+    public static readonly byte[] RESTARTSCREEN = { 0x84, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
+    public static readonly byte[] DISPLAY_BITMAP = { 0xc8, 0xef, 0x69, 0x00, 0x17, 0x70 };
+
+    public static readonly byte[] STARTMODE_DEFAULT = { 0x00 };
+    public static readonly byte[] STARTMODE_IMAGE = { 0x01 };
+    public static readonly byte[] STARTMODE_VIDEO = { 0x02 };
+    public static readonly byte[] FLIP_180 = { 0x01 };
+    public static readonly byte[] NO_FLIP = { 0x00 };
+    public static readonly byte[] SEND_PAYLOAD = { 0xFF };
+
     public enum Orientation : byte
     {
         Portrait = 0,
@@ -36,7 +58,7 @@ public sealed class TuringSmartScreen5Inch : IDisposable
         port = new SerialPort(name)
         {
             DtrEnable = true,
-            RtsEnable = true,            
+            RtsEnable = true,
             ReadTimeout = 1000,
             WriteTimeout = 1000,
             BaudRate = 115200,
@@ -66,13 +88,13 @@ public sealed class TuringSmartScreen5Inch : IDisposable
 
             dataReceivedEvent.Set();
         };
-        WriteCommand(GetDevice);
+        WriteCommand(HELLO);
         var resp = ReadResponse();
         if (resp is null || !resp.StartsWith("chs_5inch"))
         {
             throw new Exception($"Invalid response '{resp}' received from 5 Inch Turing Screen on init");
         }
-        WriteCommand(StopVideo);
+        WriteCommand(STOP_VIDEO);
     }
 
     public void Close()
@@ -114,13 +136,23 @@ public sealed class TuringSmartScreen5Inch : IDisposable
     {
         throw new NotImplementedException();
     }
-    public void Reset() => WriteCommand(101);
+    public void Reset() => WriteCommand(RESTART);
 
-    public void Clear() => WriteCommand(102);
+    public void Clear()
+    {
+        //nothing to do
+    }
 
-    public void ScreenOff() => WriteCommand(108);
+    public void ScreenOff() {
+        WriteCommand(STOP_VIDEO);
+        WriteCommand(STOP_MEDIA);
+        WriteCommand(TURNOFF);
+    }
 
-    public void ScreenOn() => WriteCommand(109);
+    public void ScreenOn() {
+        WriteCommand(STOP_VIDEO);
+        WriteCommand(STOP_MEDIA);
+    }
 
     public void SetBrightness(int level)
     {
@@ -150,12 +182,12 @@ public sealed class TuringSmartScreen5Inch : IDisposable
             if (!isFullScreen)
             {
                 DisplayPartialImage(x, y, width, height, cBuffer);
-                WriteCommand(QueryRenderStatus);
+                WriteCommand(QUERY_STATUS);
                 var resp = ReadResponse();
                 if (resp?.Contains("needReSend:1") ??false)
                 {
                     DisplayPartialImage(x, y, width, height, cBuffer);
-                    WriteCommand(QueryRenderStatus);
+                    WriteCommand(QUERY_STATUS);
                 }
             }
             else
@@ -164,8 +196,8 @@ public sealed class TuringSmartScreen5Inch : IDisposable
                 {
                     throw new Exception("Invalid parameters for full screen image");
                 }
-                WriteCommand(StartDisplay, 0x2c);
-                WriteCommand(DisplayFullIMAGE);
+                WriteCommand(START_DISPLAY_BITMAP, 0x2c);
+                WriteCommand(DISPLAY_BITMAP);
                 var blockSize = 249;
                 var currentPosition = 0;
                 while (currentPosition < cBuffer.Length)
@@ -174,9 +206,9 @@ public sealed class TuringSmartScreen5Inch : IDisposable
                     WriteCommand(block);
                     currentPosition += blockSize;
                 }
-                WriteCommand(PreUpdateBitmap);
+                WriteCommand(PRE_UPDATE_BITMAP);
                 ReadResponse();
-                WriteCommand(QueryRenderStatus);
+                WriteCommand(QUERY_STATUS);
                 ReadResponse();
 
             }
@@ -239,7 +271,7 @@ public sealed class TuringSmartScreen5Inch : IDisposable
     private void DisplayPartialImage(int x, int y, int width, int height, TuringSmartScreenBuffer5Inch buffer)
     {
         var (data, updSize) = GeneratePartialUpdateFromBuffer(height, width, x, y, buffer.img_buffer);
-        var cmd = new List<byte>(UpdateIMG);
+        var cmd = new List<byte>(UPDATE_BITMAP);
         cmd.AddRange(updSize);
         WriteCommand(cmd);
         WriteCommand(data);

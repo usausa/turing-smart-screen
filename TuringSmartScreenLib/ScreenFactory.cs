@@ -7,7 +7,7 @@ public static class ScreenFactory
         if (type == ScreenType.RevisionB)
         {
             var screen = new TuringSmartScreenRevisionB(name);
-            screen.Open();
+            screen.Open();            
             return (screen.Version & 0x10) != 0
                 ? new ScreenWrapperRevisionB1(screen, width ?? 320, height ?? 480)
                 : new ScreenWrapperRevisionB0(screen, width ?? 320, height ?? 480);
