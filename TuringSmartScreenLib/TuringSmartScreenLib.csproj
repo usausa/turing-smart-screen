@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net6.0;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>net8.0;net7.0;net6.0;netstandard2.1</TargetFrameworks>
     <CodeAnalysisRuleSet>..\Analyzers.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
 
@@ -12,6 +12,7 @@
     <Summary>Turing Smart Screen controller</Summary>
     <PackageTags>turing-smart-screen hardware serial port</PackageTags>
   </PropertyGroup>
+
 
   <ItemGroup>
     <PackageReference Include="System.IO.Ports" Version="8.0.*" />

@@ -1,4 +1,3 @@
-
 namespace Example;
 
 using SkiaSharp;
@@ -16,14 +15,14 @@ public static class Program
     {
         // Create screen
         using var screen = ScreenFactory.Create(ScreenType.Large5Inch, "COM9");
-        //using var screen = ScreenFactory.Create(ScreenType.RevisionA, "COM9");
+        // using var screen = ScreenFactory.Create(ScreenType.RevisionA, "COM9");
         screen.SetBrightness(100);
         screen.Orientation = ScreenOrientation.Landscape;
 
         // Clear
         var screenBuffer = screen.CreateBuffer();
-        //screenBuffer.Clear(255, 255, 255);
-        //screen.DisplayBuffer(screenBuffer);
+        // screenBuffer.Clear(255, 255, 255);
+        // screen.DisplayBuffer(screenBuffer);
         using var bitmap = SKBitmap.Decode("test1.png");
         screenBuffer.ReadFrom(bitmap);
         screen.DisplayBuffer(0, 0, screenBuffer);

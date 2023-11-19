@@ -67,9 +67,8 @@ public static class Extensions
     public static void ReadFrom(this TuringSmartScreenBuffer5Inch buffer, SKBitmap bitmap, int sx, int sy, int sw, int sh)
     {
         using var memStream = new MemoryStream();
-        using var wstream = new SKManagedWStream(memStream);
+        using var wStream = new SKManagedWStream(memStream);
         buffer.SetRGB(sw, sh, bitmap.Bytes);
-  
     }
 
     public static void ReadFrom(this TuringSmartScreenBufferB buffer, SKBitmap bitmap) =>

@@ -5,8 +5,9 @@ using System.IO.Ports;
 
 public sealed class TuringSmartScreen5Inch : IDisposable
 {
+#pragma warning disable SA1310 // Field names should not contain underscore - disabled to have constants match python names
 
-    //see https://github.com/mathoudebine/turing-smart-screen-python/blob/main/library/lcd/lcd_comm_rev_c.py for reference
+    // see https://github.com/mathoudebine/turing-smart-screen-python/blob/main/library/lcd/lcd_comm_rev_c.py for reference
     public static readonly byte[] OnExit = { 0x87, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
 
     public static readonly byte[] HELLO = { 0x01, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0xc5, 0xd3 };
@@ -38,6 +39,7 @@ public sealed class TuringSmartScreen5Inch : IDisposable
     public static readonly byte[] FLIP_180 = { 0x01 };
     public static readonly byte[] NO_FLIP = { 0x00 };
     public static readonly byte[] SEND_PAYLOAD = { 0xFF };
+#pragma warning restore SA1310 // Field names should not contain underscore
 
     public enum Orientation : byte
     {
@@ -49,9 +51,8 @@ public sealed class TuringSmartScreen5Inch : IDisposable
 
     private readonly SerialPort port;
     private readonly bool debugOutput;
-    private Orientation currentOrientation;
     private string? currentResponse;
-    private AutoResetEvent dataReceivedEvent = new(false);
+    private readonly AutoResetEvent dataReceivedEvent = new(false);
 
     public TuringSmartScreen5Inch(string name, bool debugOutput = false)
     {
@@ -120,7 +121,6 @@ public sealed class TuringSmartScreen5Inch : IDisposable
         port.Write(command.ToArray(), 0, command.Count());
     }
 
-
     private string? ReadResponse()
     {
         var received = dataReceivedEvent.WaitOne(2000);
@@ -140,30 +140,44 @@ public sealed class TuringSmartScreen5Inch : IDisposable
 
     public void Clear()
     {
-        //nothing to do
+        // nothing to do
     }
 
-    public void ScreenOff() {
+    public void ScreenOff()
+    {
         WriteCommand(STOP_VIDEO);
         WriteCommand(STOP_MEDIA);
         WriteCommand(TURNOFF);
     }
 
-    public void ScreenOn() {
+    public void ScreenOn()
+    {
         WriteCommand(STOP_VIDEO);
         WriteCommand(STOP_MEDIA);
     }
 
     public void SetBrightness(int level)
     {
-        var cmd = new List<byte> { 0x7b, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
-        cmd.Add((byte)level);
+        var cmd = new List<byte>
+        {
+            0x7b,
+            0xef,
+            0x69,
+            0x00,
+            0x00,
+            0x00,
+            0x01,
+            0x00,
+            0x00,
+            0x00,
+            (byte)level
+        };
         WriteCommand(cmd.ToArray());
     }
 
     public void SetOrientation(Orientation orientation, int width, int height)
     {
-        currentOrientation = orientation;
+        // ignored - rotation is not handled here
     }
 
     public const int HEIGHT = 480;
@@ -184,7 +198,7 @@ public sealed class TuringSmartScreen5Inch : IDisposable
                 DisplayPartialImage(x, y, width, height, cBuffer);
                 WriteCommand(QUERY_STATUS);
                 var resp = ReadResponse();
-                if (resp?.Contains("needReSend:1") ??false)
+                if (resp?.Contains("needReSend:1") ?? false)
                 {
                     DisplayPartialImage(x, y, width, height, cBuffer);
                     WriteCommand(QUERY_STATUS);
@@ -202,7 +216,7 @@ public sealed class TuringSmartScreen5Inch : IDisposable
                 var currentPosition = 0;
                 while (currentPosition < cBuffer.Length)
                 {
-                    var block = cBuffer.img_buffer.Skip(currentPosition).Take(blockSize).ToArray();
+                    var block = cBuffer.ImgBuffer.Skip(currentPosition).Take(blockSize).ToArray();
                     WriteCommand(block);
                     currentPosition += blockSize;
                 }
@@ -210,40 +224,40 @@ public sealed class TuringSmartScreen5Inch : IDisposable
                 ReadResponse();
                 WriteCommand(QUERY_STATUS);
                 ReadResponse();
-
             }
         }
     }
 
-    private void ClearScreen() {
+    private void ClearScreen()
+    {
+        // no API available for this
     }
 
     private static byte[] ConvertAndPad(int number, int fixedLength)
     {
-        byte[] byteArray = BitConverter.GetBytes(number);
+        var byteArray = BitConverter.GetBytes(number);
         // Apply zero padding if necessary
         Array.Resize(ref byteArray, fixedLength);
         Array.Reverse(byteArray);
         return byteArray;
     }
 
-    internal static (byte[], byte[]) GeneratePartialUpdateFromBuffer(int height, int width, int x, int y, byte[] image, int channelCount = 4)
+    internal static (byte[] Data, byte[] UpdateSize) GeneratePartialUpdateFromBuffer(int height, int width, int x, int y, byte[] image, int channelCount = 4)
     {
         var data = new List<byte>();
 
-        for (int h = 0; h < height; h++)
+        for (var h = 0; h < height; h++)
         {
             data.AddRange(ConvertAndPad(((x + h) * 800) + y, 3));
             data.AddRange(ConvertAndPad(width, 2));
-            for (int w = 0; w < width; w++)
+            for (var w = 0; w < width; w++)
             {
-                int indexR = ((h * width) + w) * channelCount;
+                var indexR = ((h * width) + w) * channelCount;
                 data.Add(image[indexR]);
-                int indexG = ((h * width) + w) * channelCount + 1;
+                var indexG = (((h * width) + w) * channelCount) + 1;
                 data.Add(image[indexG]);
-                int indexB = ((h * width) + w) * channelCount + 2;
+                var indexB = (((h * width) + w) * channelCount) + 2;
                 data.Add(image[indexB]);
-
             }
         }
         var updSize = ConvertAndPad(data.Count + 2, 2);
@@ -258,7 +272,7 @@ public sealed class TuringSmartScreen5Inch : IDisposable
                     newMsg.Add(0);
                 }
             }
-            //remove last padding 0
+            // remove last padding 0
             newMsg.RemoveAt(newMsg.Count - 1);
             data = newMsg;
         }
@@ -270,11 +284,10 @@ public sealed class TuringSmartScreen5Inch : IDisposable
 
     private void DisplayPartialImage(int x, int y, int width, int height, TuringSmartScreenBuffer5Inch buffer)
     {
-        var (data, updSize) = GeneratePartialUpdateFromBuffer(height, width, x, y, buffer.img_buffer);
+        var (data, updSize) = GeneratePartialUpdateFromBuffer(height, width, x, y, buffer.ImgBuffer);
         var cmd = new List<byte>(UPDATE_BITMAP);
         cmd.AddRange(updSize);
         WriteCommand(cmd);
         WriteCommand(data);
-
     }
 }

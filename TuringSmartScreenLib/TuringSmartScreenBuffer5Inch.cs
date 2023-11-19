@@ -8,32 +8,32 @@ using System.Runtime.CompilerServices;
 #pragma warning disable IDE0032
 public sealed class TuringSmartScreenBuffer5Inch : IScreenBuffer
 {
-
-    internal byte[] img_buffer = new byte[0];
+    internal byte[] ImgBuffer { get; set; } = new byte[0];
     public int Width { get; private set; }
     public int SX { get; private set; }
     public int SY { get; private set; }
 
     public int Height { get; private set; }
 
-    public int Length => img_buffer.Length;
+    public int Length => ImgBuffer.Length;
 
     public void SetPixel(int x, int y, byte r, byte g, byte b)
     {
-        img_buffer[(y * Width) + x] = r;
-        img_buffer[(y * Width) + x + 1] = g;
-        img_buffer[(y * Width) + x + 2] = b;
+        ImgBuffer[(y * Width) + x] = r;
+        ImgBuffer[(y * Width) + x + 1] = g;
+        ImgBuffer[(y * Width) + x + 2] = b;
     }
-    public void Clear(byte r = 0, byte g = 0, byte b = 0) => img_buffer = new byte[0];
+    public void Clear(byte r = 0, byte g = 0, byte b = 0) => ImgBuffer = new byte[0];
     public void SetRGB(int sw, int sh, byte[] buffer)
     {
         Width = sw;
         Height = sh;
-        img_buffer = buffer;
+        ImgBuffer = buffer;
     }
 
-    internal bool IsEmpty() {
-        return img_buffer.Length == 0;
+    internal bool IsEmpty()
+    {
+        return ImgBuffer.Length == 0;
     }
 }
 #pragma warning restore IDE0032
