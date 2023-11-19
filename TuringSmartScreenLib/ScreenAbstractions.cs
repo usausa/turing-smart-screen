@@ -119,9 +119,9 @@ internal sealed class ScreenWrapperRevisionA : ScreenBase
 
 internal sealed class ScreenWrapper5Inch : ScreenBase
 {
-    private readonly TuringSmartScreen5Inch screen;
+    private readonly TuringSmartScreenRevisionC screen;
 
-    public ScreenWrapper5Inch(TuringSmartScreen5Inch screen, int width, int height)
+    public ScreenWrapper5Inch(TuringSmartScreenRevisionC screen, int width, int height)
         : base(width, height)
     {
         this.screen = screen;
@@ -144,23 +144,23 @@ internal sealed class ScreenWrapper5Inch : ScreenBase
         switch (orientation)
         {
             case ScreenOrientation.Portrait:
-                screen.SetOrientation(TuringSmartScreen5Inch.Orientation.Portrait, Width, Height);
+                screen.SetOrientation(TuringSmartScreenRevisionC.Orientation.Portrait, Width, Height);
                 return true;
             case ScreenOrientation.ReversePortrait:
-                screen.SetOrientation(TuringSmartScreen5Inch.Orientation.ReversePortrait, Width, Height);
+                screen.SetOrientation(TuringSmartScreenRevisionC.Orientation.ReversePortrait, Width, Height);
                 return true;
             case ScreenOrientation.Landscape:
-                screen.SetOrientation(TuringSmartScreen5Inch.Orientation.Landscape, Width, Height);
+                screen.SetOrientation(TuringSmartScreenRevisionC.Orientation.Landscape, Width, Height);
                 return true;
             case ScreenOrientation.ReverseLandscape:
-                screen.SetOrientation(TuringSmartScreen5Inch.Orientation.ReverseLandscape, Width, Height);
+                screen.SetOrientation(TuringSmartScreenRevisionC.Orientation.ReverseLandscape, Width, Height);
                 return true;
         }
 
         return false;
     }
 
-    public override IScreenBuffer CreateBuffer(int width, int height) => new TuringSmartScreenBuffer5Inch();
+    public override IScreenBuffer CreateBuffer(int width, int height) => new TuringSmartScreenBufferC();
 
     public override void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, width, height, buffer);
 }

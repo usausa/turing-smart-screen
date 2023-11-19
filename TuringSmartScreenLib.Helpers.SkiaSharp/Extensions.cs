@@ -17,7 +17,7 @@ public static class Extensions
         {
             bufferA.ReadFrom(bitmap, sx, sy, sw, sh);
         }
-        else if (buffer is TuringSmartScreenBuffer5Inch buffer5)
+        else if (buffer is TuringSmartScreenBufferC buffer5)
         {
             buffer5.ReadFrom(bitmap, sx, sy, sw, sh);
         }
@@ -56,15 +56,15 @@ public static class Extensions
             return false;
         }
 
-        if (sw == TuringSmartScreen5Inch.WIDTH && sh == TuringSmartScreen5Inch.HEIGHT)
+        if (sw == TuringSmartScreenRevisionC.WIDTH && sh == TuringSmartScreenRevisionC.HEIGHT)
         {
             return true;
         }
 
-        return sh == TuringSmartScreen5Inch.WIDTH && sw == TuringSmartScreen5Inch.HEIGHT;
+        return sh == TuringSmartScreenRevisionC.WIDTH && sw == TuringSmartScreenRevisionC.HEIGHT;
     }
 
-    public static void ReadFrom(this TuringSmartScreenBuffer5Inch buffer, SKBitmap bitmap, int sx, int sy, int sw, int sh)
+    public static void ReadFrom(this TuringSmartScreenBufferC buffer, SKBitmap bitmap, int sx, int sy, int sw, int sh)
     {
         using var memStream = new MemoryStream();
         using var wStream = new SKManagedWStream(memStream);

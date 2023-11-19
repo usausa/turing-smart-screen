@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 #pragma warning disable CA1819
 #pragma warning disable IDE0032
-public sealed class TuringSmartScreenBuffer5Inch : IScreenBuffer
+public sealed class TuringSmartScreenBufferC : IScreenBuffer
 {
     internal byte[] ImgBuffer { get; set; } = new byte[0];
     public int Width { get; private set; }

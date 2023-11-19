@@ -62,7 +62,7 @@ public class UnitTest1
         var tdArray = ConvertTo3DArray(oneDimensionalArray, width, height, channelCount);
         var (strData, updMsg) = GeneratePartialUpdateFromBufferPython(height, width, 0, 0, tdArray);
 
-        var (buffer2, updData) = TuringSmartScreen5Inch.GeneratePartialUpdateFromBuffer(height, width, 0, 0, oneDimensionalArray, 3);
+        var (buffer2, updData) = TuringSmartScreenRevisionC.GeneratePartialUpdateFromBuffer(height, width, 0, 0, oneDimensionalArray, 3);
         var toHex = Convert.ToHexString(buffer2);
         Assert.Equal(strData, toHex, ignoreCase: true);
         Assert.Equal(updMsg, Convert.ToHexString(updData), ignoreCase: true);
@@ -81,7 +81,7 @@ public class UnitTest1
         var tdArray = ConvertTo3DArray(oneDimensionalArray, width, height, channelCount);
         var (strData, updMsg) = GeneratePartialUpdateFromBufferPython(height, width, 0, 0, tdArray);
 
-        var (buffer2, updData) = TuringSmartScreen5Inch.GeneratePartialUpdateFromBuffer(height, width, 0, 0, oneDimensionalArray, 3);
+        var (buffer2, updData) = TuringSmartScreenRevisionC.GeneratePartialUpdateFromBuffer(height, width, 0, 0, oneDimensionalArray, 3);
         var toHex = Convert.ToHexString(buffer2);
         Assert.Equal(strData, toHex, ignoreCase: true);
         Assert.Equal(updMsg, Convert.ToHexString(updData), ignoreCase: true);

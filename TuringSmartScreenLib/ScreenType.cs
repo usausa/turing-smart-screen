@@ -4,5 +4,5 @@ public enum ScreenType
 {
     RevisionA,
     RevisionB,
-    Large5Inch
+    RevisionC
 }

@@ -3,7 +3,7 @@ namespace TuringSmartScreenLib;
 using System;
 using System.IO.Ports;
 
-public sealed class TuringSmartScreen5Inch : IDisposable
+public sealed class TuringSmartScreenRevisionC : IDisposable
 {
 #pragma warning disable SA1310 // Field names should not contain underscore - disabled to have constants match python names
 
@@ -54,7 +54,7 @@ public sealed class TuringSmartScreen5Inch : IDisposable
     private string? currentResponse;
     private readonly AutoResetEvent dataReceivedEvent = new(false);
 
-    public TuringSmartScreen5Inch(string name, bool debugOutput = false)
+    public TuringSmartScreenRevisionC(string name, bool debugOutput = false)
     {
         port = new SerialPort(name)
         {
@@ -184,7 +184,7 @@ public sealed class TuringSmartScreen5Inch : IDisposable
     public const int WIDTH = 800;
     public void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer)
     {
-        var cBuffer = (TuringSmartScreenBuffer5Inch)buffer;
+        var cBuffer = (TuringSmartScreenBufferC)buffer;
         if (cBuffer.IsEmpty())
         {
             ClearScreen();
@@ -282,7 +282,7 @@ public sealed class TuringSmartScreen5Inch : IDisposable
         return (data.ToArray(), updSize);
     }
 
-    private void DisplayPartialImage(int x, int y, int width, int height, TuringSmartScreenBuffer5Inch buffer)
+    private void DisplayPartialImage(int x, int y, int width, int height, TuringSmartScreenBufferC buffer)
     {
         var (data, updSize) = GeneratePartialUpdateFromBuffer(height, width, x, y, buffer.ImgBuffer);
         var cmd = new List<byte>(UPDATE_BITMAP);
