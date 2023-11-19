@@ -1,16 +1,9 @@
-using SkiaSharp;
-using static System.Net.Mime.MediaTypeNames;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using System.IO;
-using System.Net.NetworkInformation;
 
 namespace Example;
 
 using SkiaSharp;
-
 using TuringSmartScreenLib;
 using TuringSmartScreenLib.Helpers.SkiaSharp;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 public static class Program
 {

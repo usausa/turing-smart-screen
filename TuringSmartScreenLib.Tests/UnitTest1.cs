@@ -27,7 +27,7 @@ public class UnitTest1
     /// <param name="x"></param>
     /// <param name="y"></param>
     /// <param name="image"></param>
-    private static (string,string) GeneratePartialUpdateFromBufferPython(int height, int width, int x, int y, byte[,,] image)
+    private static (string, string) GeneratePartialUpdateFromBufferPython(int height, int width, int x, int y, byte[,,] image)
     {
         StringBuilder msg = new StringBuilder();
 
@@ -48,11 +48,11 @@ public class UnitTest1
                 .Where(i => i % 498 == 0)
                 .Select(i => msg.ToString().Substring(i, Math.Min(498, msg.Length - i))).ToList();
             var newStr = string.Join("00", chunks);
-            msg = new StringBuilder(newStr);            
+            msg = new StringBuilder(newStr);
         }
 
         msg.Append("ef69");
-        return (msg.ToString(),UPD_Size);
+        return (msg.ToString(), UPD_Size);
     }
 
 
@@ -64,7 +64,7 @@ public class UnitTest1
         int channelCount = 3; // Assuming RGB format
         var tdArray = ConvertTo3DArray(bitmap.Bytes, bitmap.Width, bitmap.Height, channelCount);
         var strUpdate = GeneratePartialUpdateFromBufferPython(bitmap.Height, bitmap.Width, 0, 0, tdArray);
-        
+
     }
 
     [Fact]
@@ -81,9 +81,9 @@ public class UnitTest1
         var tdArray = ConvertTo3DArray(oneDimensionalArray, width, height, channelCount);
         var (strData, updMsg) = GeneratePartialUpdateFromBufferPython(height, width, 0, 0, tdArray);
 
-        var (buffer2,updData) = TuringSmartScreen5Inch.GeneratePartialUpdateFromBuffer(height, width, 0, 0, oneDimensionalArray,3);
+        var (buffer2, updData) = TuringSmartScreen5Inch.GeneratePartialUpdateFromBuffer(height, width, 0, 0, oneDimensionalArray, 3);
         var toHex = Convert.ToHexString(buffer2);
-        Assert.Equal(strData, toHex, ignoreCase:true);
+        Assert.Equal(strData, toHex, ignoreCase: true);
         Assert.Equal(updMsg, Convert.ToHexString(updData), ignoreCase: true);
     }
 
@@ -100,7 +100,7 @@ public class UnitTest1
         var tdArray = ConvertTo3DArray(oneDimensionalArray, width, height, channelCount);
         var (strData, updMsg) = GeneratePartialUpdateFromBufferPython(height, width, 0, 0, tdArray);
 
-        var (buffer2, updData) = TuringSmartScreen5Inch.GeneratePartialUpdateFromBuffer(height, width, 0, 0, oneDimensionalArray,3);
+        var (buffer2, updData) = TuringSmartScreen5Inch.GeneratePartialUpdateFromBuffer(height, width, 0, 0, oneDimensionalArray, 3);
         var toHex = Convert.ToHexString(buffer2);
         Assert.Equal(strData, toHex, ignoreCase: true);
         Assert.Equal(updMsg, Convert.ToHexString(updData), ignoreCase: true);

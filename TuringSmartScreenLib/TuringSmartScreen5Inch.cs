@@ -113,10 +113,6 @@ public sealed class TuringSmartScreen5Inch : IDisposable
     private void WriteCommand(byte command)
     {
         throw new NotImplementedException();
-
-        var buffer = new byte[6];
-        buffer[5] = command;
-        port.Write(buffer, 0, buffer.Length);
     }
     public void Reset() => WriteCommand(101);
 

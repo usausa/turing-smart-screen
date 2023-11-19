@@ -22,7 +22,7 @@ public static class ScreenFactory
 
         if (type == ScreenType.Large5Inch)
         {
-            var screen = new TuringSmartScreen5Inch(name,true);
+            var screen = new TuringSmartScreen5Inch(name, true);
             screen.Open();
             return new ScreenWrapper5Inch(screen, width ?? 800, height ?? 480);
         }
