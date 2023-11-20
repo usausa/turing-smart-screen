@@ -6,6 +6,7 @@ using System.IO.Ports;
 public sealed class TuringSmartScreenRevisionC : IDisposable
 {
 #pragma warning disable SA1310 // Field names should not contain underscore - disabled to have constants match python names
+#pragma warning disable CA1707 // Identifiers should not contain underscores
 
     // see https://github.com/mathoudebine/turing-smart-screen-python/blob/main/library/lcd/lcd_comm_rev_c.py for reference
     public static readonly byte[] OnExit = { 0x87, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
@@ -40,6 +41,7 @@ public sealed class TuringSmartScreenRevisionC : IDisposable
     public static readonly byte[] NO_FLIP = { 0x00 };
     public static readonly byte[] SEND_PAYLOAD = { 0xFF };
 #pragma warning restore SA1310 // Field names should not contain underscore
+#pragma warning restore CA1707 // Identifiers should not contain underscores
 
     public enum Orientation : byte
     {
@@ -72,6 +74,7 @@ public sealed class TuringSmartScreenRevisionC : IDisposable
     public void Dispose()
     {
         Close();
+        dataReceivedEvent?.Dispose();
     }
 
     public void Open()
@@ -91,9 +94,9 @@ public sealed class TuringSmartScreenRevisionC : IDisposable
         };
         WriteCommand(HELLO);
         var resp = ReadResponse();
-        if (resp is null || !resp.StartsWith("chs_5inch"))
+        if (resp is null || !resp.StartsWith("chs_5inch", StringComparison.InvariantCulture))
         {
-            throw new Exception($"Invalid response '{resp}' received from 5 Inch Turing Screen on init");
+            throw new InvalidOperationException($"Invalid response '{resp}' received from 5 Inch Turing Screen on init");
         }
         WriteCommand(STOP_VIDEO);
     }
@@ -108,10 +111,10 @@ public sealed class TuringSmartScreenRevisionC : IDisposable
 
     private void WriteCommand(IEnumerable<byte> command, byte padValue = 0x00)
     {
-        var msgLength = command.Count();
+        var l = command.ToList();
+        var msgLength = l.Count;
         if (msgLength % 250 != 0)
         {
-            var l = command.ToList();
             for (var i = 0; i < ((250 * Math.Ceiling(1.0 * msgLength / 250)) - msgLength); i++)
             {
                 l.Add(padValue);
@@ -138,10 +141,12 @@ public sealed class TuringSmartScreenRevisionC : IDisposable
     }
     public void Reset() => WriteCommand(RESTART);
 
+#pragma warning disable CA1822 // Mark members as static
     public void Clear()
     {
         // nothing to do
     }
+#pragma warning restore CA1822 // Mark members as static
 
     public void ScreenOff()
     {
@@ -175,10 +180,12 @@ public sealed class TuringSmartScreenRevisionC : IDisposable
         WriteCommand(cmd.ToArray());
     }
 
+#pragma warning disable CA1822 // Mark members as static
     public void SetOrientation(Orientation orientation, int width, int height)
     {
         // ignored - rotation is not handled here
     }
+#pragma warning restore CA1822 // Mark members as static
 
     public const int HEIGHT = 480;
     public const int WIDTH = 800;
@@ -198,7 +205,7 @@ public sealed class TuringSmartScreenRevisionC : IDisposable
                 DisplayPartialImage(x, y, width, height, cBuffer);
                 WriteCommand(QUERY_STATUS);
                 var resp = ReadResponse();
-                if (resp?.Contains("needReSend:1") ?? false)
+                if (resp?.Contains("needReSend:1", StringComparison.InvariantCulture) ?? false)
                 {
                     DisplayPartialImage(x, y, width, height, cBuffer);
                     WriteCommand(QUERY_STATUS);
@@ -208,7 +215,7 @@ public sealed class TuringSmartScreenRevisionC : IDisposable
             {
                 if (x != 0 || y != 0 || width != WIDTH || height != HEIGHT)
                 {
-                    throw new Exception("Invalid parameters for full screen image");
+                    throw new InvalidOperationException("Invalid parameters for full screen image");
                 }
                 WriteCommand(START_DISPLAY_BITMAP, 0x2c);
                 WriteCommand(DISPLAY_BITMAP);
@@ -228,10 +235,12 @@ public sealed class TuringSmartScreenRevisionC : IDisposable
         }
     }
 
+#pragma warning disable CA1822 // Mark members as static
     private void ClearScreen()
     {
         // no API available for this
     }
+#pragma warning restore CA1822 // Mark members as static
 
     private static byte[] ConvertAndPad(int number, int fixedLength)
     {

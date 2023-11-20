@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 #pragma warning disable IDE0032
 public sealed class TuringSmartScreenBufferC : IScreenBuffer
 {
-    internal byte[] ImgBuffer { get; set; } = new byte[0];
+    internal byte[] ImgBuffer { get; set; } = Array.Empty<byte>();
     public int Width { get; private set; }
     public int SX { get; private set; }
     public int SY { get; private set; }
@@ -23,7 +23,7 @@ public sealed class TuringSmartScreenBufferC : IScreenBuffer
         ImgBuffer[(y * Width) + x + 1] = g;
         ImgBuffer[(y * Width) + x + 2] = b;
     }
-    public void Clear(byte r = 0, byte g = 0, byte b = 0) => ImgBuffer = new byte[0];
+    public void Clear(byte r = 0, byte g = 0, byte b = 0) => ImgBuffer = Array.Empty<byte>();
     public void SetRGB(int sw, int sh, byte[] buffer)
     {
         Width = sw;

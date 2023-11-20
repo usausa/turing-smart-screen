@@ -6,10 +6,6 @@ using TuringSmartScreenLib.Helpers.SkiaSharp;
 
 public static class Program
 {
-    private const int Margin = 2;
-
-    private const int Digits = 6;
-
     // ReSharper disable FunctionNeverReturns
     public static void Main()
     {
