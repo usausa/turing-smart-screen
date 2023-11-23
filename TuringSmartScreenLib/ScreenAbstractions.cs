@@ -66,7 +66,7 @@ internal abstract class ScreenBase : IScreen
 
     public abstract IScreenBuffer CreateBuffer(int width, int height);
 
-    public abstract void DisplayBitmap(int x, int y, int width, int height, byte[] bitmap);
+    public abstract void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer);
 }
 
 internal sealed class ScreenWrapperRevisionA : ScreenBase
@@ -114,7 +114,55 @@ internal sealed class ScreenWrapperRevisionA : ScreenBase
 
     public override IScreenBuffer CreateBuffer(int width, int height) => new TuringSmartScreenBufferA(width, height);
 
-    public override void DisplayBitmap(int x, int y, int width, int height, byte[] bitmap) => screen.DisplayBitmap(x, y, width, height, bitmap);
+    public override void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, width, height, ((TuringSmartScreenBufferA)buffer).Buffer);
+}
+
+internal sealed class ScreenWrapper5Inch : ScreenBase
+{
+    private readonly TuringSmartScreenRevisionC screen;
+
+    public ScreenWrapper5Inch(TuringSmartScreenRevisionC screen, int width, int height)
+        : base(width, height)
+    {
+        this.screen = screen;
+    }
+
+    public override void Dispose() => screen.Dispose();
+
+    public override void Reset() => screen.Reset();
+
+    public override void Clear() => screen.Clear();
+
+    public override void ScreenOff() => screen.ScreenOff();
+
+    public override void ScreenOn() => screen.ScreenOn();
+
+    public override void SetBrightness(byte level) => screen.SetBrightness(level);
+
+    protected override bool SetOrientation(ScreenOrientation orientation)
+    {
+        switch (orientation)
+        {
+            case ScreenOrientation.Portrait:
+                screen.SetOrientation(TuringSmartScreenRevisionC.Orientation.Portrait, Width, Height);
+                return true;
+            case ScreenOrientation.ReversePortrait:
+                screen.SetOrientation(TuringSmartScreenRevisionC.Orientation.ReversePortrait, Width, Height);
+                return true;
+            case ScreenOrientation.Landscape:
+                screen.SetOrientation(TuringSmartScreenRevisionC.Orientation.Landscape, Width, Height);
+                return true;
+            case ScreenOrientation.ReverseLandscape:
+                screen.SetOrientation(TuringSmartScreenRevisionC.Orientation.ReverseLandscape, Width, Height);
+                return true;
+        }
+
+        return false;
+    }
+
+    public override IScreenBuffer CreateBuffer(int width, int height) => new TuringSmartScreenBufferC();
+
+    public override void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, width, height, buffer);
 }
 
 internal abstract class ScreenWrapperRevisionB : ScreenBase
@@ -178,7 +226,7 @@ internal abstract class ScreenWrapperRevisionB : ScreenBase
 
     public override IScreenBuffer CreateBuffer(int width, int height) => new TuringSmartScreenBufferB(width, height);
 
-    public override void DisplayBitmap(int x, int y, int width, int height, byte[] bitmap) => screen.DisplayBitmap(x, y, width, height, bitmap);
+    public override void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, width, height, ((TuringSmartScreenBufferB)buffer).Buffer);
 }
 
 internal sealed class ScreenWrapperRevisionB0 : ScreenWrapperRevisionB

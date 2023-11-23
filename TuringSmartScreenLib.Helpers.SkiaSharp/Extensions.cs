@@ -17,6 +17,10 @@ public static class Extensions
         {
             bufferA.ReadFrom(bitmap, sx, sy, sw, sh);
         }
+        else if (buffer is TuringSmartScreenBufferC buffer5)
+        {
+            buffer5.ReadFrom(bitmap, sx, sy, sw, sh);
+        }
         else
         {
             for (var y = sy; y < sy + sh; y++)
@@ -43,6 +47,28 @@ public static class Extensions
                 buffer.SetPixel(x, y, color.Red, color.Green, color.Blue);
             }
         }
+    }
+
+    public static bool IsFullScreen(int sx, int sy, int sw, int sh)
+    {
+        if (sx > 0 || sy > 0)
+        {
+            return false;
+        }
+
+        if (sw == TuringSmartScreenRevisionC.WIDTH && sh == TuringSmartScreenRevisionC.HEIGHT)
+        {
+            return true;
+        }
+
+        return sh == TuringSmartScreenRevisionC.WIDTH && sw == TuringSmartScreenRevisionC.HEIGHT;
+    }
+
+    public static void ReadFrom(this TuringSmartScreenBufferC buffer, SKBitmap bitmap, int sx, int sy, int sw, int sh)
+    {
+        using var memStream = new MemoryStream();
+        using var wStream = new SKManagedWStream(memStream);
+        buffer.SetRGB(sw, sh, bitmap.Bytes);
     }
 
     public static void ReadFrom(this TuringSmartScreenBufferB buffer, SKBitmap bitmap) =>

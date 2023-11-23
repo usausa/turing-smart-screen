@@ -21,6 +21,6 @@ public interface IScreen : IDisposable
 
     IScreenBuffer CreateBuffer(int width, int height);
 
-    void DisplayBitmap(int x, int y, int width, int height, byte[] bitmap);
+    void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer);
 }
 #pragma warning restore CA1819

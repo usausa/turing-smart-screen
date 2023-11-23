@@ -11,4 +11,13 @@
     <ProjectReference Include="..\TuringSmartScreenLib\TuringSmartScreenLib.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="test1.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="test2-crop.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
