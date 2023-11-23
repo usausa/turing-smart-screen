@@ -31,6 +31,7 @@
     <Rule Id="CA1716" Action="Hidden" />
     <Rule Id="CA1721" Action="Hidden" />
     <Rule Id="CA1724" Action="Hidden" />
+    <Rule Id="CA1861" Action="Hidden" />
     <Rule Id="CA2007" Action="Hidden" />
   </Rules>
 </RuleSet>
