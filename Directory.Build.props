@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>2.1.0</Version>
+    <Version>2.2.0</Version>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <IncludeSymbols>true</IncludeSymbols>
@@ -20,7 +20,7 @@
     <Authors>machi_pon</Authors>
     <Copyright>Copyright (c) 2022 machi_pon</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/usausa/Smart-Net</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/usausa/turing-smart-screen</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
