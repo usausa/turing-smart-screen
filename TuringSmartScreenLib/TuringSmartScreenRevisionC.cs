@@ -9,15 +9,15 @@ public sealed class TuringSmartScreenRevisionC : IDisposable
 #pragma warning disable CA1707 // Identifiers should not contain underscores
 
     // see https://github.com/mathoudebine/turing-smart-screen-python/blob/main/library/lcd/lcd_comm_rev_c.py for reference
-    public static readonly byte[] OnExit = { 0x87, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
+    //public static readonly byte[] OnExit = { 0x87, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
 
     public static readonly byte[] HELLO = { 0x01, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0xc5, 0xd3 };
-    public static readonly byte[] OPTIONS = { 0x7d, 0xef, 0x69, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x2d };
+    //public static readonly byte[] OPTIONS = { 0x7d, 0xef, 0x69, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x2d };
     public static readonly byte[] RESTART = { 0x84, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
     public static readonly byte[] TURNOFF = { 0x83, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
-    public static readonly byte[] TURNON = { 0x83, 0xef, 0x69, 0x00, 0x00, 0x00, 0x00 };
+    //public static readonly byte[] TURNON = { 0x83, 0xef, 0x69, 0x00, 0x00, 0x00, 0x00 };
 
-    public static readonly byte[] SET_BRIGHTNESS = { 0x7b, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
+    //public static readonly byte[] SET_BRIGHTNESS = { 0x7b, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
 
     // STOP COMMANDS
     public static readonly byte[] STOP_VIDEO = { 0x79, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
@@ -31,15 +31,15 @@ public sealed class TuringSmartScreenRevisionC : IDisposable
     public static readonly byte[] PRE_UPDATE_BITMAP = { 0x86, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
     public static readonly byte[] UPDATE_BITMAP = { 0xcc, 0xef, 0x69, 0x00, 0x00 };
 
-    public static readonly byte[] RESTARTSCREEN = { 0x84, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
+    //public static readonly byte[] RESTARTSCREEN = { 0x84, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
     public static readonly byte[] DISPLAY_BITMAP = { 0xc8, 0xef, 0x69, 0x00, 0x17, 0x70 };
 
-    public static readonly byte[] STARTMODE_DEFAULT = { 0x00 };
-    public static readonly byte[] STARTMODE_IMAGE = { 0x01 };
-    public static readonly byte[] STARTMODE_VIDEO = { 0x02 };
-    public static readonly byte[] FLIP_180 = { 0x01 };
-    public static readonly byte[] NO_FLIP = { 0x00 };
-    public static readonly byte[] SEND_PAYLOAD = { 0xFF };
+    //public static readonly byte[] STARTMODE_DEFAULT = { 0x00 };
+    //public static readonly byte[] STARTMODE_IMAGE = { 0x01 };
+    //public static readonly byte[] STARTMODE_VIDEO = { 0x02 };
+    //public static readonly byte[] FLIP_180 = { 0x01 };
+    //public static readonly byte[] NO_FLIP = { 0x00 };
+    //public static readonly byte[] SEND_PAYLOAD = { 0xFF };
 #pragma warning restore SA1310 // Field names should not contain underscore
 #pragma warning restore CA1707 // Identifiers should not contain underscores
 
@@ -74,7 +74,7 @@ public sealed class TuringSmartScreenRevisionC : IDisposable
     public void Dispose()
     {
         Close();
-        dataReceivedEvent?.Dispose();
+        dataReceivedEvent.Dispose();
     }
 
     public void Open()
@@ -199,7 +199,7 @@ public sealed class TuringSmartScreenRevisionC : IDisposable
         else
         {
             var isFullScreen = height == HEIGHT && width == WIDTH;
-            var isRotated = width == HEIGHT && height == WIDTH;
+            //var isRotated = width == HEIGHT && height == WIDTH;
             if (!isFullScreen)
             {
                 DisplayPartialImage(x, y, width, height, cBuffer);
@@ -272,7 +272,7 @@ public sealed class TuringSmartScreenRevisionC : IDisposable
         var updSize = ConvertAndPad(data.Count + 2, 2);
         if (data.Count > 250)
         {
-            var newMsg = new List<byte> { };
+            var newMsg = new List<byte>();
             for (var i = 0; i <= data.Count; i++)
             {
                 if (i % 249 == 0)

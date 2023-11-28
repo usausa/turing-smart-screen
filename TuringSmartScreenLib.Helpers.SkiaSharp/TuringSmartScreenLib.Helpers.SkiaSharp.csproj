@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net6.0;netstandard2.1</TargetFrameworks>
+    <TargetFrameworks>net8.0;net6.0</TargetFrameworks>
     <CodeAnalysisRuleSet>..\Analyzers.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
 
@@ -9,7 +9,6 @@
     <PackageId>TuringSmartScreenLib.Helpers.SkiaSharp</PackageId>
     <Title>TuringSmartScreenLib.Helpers.SkiaSharp</Title>
     <Description>Turing Smart Screen controller helper.</Description>
-    <Summary>Turing Smart Screen controller helper</Summary>
     <PackageTags>turing-smart-screen image</PackageTags>
   </PropertyGroup>
 

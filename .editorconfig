@@ -33,8 +33,6 @@ indent_size = 4
 indent_style = space
 tab_width = 4
 
-dotnet_diagnostic.IDE0055.severity = warning
-
 ###############################
 # .NET Coding Conventions     #
 ###############################
@@ -72,9 +70,11 @@ dotnet_style_null_propagation = true:warning
 dotnet_style_object_initializer = true:warning
 dotnet_style_operator_placement_when_wrapping = beginning_of_line:warning
 dotnet_style_prefer_auto_properties = true:warning
+dotnet_style_prefer_collection_expression = true:warning
 dotnet_style_prefer_compound_assignment = true:warning
 dotnet_style_prefer_conditional_expression_over_assignment = true:silent
 dotnet_style_prefer_conditional_expression_over_return = true:silent
+dotnet_style_prefer_foreach_explicit_cast_in_source = when_strongly_typed
 dotnet_style_prefer_inferred_anonymous_type_member_names = true:warning
 dotnet_style_prefer_inferred_tuple_names = true:warning
 dotnet_style_prefer_is_null_check_over_reference_equality_method = true:warning
@@ -88,7 +88,7 @@ dotnet_style_readonly_field = true:warning
 dotnet_code_quality_unused_parameters = all:warning
 
 # Suppression preferences
-dotnet_remove_unnecessary_suppression_exclusions = none
+dotnet_remove_unnecessary_suppression_exclusions = all:warning
 
 # Whitespace options
 dotnet_style_allow_multiple_blank_lines_experimental = false:warning
@@ -128,12 +128,16 @@ csharp_style_prefer_parameter_null_checking = true:silent
 # Modifier preferences
 csharp_prefer_static_local_function = true:warning
 csharp_preferred_modifier_order = public,private,protected,internal,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,required,volatile,async:warning
+csharp_style_prefer_readonly_struct = true:warning
+csharp_style_prefer_readonly_struct_member = true:warning
 
 # Code-block preferences
 csharp_prefer_braces = true:silent
 csharp_prefer_simple_using_statement = true:warning
 csharp_style_namespace_declarations = file_scoped:warning
 csharp_style_prefer_method_group_conversion = true:warning
+csharp_style_prefer_primary_constructors = true:silent
+csharp_style_prefer_top_level_statements = true:warning
 
 # Expression-level preferences
 csharp_prefer_simple_default_expression = true:warning
@@ -145,7 +149,8 @@ csharp_style_prefer_local_over_anonymous_function = true:warning
 csharp_style_prefer_null_check_over_type_check = true:warning
 csharp_style_prefer_range_operator = true:warning
 csharp_style_prefer_tuple_swap = true:warning
-csharp_style_throw_expression = true:warning
+csharp_style_prefer_utf8_string_literals = true:warning
+csharp_style_throw_expression = true:silent
 csharp_style_unused_value_assignment_preference = discard_variable:warning
 csharp_style_unused_value_expression_statement_preference = discard_variable:silent
 
@@ -154,6 +159,8 @@ csharp_using_directive_placement = inside_namespace:warning
 
 # New line preferences
 csharp_style_allow_blank_line_after_colon_in_constructor_initializer_experimental = false:warning
+csharp_style_allow_blank_line_after_token_in_arrow_expression_clause_experimental = true:silent
+csharp_style_allow_blank_line_after_token_in_conditional_expression_experimental = true:silent
 csharp_style_allow_blank_lines_between_consecutive_braces_experimental = false:warning
 csharp_style_allow_embedded_statements_on_same_line_experimental = true:silent
 
@@ -260,3 +267,318 @@ dotnet_naming_style.begins_with_i.required_prefix = I
 dotnet_naming_style.begins_with_i.required_suffix =
 dotnet_naming_style.begins_with_i.word_separator =
 dotnet_naming_style.begins_with_i.capitalization = pascal_case
+
+
+###############################
+# .NET diagnostic             #
+###############################
+
+# Simplify name
+dotnet_diagnostic.IDE0001.severity = warning
+
+# Simplify member access
+dotnet_diagnostic.IDE0002.severity = warning
+
+# dotnet_style_qualification_for_event
+# dotnet_style_qualification_for_field
+# dotnet_style_qualification_for_method
+# dotnet_style_qualification_for_property
+dotnet_diagnostic.IDE0003.severity = warning
+dotnet_diagnostic.IDE0009.severity = warning
+
+# Remove unnecessary cast
+dotnet_diagnostic.IDE0004.severity = warning
+
+# Remove unnecessary using directives
+#dotnet_diagnostic.IDE0005.severity = warning
+
+# csharp_style_var_elsewhere
+# csharp_style_var_for_built_in_types
+# csharp_style_var_when_type_is_apparent
+dotnet_diagnostic.IDE0007.severity = warning
+dotnet_diagnostic.IDE0008.severity = warning
+
+# Add missing cases to switch statement
+dotnet_diagnostic.IDE0010.severity = none
+
+# csharp_prefer_braces
+dotnet_diagnostic.IDE0011.severity = none
+
+# csharp_style_throw_expression
+dotnet_diagnostic.IDE0016.severity = none
+
+# dotnet_style_object_initializer
+dotnet_diagnostic.IDE0017.severity = warning
+
+# csharp_style_inlined_variable_declaration
+dotnet_diagnostic.IDE0018.severity = warning
+
+# csharp_style_pattern_matching_over_as_with_null_check
+dotnet_diagnostic.IDE0019.severity = warning
+
+# csharp_style_pattern_matching_over_is_with_cast_check
+dotnet_diagnostic.IDE0020.severity = warning
+dotnet_diagnostic.IDE0038.severity = warning
+
+# csharp_style_expression_bodied_constructors
+dotnet_diagnostic.IDE0021.severity = none
+
+# csharp_style_expression_bodied_methods
+dotnet_diagnostic.IDE0022.severity = none
+
+# csharp_style_expression_bodied_operators
+dotnet_diagnostic.IDE0023.severity = none
+dotnet_diagnostic.IDE0024.severity = none
+
+# csharp_style_expression_bodied_properties
+dotnet_diagnostic.IDE0025.severity = warning
+
+# csharp_style_expression_bodied_indexers
+dotnet_diagnostic.IDE0026.severity = warning
+
+# csharp_style_expression_bodied_accessors
+dotnet_diagnostic.IDE0027.severity = warning
+
+# dotnet_style_collection_initializer
+dotnet_diagnostic.IDE0028.severity = warning
+
+# dotnet_style_coalesce_expression
+dotnet_diagnostic.IDE0029.severity = warning
+dotnet_diagnostic.IDE0030.severity = warning
+dotnet_diagnostic.IDE0270.severity = warning
+
+# dotnet_style_null_propagation
+dotnet_diagnostic.IDE0031.severity = warning
+
+# dotnet_style_prefer_auto_properties
+dotnet_diagnostic.IDE0032.severity = warning
+
+# dotnet_style_explicit_tuple_names
+dotnet_diagnostic.IDE0033.severity = warning
+
+# csharp_prefer_simple_default_expression
+dotnet_diagnostic.IDE0034.severity = warning
+
+# Remove unreachable code
+dotnet_diagnostic.IDE0035.severity = warning
+
+# csharp_preferred_modifier_order
+dotnet_diagnostic.IDE0036.severity = warning
+
+# dotnet_style_prefer_inferred_tuple_names
+# dotnet_style_prefer_inferred_anonymous_type_member_names
+dotnet_diagnostic.IDE0037.severity = warning
+
+# csharp_style_prefer_local_over_anonymous_function
+dotnet_diagnostic.IDE0039.severity = warning
+
+# dotnet_style_require_accessibility_modifiers
+dotnet_diagnostic.IDE0040.severity = warning
+
+# dotnet_style_prefer_is_null_check_over_reference_equality_method
+dotnet_diagnostic.IDE0041.severity = warning
+
+# csharp_style_deconstructed_variable_declaration
+dotnet_diagnostic.IDE0042.severity = warning
+
+# dotnet_style_readonly_field
+dotnet_diagnostic.IDE0044.severity = warning
+
+# dotnet_style_prefer_conditional_expression_over_assignment
+dotnet_diagnostic.IDE0045.severity = none
+
+# dotnet_style_prefer_conditional_expression_over_return
+dotnet_diagnostic.IDE0046.severity = none
+
+# dotnet_style_parentheses_in_arithmetic_binary_operators
+# dotnet_style_parentheses_in_relational_binary_operators
+# dotnet_style_parentheses_in_other_binary_operators
+# dotnet_style_parentheses_in_other_operators
+dotnet_diagnostic.IDE0047.severity = none
+dotnet_diagnostic.IDE0048.severity = none
+
+# dotnet_style_predefined_type_for_locals_parameters_members
+# dotnet_style_predefined_type_for_member_access
+dotnet_diagnostic.IDE0049.severity = none
+
+# Remove unused private member
+dotnet_diagnostic.IDE0051.severity = warning
+
+# Remove unread private member
+dotnet_diagnostic.IDE0052.severity = warning
+
+# csharp_style_expression_bodied_lambdas
+dotnet_diagnostic.IDE0053.severity = none
+
+# dotnet_style_prefer_compound_assignment
+dotnet_diagnostic.IDE0054.severity = warning
+dotnet_diagnostic.IDE0074.severity = warning
+
+# Formatting rule
+dotnet_diagnostic.IDE0055.severity = warning
+
+# csharp_style_prefer_index_operator
+dotnet_diagnostic.IDE0056.severity = warning
+
+# csharp_style_prefer_range_operator
+dotnet_diagnostic.IDE0057.severity = warning
+
+# csharp_style_unused_value_expression_statement_preference
+dotnet_diagnostic.IDE0058.severity = none
+
+# csharp_style_unused_value_assignment_preference
+dotnet_diagnostic.IDE0059.severity = warning
+
+# dotnet_code_quality_unused_parameters
+dotnet_diagnostic.IDE0060.severity = warning
+
+# csharp_style_expression_bodied_local_functions
+dotnet_diagnostic.IDE0061.severity = none
+
+# csharp_prefer_static_local_function
+dotnet_diagnostic.IDE0062.severity = warning
+
+# csharp_prefer_simple_using_statement
+dotnet_diagnostic.IDE0063.severity = warning
+
+# Make struct fields writable
+dotnet_diagnostic.IDE0064.severity = warning
+
+# csharp_using_directive_placement
+dotnet_diagnostic.IDE0065.severity = warning
+
+# csharp_style_prefer_switch_expression
+dotnet_diagnostic.IDE0066.severity = warning
+
+# Use 'System.HashCode.Combine'
+dotnet_diagnostic.IDE0070.severity = warning
+
+# dotnet_style_prefer_simplified_interpolation
+dotnet_diagnostic.IDE0071.severity = warning
+
+# Add missing cases to switch expression
+dotnet_diagnostic.IDE0072.severity = none
+
+# file_header_template
+dotnet_diagnostic.IDE0073.severity = none
+
+# dotnet_style_prefer_simplified_boolean_expressions
+dotnet_diagnostic.IDE0075.severity = warning
+
+# Remove invalid global 'SuppressMessageAttribute'
+dotnet_diagnostic.IDE0076.severity = none
+
+# Avoid legacy format target in global 'SuppressMessageAttribute'
+dotnet_diagnostic.IDE0077.severity = none
+
+# csharp_style_prefer_pattern_matching
+dotnet_diagnostic.IDE0078.severity = none
+
+# dotnet_remove_unnecessary_suppression_exclusions
+dotnet_diagnostic.IDE0079.severity = warning
+
+# Remove unnecessary suppression operator
+dotnet_diagnostic.IDE0080.severity = warning
+
+# Convert typeof to nameof
+dotnet_diagnostic.IDE0082.severity = warning
+
+# csharp_style_prefer_not_pattern
+dotnet_diagnostic.IDE0083.severity = warning
+
+# csharp_style_implicit_object_creation_when_type_is_apparent
+dotnet_diagnostic.IDE0090.severity = warning
+
+# Remove unnecessary equality operator
+dotnet_diagnostic.IDE0100.severity = warning
+
+# Remove unnecessary discard
+dotnet_diagnostic.IDE0110.severity = warning
+
+# Simplify LINQ expression
+dotnet_diagnostic.IDE0120.severity = warning
+
+# dotnet_style_namespace_match_folder
+dotnet_diagnostic.IDE0130.severity = warning
+
+# csharp_style_prefer_null_check_over_type_check
+dotnet_diagnostic.IDE0150.severity = warning
+
+# csharp_style_namespace_declarations
+dotnet_diagnostic.IDE0160.severity = warning
+dotnet_diagnostic.IDE0161.severity = warning
+
+# csharp_style_prefer_extended_property_pattern
+dotnet_diagnostic.IDE0170.severity = warning
+
+# csharp_style_prefer_tuple_swap
+dotnet_diagnostic.IDE0180.severity = warning
+
+# csharp_style_prefer_method_group_conversion
+dotnet_diagnostic.IDE0200.severity = warning
+
+# csharp_style_prefer_top_level_statements
+dotnet_diagnostic.IDE0210.severity = warning
+dotnet_diagnostic.IDE0211.severity = warning
+
+# dotnet_style_prefer_foreach_explicit_cast_in_source
+dotnet_diagnostic.IDE0220.severity = none
+
+# csharp_style_prefer_utf8_string_literals
+dotnet_diagnostic.IDE0230.severity = warning
+
+# Nullable directive is redundant
+dotnet_diagnostic.IDE0240.severity = warning
+
+# Nullable directive is unnecessary
+dotnet_diagnostic.IDE0241.severity = warning
+
+# csharp_style_prefer_readonly_struct
+dotnet_diagnostic.IDE0250.severity = warning
+
+# csharp_style_prefer_readonly_struct_member
+dotnet_diagnostic.IDE0251.severity = warning
+
+# csharp_style_pattern_matching_over_as_with_null_check
+dotnet_diagnostic.IDE0260.severity = warning
+
+# Use 'nameof'
+dotnet_diagnostic.IDE0280.severity = warning
+
+# csharp_style_prefer_primary_constructors
+dotnet_diagnostic.IDE0290.severity = none
+
+# dotnet_style_prefer_collection_expression
+dotnet_diagnostic.IDE0300.severity = warning
+dotnet_diagnostic.IDE0301.severity = warning
+dotnet_diagnostic.IDE0302.severity = warning
+dotnet_diagnostic.IDE0303.severity = warning
+dotnet_diagnostic.IDE0304.severity = warning
+dotnet_diagnostic.IDE0305.severity = warning
+
+# csharp_style_conditional_delegate_call
+dotnet_diagnostic.IDE1005.severity = warning
+
+# Naming rule violation
+dotnet_diagnostic.IDE1006.severity = warning
+
+# dotnet_style_allow_multiple_blank_lines_experimental
+dotnet_diagnostic.IDE2000.severity = none
+
+# csharp_style_allow_embedded_statements_on_same_line_experimental
+dotnet_diagnostic.IDE2001.severity = none
+
+# csharp_style_allow_blank_lines_between_consecutive_braces_experimental
+dotnet_diagnostic.IDE2002.severity = warning
+
+# dotnet_style_allow_statement_immediately_after_block_experimental
+dotnet_diagnostic.IDE2003.severity = none
+
+# csharp_style_allow_blank_line_after_colon_in_constructor_initializer_experimental
+dotnet_diagnostic.IDE2004.severity = warning
+
+# csharp_style_allow_blank_line_after_token_in_conditional_expression_experimental
+dotnet_diagnostic.IDE2005.severity = none
+
+# csharp_style_allow_blank_line_after_token_in_arrow_expression_clause_experimental
+dotnet_diagnostic.IDE2006.severity = none
