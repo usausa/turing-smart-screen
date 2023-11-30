@@ -25,7 +25,7 @@ public class UnitTest1
             }
         }
 
-        var updSize = $"{(int)((msg.Length / 2) + 2):X4}";
+        var updSize = $"{((msg.Length / 2) + 2):X4}";
 
         if (msg.Length > 500)
         {
