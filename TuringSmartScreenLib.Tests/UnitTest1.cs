@@ -6,7 +6,7 @@ using SkiaSharp;
 /// <summary>
 /// Unit test to compare the output of the Python code with the C# code.
 /// </summary>
-public class UnitTest1
+public sealed class UnitTest1
 {
     /// <summary>
     /// Code translated from Python see source code:

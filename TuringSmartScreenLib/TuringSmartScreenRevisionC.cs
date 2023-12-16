@@ -139,6 +139,7 @@ public sealed class TuringSmartScreenRevisionC : IDisposable
     {
         throw new NotImplementedException();
     }
+
     public void Reset() => WriteCommand(RESTART);
 
 #pragma warning disable CA1822 // Mark members as static
@@ -189,6 +190,7 @@ public sealed class TuringSmartScreenRevisionC : IDisposable
 
     public const int HEIGHT = 480;
     public const int WIDTH = 800;
+
     public void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer)
     {
         var cBuffer = (TuringSmartScreenBufferC)buffer;

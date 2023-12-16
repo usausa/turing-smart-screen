@@ -5,6 +5,7 @@ using SkiaSharp;
 
 using TuringSmartScreenLib;
 using TuringSmartScreenLib.Helpers.SkiaSharp;
+
 // ReSharper disable UseObjectOrCollectionInitializer
 #pragma warning disable IDE0017
 

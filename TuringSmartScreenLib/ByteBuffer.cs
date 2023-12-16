@@ -1,6 +1,6 @@
 namespace TuringSmartScreenLib;
 
-public class ByteBuffer
+public sealed class ByteBuffer
 {
     // TODO
 }
