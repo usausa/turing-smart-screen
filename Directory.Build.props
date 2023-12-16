@@ -27,7 +27,7 @@
     <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+  <PropertyGroup>
     <AnalysisMode>All</AnalysisMode>
     <AnalysisLevel>preview</AnalysisLevel>
   </PropertyGroup>
