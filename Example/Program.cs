@@ -21,7 +21,7 @@ public static class Program
         screen.Orientation = ScreenOrientation.Landscape;
 
         // Clear
-        var clearBuffer = screen.CreateBuffer();
+        using var clearBuffer = screen.CreateBuffer();
         clearBuffer.Clear(255, 255, 255);
         screen.DisplayBuffer(clearBuffer);
 

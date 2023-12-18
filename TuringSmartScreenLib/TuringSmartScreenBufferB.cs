@@ -1,9 +1,9 @@
 namespace TuringSmartScreenLib;
 
+using System.Buffers;
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 
-#pragma warning disable CA1819
 #pragma warning disable IDE0032
 // ReSharper disable ConvertToAutoProperty
 public sealed class TuringSmartScreenBufferB : IScreenBuffer
@@ -12,19 +12,29 @@ public sealed class TuringSmartScreenBufferB : IScreenBuffer
 
     private readonly int height;
 
-    private readonly byte[] buffer;
+    private byte[] buffer;
 
     public int Width => width;
 
     public int Height => height;
 
-    public byte[] Buffer => buffer;
+    internal byte[] Buffer => buffer;
 
     public TuringSmartScreenBufferB(int width, int height)
     {
         this.width = width;
         this.height = height;
-        buffer = new byte[width * height * 2];
+        buffer = ArrayPool<byte>.Shared.Rent(width * height * 2);
+        buffer.AsSpan().Clear();
+    }
+
+    public void Dispose()
+    {
+        if (buffer.Length > 0)
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+            buffer = [];
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -46,4 +56,3 @@ public sealed class TuringSmartScreenBufferB : IScreenBuffer
 }
 // ReSharper restore ConvertToAutoProperty
 #pragma warning restore IDE0032
-#pragma warning restore CA1819

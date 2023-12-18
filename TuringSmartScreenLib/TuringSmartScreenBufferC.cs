@@ -1,19 +1,20 @@
 namespace TuringSmartScreenLib;
 
-using System;
-
 // TODO
-#pragma warning disable CA1819
-#pragma warning disable IDE0032
 public sealed class TuringSmartScreenBufferC : IScreenBuffer
 {
-    internal byte[] ImgBuffer { get; set; } = Array.Empty<byte>();
+    internal byte[] ImgBuffer { get; set; } = [];
 
     public int Width { get; private set; }
 
     public int Height { get; private set; }
 
     public int Length => ImgBuffer.Length;
+
+    public void Dispose()
+    {
+        // TODO
+    }
 
     public void SetPixel(int x, int y, byte r, byte g, byte b)
     {
@@ -22,7 +23,7 @@ public sealed class TuringSmartScreenBufferC : IScreenBuffer
         ImgBuffer[(y * Width) + x + 2] = b;
     }
 
-    public void Clear(byte r = 0, byte g = 0, byte b = 0) => ImgBuffer = Array.Empty<byte>();
+    public void Clear(byte r = 0, byte g = 0, byte b = 0) => ImgBuffer = [];
 
     public void SetRGB(int sw, int sh, byte[] buffer)
     {
@@ -36,5 +37,3 @@ public sealed class TuringSmartScreenBufferC : IScreenBuffer
         return ImgBuffer.Length == 0;
     }
 }
-#pragma warning restore IDE0032
-#pragma warning restore CA1819
