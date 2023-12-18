@@ -89,7 +89,7 @@ internal sealed class ScreenWrapperRevisionA : ScreenBase
 
     public override void ScreenOn() => screen.ScreenOn();
 
-    public override void SetBrightness(byte level) => screen.SetBrightness(level);
+    public override void SetBrightness(byte level) => screen.SetBrightness(255 - level);
 
     protected override bool SetOrientation(ScreenOrientation orientation)
     {
@@ -115,54 +115,6 @@ internal sealed class ScreenWrapperRevisionA : ScreenBase
     public override IScreenBuffer CreateBuffer(int width, int height) => new TuringSmartScreenBufferA(width, height);
 
     public override void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, width, height, ((TuringSmartScreenBufferA)buffer).Buffer);
-}
-
-internal sealed class ScreenWrapper5Inch : ScreenBase
-{
-    private readonly TuringSmartScreenRevisionC screen;
-
-    public ScreenWrapper5Inch(TuringSmartScreenRevisionC screen, int width, int height)
-        : base(width, height)
-    {
-        this.screen = screen;
-    }
-
-    public override void Dispose() => screen.Dispose();
-
-    public override void Reset() => screen.Reset();
-
-    public override void Clear() => screen.Clear();
-
-    public override void ScreenOff() => screen.ScreenOff();
-
-    public override void ScreenOn() => screen.ScreenOn();
-
-    public override void SetBrightness(byte level) => screen.SetBrightness(level);
-
-    protected override bool SetOrientation(ScreenOrientation orientation)
-    {
-        switch (orientation)
-        {
-            case ScreenOrientation.Portrait:
-                screen.SetOrientation(TuringSmartScreenRevisionC.Orientation.Portrait, Width, Height);
-                return true;
-            case ScreenOrientation.ReversePortrait:
-                screen.SetOrientation(TuringSmartScreenRevisionC.Orientation.ReversePortrait, Width, Height);
-                return true;
-            case ScreenOrientation.Landscape:
-                screen.SetOrientation(TuringSmartScreenRevisionC.Orientation.Landscape, Width, Height);
-                return true;
-            case ScreenOrientation.ReverseLandscape:
-                screen.SetOrientation(TuringSmartScreenRevisionC.Orientation.ReverseLandscape, Width, Height);
-                return true;
-        }
-
-        return false;
-    }
-
-    public override IScreenBuffer CreateBuffer(int width, int height) => new TuringSmartScreenBufferC();
-
-    public override void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, width, height, buffer);
 }
 
 internal abstract class ScreenWrapperRevisionB : ScreenBase
@@ -195,6 +147,7 @@ internal abstract class ScreenWrapperRevisionB : ScreenBase
 
     public override void ScreenOn()
     {
+        // TODO
         // Emulation
         SetBrightness(100);
     }
@@ -236,6 +189,7 @@ internal sealed class ScreenWrapperRevisionB0 : ScreenWrapperRevisionB
     {
     }
 
+    // TODO
     protected override byte CalcBrightness(byte value) => value == 0 ? (byte)0 : (byte)1;
 }
 
@@ -246,5 +200,55 @@ internal sealed class ScreenWrapperRevisionB1 : ScreenWrapperRevisionB
     {
     }
 
+    // TODO
     protected override byte CalcBrightness(byte value) => (byte)((float)value / 100 * 255);
+}
+
+internal sealed class ScreenWrapperC : ScreenBase
+{
+    private readonly TuringSmartScreenRevisionC screen;
+
+    public ScreenWrapperC(TuringSmartScreenRevisionC screen, int width, int height)
+        : base(width, height)
+    {
+        this.screen = screen;
+    }
+
+    public override void Dispose() => screen.Dispose();
+
+    public override void Reset() => screen.Reset();
+
+    public override void Clear() => screen.Clear();
+
+    public override void ScreenOff() => screen.ScreenOff();
+
+    public override void ScreenOn() => screen.ScreenOn();
+
+    // TODO
+    public override void SetBrightness(byte level) => screen.SetBrightness(level);
+
+    protected override bool SetOrientation(ScreenOrientation orientation)
+    {
+        switch (orientation)
+        {
+            case ScreenOrientation.Portrait:
+                screen.SetOrientation(TuringSmartScreenRevisionC.Orientation.Portrait, Width, Height);
+                return true;
+            case ScreenOrientation.ReversePortrait:
+                screen.SetOrientation(TuringSmartScreenRevisionC.Orientation.ReversePortrait, Width, Height);
+                return true;
+            case ScreenOrientation.Landscape:
+                screen.SetOrientation(TuringSmartScreenRevisionC.Orientation.Landscape, Width, Height);
+                return true;
+            case ScreenOrientation.ReverseLandscape:
+                screen.SetOrientation(TuringSmartScreenRevisionC.Orientation.ReverseLandscape, Width, Height);
+                return true;
+        }
+
+        return false;
+    }
+
+    public override IScreenBuffer CreateBuffer(int width, int height) => new TuringSmartScreenBufferC();
+
+    public override void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, width, height, buffer);
 }

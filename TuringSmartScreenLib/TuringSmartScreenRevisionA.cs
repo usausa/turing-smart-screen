@@ -103,7 +103,7 @@ public sealed class TuringSmartScreenRevisionA : IDisposable
 
     public void ScreenOn() => WriteCommand(109);
 
-    public void SetBrightness(int level) => WriteCommand(110, 255 - level);
+    public void SetBrightness(int level) => WriteCommand(110, level);
 
     public void SetOrientation(Orientation orientation, int width, int height) =>
         WriteCommand(121, (byte)orientation, width, height);

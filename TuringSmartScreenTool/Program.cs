@@ -117,6 +117,7 @@ fillCommand.Handler = CommandHandler.Create((string revision, string port, strin
 {
     var c = SKColor.Parse(color);
 
+    // TODO fix size & orientation ?
     using var screen = ScreenFactory.Create(GetScreenType(revision), port);
     var buffer = screen.CreateBuffer(480, 320);
     buffer.Clear(c.Red, c.Green, c.Blue);

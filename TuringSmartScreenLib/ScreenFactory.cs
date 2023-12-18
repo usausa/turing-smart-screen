@@ -24,7 +24,7 @@ public static class ScreenFactory
         {
             var screen = new TuringSmartScreenRevisionC(name, true);
             screen.Open();
-            return new ScreenWrapper5Inch(screen, width ?? 800, height ?? 480);
+            return new ScreenWrapperC(screen, width ?? 800, height ?? 480);
         }
 
         throw new NotSupportedException("Unsupported type.");

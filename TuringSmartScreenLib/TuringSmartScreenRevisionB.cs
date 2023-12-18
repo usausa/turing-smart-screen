@@ -40,6 +40,7 @@ public sealed class TuringSmartScreenRevisionB : IDisposable
         port.DiscardInBuffer();
         port.DiscardOutBuffer();
 
+        // TODO
         var hello = new byte[] { 0xCA, (byte)'H', (byte)'E', (byte)'L', (byte)'L', (byte)'O', 0, 0, 0, 0xCA };
         port.Write(hello, 0, hello.Length);
 
@@ -59,6 +60,8 @@ public sealed class TuringSmartScreenRevisionB : IDisposable
                 Version = response[7];
             }
         }
+
+        port.DiscardInBuffer();
     }
 
     public void Close()
