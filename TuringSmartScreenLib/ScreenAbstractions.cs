@@ -89,7 +89,7 @@ internal sealed class ScreenWrapperRevisionA : ScreenBase
 
     public override void ScreenOn() => screen.ScreenOn();
 
-    public override void SetBrightness(byte level) => screen.SetBrightness(255 - level);
+    public override void SetBrightness(byte level) => screen.SetBrightness(255 - (byte)((float)level / 100 * 255));
 
     protected override bool SetOrientation(ScreenOrientation orientation)
     {
@@ -136,7 +136,7 @@ internal abstract class ScreenWrapperRevisionB : ScreenBase
 
     public override void Clear()
     {
-        // TODO Emulation
+        // TODO Emulation ?
     }
 
     public override void ScreenOff()
@@ -147,7 +147,6 @@ internal abstract class ScreenWrapperRevisionB : ScreenBase
 
     public override void ScreenOn()
     {
-        // TODO
         // Emulation
         SetBrightness(100);
     }
@@ -189,7 +188,6 @@ internal sealed class ScreenWrapperRevisionB0 : ScreenWrapperRevisionB
     {
     }
 
-    // TODO
     protected override byte CalcBrightness(byte value) => value == 0 ? (byte)0 : (byte)1;
 }
 
@@ -200,7 +198,6 @@ internal sealed class ScreenWrapperRevisionB1 : ScreenWrapperRevisionB
     {
     }
 
-    // TODO
     protected override byte CalcBrightness(byte value) => (byte)((float)value / 100 * 255);
 }
 
@@ -224,7 +221,7 @@ internal sealed class ScreenWrapperC : ScreenBase
 
     public override void ScreenOn() => screen.ScreenOn();
 
-    // TODO
+    // TODO ?
     public override void SetBrightness(byte level) => screen.SetBrightness(level);
 
     protected override bool SetOrientation(ScreenOrientation orientation)
