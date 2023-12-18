@@ -19,6 +19,7 @@ public static class Extensions
         }
         else if (buffer is TuringSmartScreenBufferC buffer5)
         {
+            // TODO
             buffer5.ReadFrom(bitmap, sx, sy, sw, sh);
         }
         else
@@ -33,6 +34,8 @@ public static class Extensions
             }
         }
     }
+
+    // RevisionA
 
     public static void ReadFrom(this TuringSmartScreenBufferA buffer, SKBitmap bitmap) =>
         buffer.ReadFrom(bitmap, 0, 0, bitmap.Width, bitmap.Height);
@@ -49,20 +52,7 @@ public static class Extensions
         }
     }
 
-    public static bool IsFullScreen(int sx, int sy, int sw, int sh)
-    {
-        if (sx > 0 || sy > 0)
-        {
-            return false;
-        }
-
-        if (sw == TuringSmartScreenRevisionC.WIDTH && sh == TuringSmartScreenRevisionC.HEIGHT)
-        {
-            return true;
-        }
-
-        return sh == TuringSmartScreenRevisionC.WIDTH && sw == TuringSmartScreenRevisionC.HEIGHT;
-    }
+    // RevisionB
 
     public static void ReadFrom(this TuringSmartScreenBufferB buffer, SKBitmap bitmap) =>
         buffer.ReadFrom(bitmap, 0, 0, bitmap.Width, bitmap.Height);
@@ -78,6 +68,10 @@ public static class Extensions
             }
         }
     }
+
+    // RevisionC
+
+    // TODO
 
     public static void ReadFrom(this TuringSmartScreenBufferC buffer, SKBitmap bitmap, int sw, int sh)
     {

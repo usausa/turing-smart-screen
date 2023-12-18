@@ -2,6 +2,7 @@ namespace TuringSmartScreenLib;
 
 using System;
 
+// TODO
 #pragma warning disable CA1819
 #pragma warning disable IDE0032
 public sealed class TuringSmartScreenBufferC : IScreenBuffer

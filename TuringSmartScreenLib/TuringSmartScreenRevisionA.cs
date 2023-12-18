@@ -50,45 +50,48 @@ public sealed class TuringSmartScreenRevisionA : IDisposable
 
     private void WriteCommand(byte command)
     {
-        var buffer = new byte[6];
-        buffer[5] = command;
-        port.Write(buffer, 0, buffer.Length);
+        using var buffer = new ByteBuffer(6);
+        buffer.Skip(5);
+        buffer.Write(command);
+        port.Write(buffer.Buffer, 0, buffer.WrittenCount);
     }
 
     private void WriteCommand(byte command, int level)
     {
-        var buffer = new byte[6];
-        buffer[0] = (byte)(level >> 2);
-        buffer[1] = (byte)((level & 3) << 6);
-        buffer[5] = command;
-        port.Write(buffer, 0, buffer.Length);
+        using var buffer = new ByteBuffer(6);
+        buffer.Write((byte)(level >> 2));
+        buffer.Write((byte)((level & 3) << 6));
+        buffer.Skip(3);
+        buffer.Write(command);
+        port.Write(buffer.Buffer, 0, buffer.WrittenCount);
     }
 
     private void WriteCommand(byte command, byte orientation, int width, int height)
     {
-        var buffer = new byte[11];
-        buffer[5] = command;
-        buffer[6] = orientation;
-        buffer[6] = (byte)(orientation + 100);
-        buffer[7] = (byte)(width >> 8);
-        buffer[8] = (byte)(width & 255);
-        buffer[9] = (byte)(height >> 8);
-        buffer[10] = (byte)(height & 255);
-        port.Write(buffer, 0, buffer.Length);
+        using var buffer = new ByteBuffer(11);
+        buffer.Skip(5);
+        buffer.Write(command);
+        buffer.Write((byte)(orientation + 100));
+        buffer.Write((byte)(width >> 8));
+        buffer.Write((byte)(width & 255));
+        buffer.Write((byte)(height >> 8));
+        buffer.Write((byte)(height & 255));
+        port.Write(buffer.Buffer, 0, buffer.WrittenCount);
     }
 
     private void WriteCommand(byte command, int x, int y, int width, int height, byte[] data)
     {
         var ex = x + width - 1;
         var ey = y + height - 1;
-        var buffer = new byte[6];
-        buffer[0] = (byte)(x >> 2);
-        buffer[1] = (byte)(((x & 3) << 6) + (y >> 4));
-        buffer[2] = (byte)(((y & 15) << 4) + (ex >> 6));
-        buffer[3] = (byte)(((ex & 63) << 2) + (ey >> 8));
-        buffer[4] = (byte)(ey & 255);
-        buffer[5] = command;
-        port.Write(buffer, 0, buffer.Length);
+
+        using var buffer = new ByteBuffer(6);
+        buffer.Write((byte)(x >> 2));
+        buffer.Write((byte)(((x & 3) << 6) + (y >> 4)));
+        buffer.Write((byte)(((y & 15) << 4) + (ex >> 6)));
+        buffer.Write((byte)(((ex & 63) << 2) + (ey >> 8)));
+        buffer.Write((byte)(ey & 255));
+        buffer.Write(command);
+        port.Write(buffer.Buffer, 0, buffer.WrittenCount);
         port.Write(data, 0, width * height * 2);
     }
 
@@ -100,7 +103,7 @@ public sealed class TuringSmartScreenRevisionA : IDisposable
 
     public void ScreenOn() => WriteCommand(109);
 
-    public void SetBrightness(int level) => WriteCommand(110, level);
+    public void SetBrightness(int level) => WriteCommand(110, 255 - level);
 
     public void SetOrientation(Orientation orientation, int width, int height) =>
         WriteCommand(121, (byte)orientation, width, height);

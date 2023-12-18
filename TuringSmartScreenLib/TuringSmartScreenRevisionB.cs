@@ -2,6 +2,7 @@ namespace TuringSmartScreenLib;
 
 using System.IO.Ports;
 
+// TODO
 public sealed class TuringSmartScreenRevisionB : IDisposable
 {
     public enum Orientation : byte
@@ -96,6 +97,7 @@ public sealed class TuringSmartScreenRevisionB : IDisposable
         port.Write(data, 0, width * height * 2);
     }
 
+    // TODO
     public void SetBrightness(byte level) => WriteCommand(0xCE, level);
 
     public void SetOrientation(Orientation orientation) => WriteCommand(0xCB, (byte)orientation);

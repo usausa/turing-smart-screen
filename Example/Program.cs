@@ -16,6 +16,7 @@ public static class Program
     {
         // Create screen
         using var screen = ScreenFactory.Create(ScreenType.RevisionA, "COM9");
+
         screen.SetBrightness(100);
         screen.Orientation = ScreenOrientation.Landscape;
 

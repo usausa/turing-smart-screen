@@ -3,6 +3,7 @@ namespace TuringSmartScreenLib;
 using System;
 using System.IO.Ports;
 
+// TODO
 public sealed class TuringSmartScreenRevisionC : IDisposable
 {
 #pragma warning disable SA1310 // Field names should not contain underscore - disabled to have constants match python names

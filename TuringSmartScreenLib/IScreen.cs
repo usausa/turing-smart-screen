@@ -1,6 +1,5 @@
 namespace TuringSmartScreenLib;
 
-#pragma warning disable CA1819
 public interface IScreen : IDisposable
 {
     int Width { get; }
@@ -23,4 +22,3 @@ public interface IScreen : IDisposable
 
     void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer);
 }
-#pragma warning restore CA1819
