@@ -5,7 +5,7 @@ using System.Buffers;
 using System.Runtime.CompilerServices;
 
 #pragma warning disable IDE0032
-internal ref struct ByteBuffer
+internal struct ByteBuffer : IBufferWriter<byte>, IDisposable
 {
     private byte[] buffer;
 
@@ -30,54 +30,49 @@ internal ref struct ByteBuffer
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Clear()
     {
         length = 0;
-        buffer.AsSpan().Clear();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void GrowIfRequired(int sizeRequired)
+    public void Advance(int count)
     {
-        if ((uint)sizeRequired > (uint)buffer.Length)
+        length += count;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public Memory<byte> GetMemory(int sizeHint = 0)
+    {
+        GrowIfRequired(sizeHint);
+        return buffer.AsMemory(length);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public Span<byte> GetSpan(int sizeHint = 0)
+    {
+        GrowIfRequired(sizeHint);
+        return buffer.AsSpan(length);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void GrowIfRequired(int sizeHint)
+    {
+        if (sizeHint == 0)
         {
-            var newBuffer = ArrayPool<byte>.Shared.Rent(sizeRequired);
+            sizeHint = 1;
+        }
+
+        var newSize = length + sizeHint;
+        if ((uint)newSize > (uint)buffer.Length)
+        {
+            var newBuffer = ArrayPool<byte>.Shared.Rent(newSize);
             newBuffer.AsSpan(length).Clear();
             buffer[..length].CopyTo(newBuffer.AsSpan());
             ArrayPool<byte>.Shared.Return(buffer);
             buffer = newBuffer;
         }
-    }
-
-    public void Skip(int size)
-    {
-        length += size;
-    }
-
-    public void Write(byte value)
-    {
-        GrowIfRequired(length + 1);
-        buffer[length] = value;
-        length++;
-    }
-
-    public void Write(byte[] value)
-    {
-        GrowIfRequired(length + value.Length);
-        value.CopyTo(buffer[length..].AsSpan());
-        length += value.Length;
-    }
-
-    public void Put(int index, byte value)
-    {
-        GrowIfRequired(index + 1);
-        buffer[index] = value;
-    }
-
-    public void Put(int index, byte[] value)
-    {
-        GrowIfRequired(index + value.Length);
-        value.CopyTo(buffer[index..].AsSpan());
     }
 }
 #pragma warning restore IDE0032

@@ -2,7 +2,6 @@ namespace TuringSmartScreenLib;
 
 using System.IO.Ports;
 
-// TODO
 public sealed class TuringSmartScreenRevisionB : IDisposable
 {
     public enum Orientation : byte
@@ -40,10 +39,12 @@ public sealed class TuringSmartScreenRevisionB : IDisposable
         port.DiscardInBuffer();
         port.DiscardOutBuffer();
 
-        // TODO
-        var hello = new byte[] { 0xCA, (byte)'H', (byte)'E', (byte)'L', (byte)'L', (byte)'O', 0, 0, 0, 0xCA };
-        port.Write(hello, 0, hello.Length);
+        var command = (Span<byte>)[0xCA, (byte)'H', (byte)'E', (byte)'L', (byte)'L', (byte)'O', 0, 0, 0, 0xCA];
+        using var buffer = new ByteBuffer(command.Length);
+        command.CopyTo(buffer.GetSpan());
+        buffer.Advance(command.Length);
 
+        // TODO
         var response = new byte[10];
         var read = port.Read(response, 0, response.Length);
         if ((read == 10) &&
@@ -74,15 +75,20 @@ public sealed class TuringSmartScreenRevisionB : IDisposable
 
     private void WriteCommand(byte command, byte value)
     {
-        var buffer = new byte[10];
-        buffer[0] = command;
-        buffer[1] = value;
-        buffer[9] = command;
-        port.Write(buffer, 0, buffer.Length);
+        const int commandSize = 10;
+        using var buffer = new ByteBuffer(commandSize);
+        var span = buffer.GetSpan();
+        span[0] = command;
+        span[1] = value;
+        span[9] = command;
+        buffer.Advance(commandSize);
+
+        port.Write(buffer.Buffer, 0, buffer.WrittenCount);
     }
 
     private void WriteCommand(byte command, int x, int y, int width, int height, byte[] data)
     {
+        // TODO
         var ex = x + width - 1;
         var ey = y + height - 1;
         var buffer = new byte[10];

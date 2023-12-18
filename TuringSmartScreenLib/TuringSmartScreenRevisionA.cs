@@ -50,32 +50,41 @@ public sealed class TuringSmartScreenRevisionA : IDisposable
 
     private void WriteCommand(byte command)
     {
-        using var buffer = new ByteBuffer(6);
-        buffer.Skip(5);
-        buffer.Write(command);
+        const int commandLength = 6;
+        using var buffer = new ByteBuffer(commandLength);
+        var span = buffer.GetSpan();
+        span[5] = command;
+        buffer.Advance(commandLength);
+
         port.Write(buffer.Buffer, 0, buffer.WrittenCount);
     }
 
     private void WriteCommand(byte command, int level)
     {
-        using var buffer = new ByteBuffer(6);
-        buffer.Write((byte)(level >> 2));
-        buffer.Write((byte)((level & 3) << 6));
-        buffer.Skip(3);
-        buffer.Write(command);
+        const int commandLength = 6;
+        using var buffer = new ByteBuffer(commandLength);
+        var span = buffer.GetSpan();
+        span[0] = (byte)(level >> 2);
+        span[1] = (byte)((level & 3) << 6);
+        span[5] = command;
+        buffer.Advance(commandLength);
+
         port.Write(buffer.Buffer, 0, buffer.WrittenCount);
     }
 
     private void WriteCommand(byte command, byte orientation, int width, int height)
     {
-        using var buffer = new ByteBuffer(11);
-        buffer.Skip(5);
-        buffer.Write(command);
-        buffer.Write((byte)(orientation + 100));
-        buffer.Write((byte)(width >> 8));
-        buffer.Write((byte)(width & 255));
-        buffer.Write((byte)(height >> 8));
-        buffer.Write((byte)(height & 255));
+        const int commandLength = 11;
+        using var buffer = new ByteBuffer(commandLength);
+        var span = buffer.GetSpan();
+        span[5] = command;
+        span[6] = (byte)(orientation + 100);
+        span[7] = (byte)(width >> 8);
+        span[8] = (byte)(width & 255);
+        span[9] = (byte)(height >> 8);
+        span[10] = (byte)(height & 255);
+        buffer.Advance(commandLength);
+
         port.Write(buffer.Buffer, 0, buffer.WrittenCount);
     }
 
@@ -84,13 +93,17 @@ public sealed class TuringSmartScreenRevisionA : IDisposable
         var ex = x + width - 1;
         var ey = y + height - 1;
 
-        using var buffer = new ByteBuffer(6);
-        buffer.Write((byte)(x >> 2));
-        buffer.Write((byte)(((x & 3) << 6) + (y >> 4)));
-        buffer.Write((byte)(((y & 15) << 4) + (ex >> 6)));
-        buffer.Write((byte)(((ex & 63) << 2) + (ey >> 8)));
-        buffer.Write((byte)(ey & 255));
-        buffer.Write(command);
+        const int commandLength = 6;
+        using var buffer = new ByteBuffer(commandLength);
+        var span = buffer.GetSpan();
+        span[0] = (byte)(x >> 2);
+        span[1] = (byte)(((x & 3) << 6) + (y >> 4));
+        span[2] = (byte)(((y & 15) << 4) + (ex >> 6));
+        span[3] = (byte)(((ex & 63) << 2) + (ey >> 8));
+        span[4] = (byte)(ey & 255);
+        span[5] = command;
+        buffer.Advance(commandLength);
+
         port.Write(buffer.Buffer, 0, buffer.WrittenCount);
         port.Write(data, 0, width * height * 2);
     }
