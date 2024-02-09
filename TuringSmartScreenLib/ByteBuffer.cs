@@ -4,6 +4,7 @@ using System;
 using System.Buffers;
 using System.Runtime.CompilerServices;
 
+// TODO delete & use pipe
 #pragma warning disable IDE0032
 internal struct ByteBuffer : IBufferWriter<byte>, IDisposable
 {
