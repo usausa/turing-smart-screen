@@ -1,5 +1,6 @@
 //namespace TuringSmartScreenLib;
 
+// TODO
 //internal sealed class ScreenWrapperC2 : ScreenBase
 //{
 //    private readonly TuringSmartScreenRevisionC screen;
@@ -20,7 +21,6 @@
 
 //    public override void ScreenOn() => screen.ScreenOn();
 
-//    // TODO Abstraction ?
 //    public override void SetBrightness(byte level) => screen.SetBrightness(level);
 
 //    protected override bool SetOrientation(ScreenOrientation orientation)

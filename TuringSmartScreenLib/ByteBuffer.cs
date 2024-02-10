@@ -13,6 +13,8 @@ internal struct ByteBuffer : IBufferWriter<byte>, IDisposable
 
     public readonly int WrittenCount => length;
 
+    public readonly ReadOnlySpan<byte> WrittenSpan => Buffer.AsSpan(0, length);
+
     public readonly byte[] Buffer => buffer;
 
     public ByteBuffer(int initialCapacity)

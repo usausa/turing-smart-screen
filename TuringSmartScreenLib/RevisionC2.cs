@@ -1,19 +1,16 @@
 namespace TuringSmartScreenLib;
 
 using System;
-using System.Diagnostics;
 using System.IO.Ports;
-using System.Text;
 
 public sealed class TuringSmartScreenRevisionC2 : IDisposable
 {
-    public static readonly byte[] Hello = [0x01, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0xc5, 0xd3];
+    private static readonly byte[] CommandHello = [0x01, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0xc5, 0xd3];
 
     // TODO
     //#pragma warning disable SA1310 // Field names should not contain underscore - disabled to have constants match python names
     //#pragma warning disable CA1707 // Identifiers should not contain underscores
 
-    //    // see https://github.com/mathoudebine/turing-smart-screen-python/blob/main/library/lcd/lcd_comm_rev_c.py for reference
     //    //public static readonly byte[] OnExit = { 0x87, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
 
     //    //public static readonly byte[] OPTIONS = { 0x7d, 0xef, 0x69, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x2d };
@@ -21,7 +18,7 @@ public sealed class TuringSmartScreenRevisionC2 : IDisposable
     //    public static readonly byte[] TURNOFF = [0x83, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01];
     //    //public static readonly byte[] TURNON = { 0x83, 0xef, 0x69, 0x00, 0x00, 0x00, 0x00 };
 
-    //    //public static readonly byte[] SET_BRIGHTNESS = { 0x7b, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
+    private static readonly byte[] CommandSetBrightness = { 0x7b, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
 
     //    // STOP COMMANDS
     //    public static readonly byte[] STOP_VIDEO = [0x79, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01];
@@ -90,27 +87,14 @@ public sealed class TuringSmartScreenRevisionC2 : IDisposable
         port.DiscardInBuffer();
         port.DiscardOutBuffer();
 
-        WriteCommand(Hello);
+        WriteCommand(CommandHello);
 
-        using var buffer = new ByteBuffer(23);
-        var read = ReadResponse(buffer.Buffer, 23);
-        if ((read != 23) || !buffer.Buffer.AsSpan(0, 9).SequenceEqual("chs_5inch"u8))
+        using var response = new ByteBuffer(23);
+        var read = ReadResponse(response.Buffer, 23);
+        if ((read != 23) || !response.Buffer.AsSpan(0, 9).SequenceEqual("chs_5inch"u8))
         {
-            throw new IOException($"Unknown response. response=[{Convert.ToHexString(buffer.Buffer.AsSpan(0, read))}]");
+            throw new IOException($"Unknown response. response=[{Convert.ToHexString(response.Buffer.AsSpan(0, read))}]");
         }
-    }
-
-    private void WriteCommand(byte[] command, byte padValue = 0x00)
-    {
-        var commandLength = ((command.Length + 249) / 250) * 250;
-
-        using var buffer = new ByteBuffer(commandLength);
-        var span = buffer.GetSpan(commandLength);
-        command.CopyTo(span);
-        span[commandLength..].Fill(padValue);
-        buffer.Advance(commandLength);
-
-        port.Write(buffer.Buffer, 0, buffer.WrittenCount);
     }
 
     private int ReadResponse(byte[] response, int length)
@@ -130,94 +114,122 @@ public sealed class TuringSmartScreenRevisionC2 : IDisposable
         return offset;
     }
 
-    //----------------------------------------
+    private void WriteCommand(ReadOnlySpan<byte> command, byte padValue = 0x00)
+    {
+        var commandLength = ((command.Length + 249) / 250) * 250;
 
-//    public void Reset() => WriteCommand(RESTART);
+        using var buffer = new ByteBuffer(commandLength);
+        var span = buffer.GetSpan(commandLength);
+        command.CopyTo(span);
+        span[commandLength..].Fill(padValue);
+        buffer.Advance(commandLength);
 
-//#pragma warning disable CA1822 // Mark members as static
-//    public void Clear()
-//    {
-//        // nothing to do
-//    }
-//#pragma warning restore CA1822 // Mark members as static
+        port.Write(buffer.Buffer, 0, buffer.WrittenCount);
+    }
 
-//    public void ScreenOff()
-//    {
-//        WriteCommand(STOP_VIDEO);
-//        WriteCommand(STOP_MEDIA);
-//        WriteCommand(TURNOFF);
-//    }
+    // TODO Reset
 
-//    public void ScreenOn()
-//    {
-//        WriteCommand(STOP_VIDEO);
-//        WriteCommand(STOP_MEDIA);
-//    }
+    // TODO Clear
 
-//    public void SetBrightness(int level)
-//    {
-//        var cmd = new List<byte>
-//        {
-//            0x7b,
-//            0xef,
-//            0x69,
-//            0x00,
-//            0x00,
-//            0x00,
-//            0x01,
-//            0x00,
-//            0x00,
-//            0x00,
-//            (byte)level
-//        };
-//        WriteCommand(cmd.ToArray());
-//    }
+    // TODO ScreenOff()
+    //    public void ScreenOff()
+    //    {
+    //        WriteCommand(STOP_VIDEO);
+    //        WriteCommand(STOP_MEDIA);
+    //        WriteCommand(TURNOFF);
+    //    }
 
-//    public void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer)
-//    {
-//        var cBuffer = (TuringSmartScreenBufferC)buffer;
-//        if (cBuffer.IsEmpty())
-//        {
-//            ClearScreen();
-//        }
-//        else
-//        {
-//            var isFullScreen = height == HEIGHT && width == WIDTH;
-//            //var isRotated = width == HEIGHT && height == WIDTH;
-//            if (!isFullScreen)
-//            {
-//                DisplayPartialImage(x, y, width, height, cBuffer);
-//                WriteCommand(QUERY_STATUS);
-//                var resp = ReadResponse();
-//                if (resp?.Contains("needReSend:1", StringComparison.InvariantCulture) ?? false)
-//                {
-//                    DisplayPartialImage(x, y, width, height, cBuffer);
-//                    WriteCommand(QUERY_STATUS);
-//                }
-//            }
-//            else
-//            {
-//                if (x != 0 || y != 0 || width != WIDTH || height != HEIGHT)
-//                {
-//                    throw new InvalidOperationException("Invalid parameters for full screen image");
-//                }
-//                WriteCommand(START_DISPLAY_BITMAP, 0x2c);
-//                WriteCommand(DISPLAY_BITMAP);
-//                var blockSize = 249;
-//                var currentPosition = 0;
-//                while (currentPosition < cBuffer.Length)
-//                {
-//                    var block = cBuffer.ImgBuffer.Skip(currentPosition).Take(blockSize).ToArray();
-//                    WriteCommand(block);
-//                    currentPosition += blockSize;
-//                }
-//                WriteCommand(PRE_UPDATE_BITMAP);
-//                ReadResponse();
-//                WriteCommand(QUERY_STATUS);
-//                ReadResponse();
-//            }
-//        }
-//    }
+    // TODO ScreenOn()
+    //    public void ScreenOn()
+    //    {
+    //        WriteCommand(STOP_VIDEO);
+    //        WriteCommand(STOP_MEDIA);
+    //    }
+
+    public void SetBrightness(int level)
+    {
+        using var command = new ByteBuffer(CommandSetBrightness.Length + 1);
+        var span = command.GetSpan();
+        CommandSetBrightness.CopyTo(span);
+        span[CommandSetBrightness.Length] = (byte)level;
+        command.Advance(CommandSetBrightness.Length + 1);
+
+        WriteCommand(command.WrittenSpan);
+    }
+
+    //        var cmd = new List<byte>
+    //        {
+    //            0x7b,
+    //            0xef,
+    //            0x69,
+    //            0x00,
+    //            0x00,
+    //            0x00,
+    //            0x01,
+    //            0x00,
+    //            0x00,
+    //            0x00,
+    //            (byte)level
+    //        };
+    //        WriteCommand(cmd.ToArray());
+    //    }
+
+    // TODO DisplayBitmap
+
+    //    public void Reset() => WriteCommand(RESTART);
+
+    //#pragma warning disable CA1822 // Mark members as static
+    //    public void Clear()
+    //    {
+    //        // nothing to do
+    //    }
+    //#pragma warning restore CA1822 // Mark members as static
+
+    //    public void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer)
+    //    {
+    //        var cBuffer = (TuringSmartScreenBufferC)buffer;
+    //        if (cBuffer.IsEmpty())
+    //        {
+    //            ClearScreen();
+    //        }
+    //        else
+    //        {
+    //            var isFullScreen = height == HEIGHT && width == WIDTH;
+    //            //var isRotated = width == HEIGHT && height == WIDTH;
+    //            if (!isFullScreen)
+    //            {
+    //                DisplayPartialImage(x, y, width, height, cBuffer);
+    //                WriteCommand(QUERY_STATUS);
+    //                var resp = ReadResponse();
+    //                if (resp?.Contains("needReSend:1", StringComparison.InvariantCulture) ?? false)
+    //                {
+    //                    DisplayPartialImage(x, y, width, height, cBuffer);
+    //                    WriteCommand(QUERY_STATUS);
+    //                }
+    //            }
+    //            else
+    //            {
+    //                if (x != 0 || y != 0 || width != WIDTH || height != HEIGHT)
+    //                {
+    //                    throw new InvalidOperationException("Invalid parameters for full screen image");
+    //                }
+    //                WriteCommand(START_DISPLAY_BITMAP, 0x2c);
+    //                WriteCommand(DISPLAY_BITMAP);
+    //                var blockSize = 249;
+    //                var currentPosition = 0;
+    //                while (currentPosition < cBuffer.Length)
+    //                {
+    //                    var block = cBuffer.ImgBuffer.Skip(currentPosition).Take(blockSize).ToArray();
+    //                    WriteCommand(block);
+    //                    currentPosition += blockSize;
+    //                }
+    //                WriteCommand(PRE_UPDATE_BITMAP);
+    //                ReadResponse();
+    //                WriteCommand(QUERY_STATUS);
+    //                ReadResponse();
+    //            }
+    //        }
+    //    }
 
     //private static byte[] ConvertAndPad(int number, int fixedLength)
     //{
