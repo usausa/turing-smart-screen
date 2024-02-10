@@ -6,8 +6,6 @@ public static partial class Extensions
 {
     // RevisionC
 
-    // TODO
-
     public static void ReadFrom(this TuringSmartScreenBufferC buffer, SKBitmap bitmap, int sw, int sh)
     {
         using var memStream = new MemoryStream();

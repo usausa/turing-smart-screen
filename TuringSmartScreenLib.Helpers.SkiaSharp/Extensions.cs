@@ -19,7 +19,8 @@ public static partial class Extensions
         }
         else if (buffer is TuringSmartScreenBufferC bufferC)
         {
-            bufferC.ReadFrom(bitmap, sx, sy, sw, sh);
+            // TODO replace
+            bufferC.ReadFrom(bitmap, sw, sh);
         }
         else
         {
