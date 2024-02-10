@@ -28,6 +28,14 @@ public sealed class TuringSmartScreenRevisionB : IDisposable
         };
     }
 
+    public void Close()
+    {
+        if (port.IsOpen)
+        {
+            port.Close();
+        }
+    }
+
     public void Dispose()
     {
         Close();
@@ -46,6 +54,7 @@ public sealed class TuringSmartScreenRevisionB : IDisposable
 
         port.Write(request.Buffer, 0, request.WrittenCount);
 
+        // TODO
         using var response = new ByteBuffer(10);
         var read = port.Read(response.Buffer, 0, 10);
         var buffer = response.Buffer;
@@ -65,14 +74,6 @@ public sealed class TuringSmartScreenRevisionB : IDisposable
         }
 
         port.DiscardInBuffer();
-    }
-
-    public void Close()
-    {
-        if (port.IsOpen)
-        {
-            port.Close();
-        }
     }
 
     private void WriteCommand(byte command, byte value)
