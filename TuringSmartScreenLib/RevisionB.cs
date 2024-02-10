@@ -54,9 +54,8 @@ public sealed class TuringSmartScreenRevisionB : IDisposable
 
         port.Write(request.Buffer, 0, request.WrittenCount);
 
-        // TODO
         using var response = new ByteBuffer(10);
-        var read = port.Read(response.Buffer, 0, 10);
+        var read = ReadResponse(response.Buffer, 10);
         var buffer = response.Buffer;
         if ((read == 10) &&
             (buffer[0] == 0xCA) &&
@@ -74,6 +73,23 @@ public sealed class TuringSmartScreenRevisionB : IDisposable
         }
 
         port.DiscardInBuffer();
+    }
+
+    private int ReadResponse(byte[] response, int length)
+    {
+        var offset = 0;
+        while (offset < length)
+        {
+            var read = port.Read(response, offset, length - offset);
+            if (read <= 0)
+            {
+                break;
+            }
+
+            offset += read;
+        }
+
+        return offset;
     }
 
     private void WriteCommand(byte command, byte value)
