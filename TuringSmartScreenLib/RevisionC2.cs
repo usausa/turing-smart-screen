@@ -4,7 +4,7 @@ using System;
 using System.Buffers;
 using System.IO.Ports;
 
-public sealed class TuringSmartScreenRevisionC2 : IDisposable
+public sealed unsafe class TuringSmartScreenRevisionC2 : IDisposable
 {
     public const int Width = 800;
     public const int Height = 480;
@@ -118,13 +118,13 @@ public sealed class TuringSmartScreenRevisionC2 : IDisposable
 
             FlushInternal(pad);
 
-            values = values[(WriteSize - 1)..];
+            values = values[block.Length..];
         }
 
         if (values.Length > 0)
         {
-            values.CopyTo(writeBuffer);
-            writeOffset = values.Length;
+            values.CopyTo(writeBuffer.AsSpan(writeOffset));
+            writeOffset += values.Length;
         }
     }
 
@@ -154,7 +154,41 @@ public sealed class TuringSmartScreenRevisionC2 : IDisposable
         writeOffset = 0;
     }
 
-    // TODO Clear
+    public void Clear(byte r = 0, byte g = 0, byte b = 0)
+    {
+        // Start
+        Write(0x2c);
+        Flush(0x2c);
+
+        // DisplayBitmap
+        Write(CommandDisplayBitmap);
+        Flush();
+
+        // Payload
+        var pattern = (Span<byte>)stackalloc byte[4];
+        pattern[0] = b;
+        pattern[1] = g;
+        pattern[2] = r;
+        pattern[3] = 0xff;
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                Write(pattern);
+            }
+        }
+        Flush();
+
+        // PreUpdateBitmap
+        Write(CommandPreUpdateBitmap);
+        Flush();
+        ReadResponse();
+
+        // QueryStatus
+        Write(CommandQueryStatus);
+        Flush();
+        ReadResponse();
+    }
 
     public void SetBrightness(int level)
     {
@@ -177,7 +211,6 @@ public sealed class TuringSmartScreenRevisionC2 : IDisposable
 
     private void DisplayFullBitmap(byte[] bitmap)
     {
-        // TODO debug
         // Start
         Write(0x2c);
         Flush(0x2c);

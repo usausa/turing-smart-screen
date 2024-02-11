@@ -12,6 +12,12 @@ screen.Open();
 //}
 //screen.SetBrightness(100);
 
+//screen.Clear(0xff, 0, 0);
+//screen.Clear(0, 0xff, 0);
+//screen.Clear(0, 0, 0xff);
+
+screen.Clear();
+
 using var bitmap = SKBitmap.Decode("test1.png");
 using var buffer = new TuringSmartScreenBufferC2(800, 480);
 buffer.ReadFrom(bitmap);

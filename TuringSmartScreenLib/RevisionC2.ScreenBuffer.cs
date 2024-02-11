@@ -43,9 +43,9 @@ public sealed class TuringSmartScreenBufferC2 : IScreenBuffer
     public void SetPixel(int x, int y, byte r, byte g, byte b)
     {
         var offset = ((y * width) + x) * 3;
-        buffer[offset] = r;
+        buffer[offset] = b;
         buffer[offset + 1] = g;
-        buffer[offset + 2] = b;
+        buffer[offset + 2] = r;
     }
 
     public void Clear(byte r = 0, byte g = 0, byte b = 0)
@@ -58,9 +58,9 @@ public sealed class TuringSmartScreenBufferC2 : IScreenBuffer
         {
             for (var offset = 0; offset < width * height * 3; offset += 3)
             {
-                buffer[offset] = r;
+                buffer[offset] = b;
                 buffer[offset + 1] = g;
-                buffer[offset + 2] = b;
+                buffer[offset + 2] = r;
             }
         }
     }
