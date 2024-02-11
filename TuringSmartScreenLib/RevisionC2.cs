@@ -1,34 +1,17 @@
 namespace TuringSmartScreenLib;
 
 using System;
+using System.Buffers;
 using System.IO.Ports;
 
 public sealed class TuringSmartScreenRevisionC2 : IDisposable
 {
+    private const int WriteSize = 250;
+    private const int ReadSize = 1024;
+    private const int ReadHelloSize = 23;
+
     private static readonly byte[] CommandHello = [0x01, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0xc5, 0xd3];
-
-    //    //public static readonly byte[] OPTIONS = { 0x7d, 0xef, 0x69, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x2d };
-    //    public static readonly byte[] RESTART = [0x84, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01];
-
-    private static readonly byte[] CommandSetBrightness = { 0x7b, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
-
-    //    // IMAGE QUERY STATUS
-    //    public static readonly byte[] QUERY_STATUS = [0xcf, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01];
-
-    //    // STATIC IMAGE
-    //    public static readonly byte[] START_DISPLAY_BITMAP = [0x2c];
-    //    public static readonly byte[] PRE_UPDATE_BITMAP = [0x86, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01];
-    //    public static readonly byte[] UPDATE_BITMAP = [0xcc, 0xef, 0x69, 0x00, 0x00];
-
-    //    //public static readonly byte[] RESTARTSCREEN = { 0x84, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
-    //    public static readonly byte[] DISPLAY_BITMAP = [0xc8, 0xef, 0x69, 0x00, 0x17, 0x70];
-
-    //    //public static readonly byte[] STARTMODE_DEFAULT = { 0x00 };
-    //    //public static readonly byte[] STARTMODE_IMAGE = { 0x01 };
-    //    //public static readonly byte[] STARTMODE_VIDEO = { 0x02 };
-    //    //public static readonly byte[] FLIP_180 = { 0x01 };
-    //    //public static readonly byte[] NO_FLIP = { 0x00 };
-    //    //public static readonly byte[] SEND_PAYLOAD = { 0xFF };
+    private static readonly byte[] CommandSetBrightness = [0x7b, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00];
 
     public enum Orientation : byte
     {
@@ -39,6 +22,12 @@ public sealed class TuringSmartScreenRevisionC2 : IDisposable
     }
 
     private readonly SerialPort port;
+
+    private byte[] writeBuffer;
+
+    private byte[] readBuffer;
+
+    private int writeOffset;
 
     public TuringSmartScreenRevisionC2(string name)
     {
@@ -52,11 +41,24 @@ public sealed class TuringSmartScreenRevisionC2 : IDisposable
             StopBits = StopBits.One,
             Parity = Parity.None
         };
+        writeBuffer = ArrayPool<byte>.Shared.Rent(WriteSize);
+        readBuffer = ArrayPool<byte>.Shared.Rent(ReadSize);
     }
 
     public void Dispose()
     {
         Close();
+
+        if (writeBuffer.Length > 0)
+        {
+            ArrayPool<byte>.Shared.Return(writeBuffer);
+            writeBuffer = [];
+        }
+        if (readBuffer.Length > 0)
+        {
+            ArrayPool<byte>.Shared.Return(readBuffer);
+            readBuffer = [];
+        }
     }
 
     public void Close()
@@ -73,22 +75,22 @@ public sealed class TuringSmartScreenRevisionC2 : IDisposable
         port.DiscardInBuffer();
         port.DiscardOutBuffer();
 
-        WriteCommand(CommandHello);
+        Write(CommandHello);
+        Flush();
 
-        using var response = new ByteBuffer(23);
-        var read = ReadResponse(response.Buffer, 23);
-        if ((read != 23) || !response.Buffer.AsSpan(0, 9).SequenceEqual("chs_5inch"u8))
+        var response = ReadResponse(ReadHelloSize);
+        if ((response.Length != ReadHelloSize) || !response[..9].SequenceEqual("chs_5inch"u8))
         {
-            throw new IOException($"Unknown response. response=[{Convert.ToHexString(response.Buffer.AsSpan(0, read))}]");
+            throw new IOException($"Unknown response. response=[{Convert.ToHexString(response)}]");
         }
     }
 
-    private int ReadResponse(byte[] response, int length)
+    private ReadOnlySpan<byte> ReadResponse(int length)
     {
         var offset = 0;
         while (offset < length)
         {
-            var read = port.Read(response, offset, length - offset);
+            var read = port.Read(readBuffer, offset, length - offset);
             if (read <= 0)
             {
                 break;
@@ -97,33 +99,62 @@ public sealed class TuringSmartScreenRevisionC2 : IDisposable
             offset += read;
         }
 
-        return offset;
+        return readBuffer.AsSpan(0, offset);
     }
 
-    private void WriteCommand(ReadOnlySpan<byte> command, byte padValue = 0x00)
+    private void Write(ReadOnlySpan<byte> values, byte pad = 0x00)
     {
-        var commandLength = ((command.Length + 249) / 250) * 250;
+        while (writeOffset + values.Length > WriteSize - 1)
+        {
+            var block = values[..(WriteSize - 1 - writeOffset)];
+            block.CopyTo(writeBuffer.AsSpan(writeOffset, block.Length));
+            writeOffset += block.Length;
 
-        using var buffer = new ByteBuffer(commandLength);
-        var span = buffer.GetSpan(commandLength);
-        command.CopyTo(span);
-        span[commandLength..].Fill(padValue);
-        buffer.Advance(commandLength);
+            FlushInternal(pad);
 
-        port.Write(buffer.Buffer, 0, buffer.WrittenCount);
+            values = values[(WriteSize - 1)..];
+        }
+
+        if (values.Length > 0)
+        {
+            values.CopyTo(writeBuffer);
+            writeOffset = values.Length;
+        }
+    }
+
+    private void Write(byte value, byte pad = 0x00)
+    {
+        if (writeOffset + 1 > WriteSize - 1)
+        {
+            FlushInternal(pad);
+        }
+
+        writeBuffer[writeOffset] = value;
+        writeOffset++;
+    }
+
+    private void Flush(byte pad = 0x00)
+    {
+        if (writeOffset > 0)
+        {
+            FlushInternal(pad);
+        }
+    }
+
+    private void FlushInternal(byte pad)
+    {
+        writeBuffer.AsSpan(writeOffset, WriteSize - writeOffset).Fill(pad);
+        port.Write(writeBuffer, 0, WriteSize);
+        writeOffset = 0;
     }
 
     // TODO Clear
 
     public void SetBrightness(int level)
     {
-        using var command = new ByteBuffer(CommandSetBrightness.Length + 1);
-        var span = command.GetSpan();
-        CommandSetBrightness.CopyTo(span);
-        span[CommandSetBrightness.Length] = (byte)level;
-        command.Advance(CommandSetBrightness.Length + 1);
-
-        WriteCommand(command.WrittenSpan);
+        Write(CommandSetBrightness);
+        Write((byte)level);
+        Flush();
     }
 
     //        var cmd = new List<byte>
