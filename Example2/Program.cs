@@ -1,13 +1,21 @@
+using SkiaSharp;
+
 using TuringSmartScreenLib;
+using TuringSmartScreenLib.Helpers.SkiaSharp;
 
 using var screen = new TuringSmartScreenRevisionC2("COM10");
 screen.Open();
-for (var i = 100; i >= 0; i--)
-{
-    screen.SetBrightness(i);
-    Thread.Sleep(10);
-}
-screen.SetBrightness(100);
+//for (var i = 100; i >= 0; i--)
+//{
+//    screen.SetBrightness(i);
+//    Thread.Sleep(10);
+//}
+//screen.SetBrightness(100);
+
+using var bitmap = SKBitmap.Decode("test1.png");
+using var buffer = new TuringSmartScreenBufferC2(800, 480);
+buffer.ReadFrom(bitmap);
+screen.DisplayBitmap(0, 0, 800, 480, buffer.RawBuffer);
 
 //using SkiaSharp;
 

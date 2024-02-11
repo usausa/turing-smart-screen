@@ -4,8 +4,8 @@ internal sealed class ScreenWrapperC : ScreenBase
 {
     private readonly TuringSmartScreenRevisionC screen;
 
-    public ScreenWrapperC(TuringSmartScreenRevisionC screen, int width, int height)
-        : base(width, height)
+    public ScreenWrapperC(TuringSmartScreenRevisionC screen)
+        : base(TuringSmartScreenRevisionC.Width, TuringSmartScreenRevisionC.Height)
     {
         this.screen = screen;
     }
@@ -20,7 +20,6 @@ internal sealed class ScreenWrapperC : ScreenBase
 
     public override void ScreenOn() => screen.ScreenOn();
 
-    // TODO ?
     public override void SetBrightness(byte level) => screen.SetBrightness(level);
 
     protected override bool SetOrientation(ScreenOrientation orientation)

@@ -2,22 +2,22 @@ namespace TuringSmartScreenLib;
 
 public static class ScreenFactory
 {
-    public static IScreen Create(ScreenType type, string name, int? width = null, int? height = null)
+    public static IScreen Create(ScreenType type, string name)
     {
         if (type == ScreenType.RevisionB)
         {
             var screen = new TuringSmartScreenRevisionB(name);
             screen.Open();
             return (screen.Version & 0x10) != 0
-                ? new ScreenWrapperRevisionB1(screen, width ?? 320, height ?? 480)
-                : new ScreenWrapperRevisionB0(screen, width ?? 320, height ?? 480);
+                ? new ScreenWrapperRevisionB1(screen)
+                : new ScreenWrapperRevisionB0(screen);
         }
 
         if (type == ScreenType.RevisionA)
         {
             var screen = new TuringSmartScreenRevisionA(name);
             screen.Open();
-            return new ScreenWrapperRevisionA(screen, width ?? 320, height ?? 480);
+            return new ScreenWrapperRevisionA(screen);
         }
 
         // TODO replace
@@ -25,7 +25,7 @@ public static class ScreenFactory
         {
             var screen = new TuringSmartScreenRevisionC(name, true);
             screen.Open();
-            return new ScreenWrapperC(screen, width ?? 800, height ?? 480);
+            return new ScreenWrapperC(screen);
         }
 
         throw new NotSupportedException("Unsupported type.");

@@ -5,6 +5,9 @@ using System.IO.Ports;
 
 public sealed class TuringSmartScreenRevisionA : IDisposable
 {
+    public const int Width = 320;
+    public const int Height = 480;
+
     public enum Orientation : byte
     {
         Portrait = 0,

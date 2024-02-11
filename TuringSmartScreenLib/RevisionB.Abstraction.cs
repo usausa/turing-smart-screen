@@ -4,8 +4,8 @@ internal abstract class ScreenWrapperRevisionB : ScreenBase
 {
     private readonly TuringSmartScreenRevisionB screen;
 
-    protected ScreenWrapperRevisionB(TuringSmartScreenRevisionB screen, int width, int height)
-        : base(width, height)
+    protected ScreenWrapperRevisionB(TuringSmartScreenRevisionB screen)
+        : base(TuringSmartScreenRevisionB.Width, TuringSmartScreenRevisionB.Height)
     {
         this.screen = screen;
     }
@@ -66,8 +66,8 @@ internal abstract class ScreenWrapperRevisionB : ScreenBase
 
 internal sealed class ScreenWrapperRevisionB0 : ScreenWrapperRevisionB
 {
-    public ScreenWrapperRevisionB0(TuringSmartScreenRevisionB screen, int width, int height)
-        : base(screen, width, height)
+    public ScreenWrapperRevisionB0(TuringSmartScreenRevisionB screen)
+        : base(screen)
     {
     }
 
@@ -76,8 +76,8 @@ internal sealed class ScreenWrapperRevisionB0 : ScreenWrapperRevisionB
 
 internal sealed class ScreenWrapperRevisionB1 : ScreenWrapperRevisionB
 {
-    public ScreenWrapperRevisionB1(TuringSmartScreenRevisionB screen, int width, int height)
-        : base(screen, width, height)
+    public ScreenWrapperRevisionB1(TuringSmartScreenRevisionB screen)
+        : base(screen)
     {
     }
 

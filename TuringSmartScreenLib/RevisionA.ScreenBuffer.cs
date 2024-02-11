@@ -47,10 +47,17 @@ public sealed class TuringSmartScreenBufferA : IScreenBuffer
 
     public void Clear(byte r = 0, byte g = 0, byte b = 0)
     {
-        var rgb = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
-        for (var offset = 0; offset < buffer.Length; offset += 2)
+        if ((r == g) && (r == b))
         {
-            BinaryPrimitives.WriteInt16LittleEndian(buffer.AsSpan(offset), (short)rgb);
+            buffer.AsSpan(0, width * height * 2).Fill(r);
+        }
+        else
+        {
+            var rgb = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
+            for (var offset = 0; offset < width * height * 2; offset += 2)
+            {
+                BinaryPrimitives.WriteInt16LittleEndian(buffer.AsSpan(offset), (short)rgb);
+            }
         }
     }
 }

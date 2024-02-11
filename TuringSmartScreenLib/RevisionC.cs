@@ -5,6 +5,9 @@ using System.IO.Ports;
 
 public sealed class TuringSmartScreenRevisionC : IDisposable
 {
+    public const int Width = 800;
+    public const int Height = 480;
+
 #pragma warning disable SA1310 // Field names should not contain underscore - disabled to have constants match python names
 #pragma warning disable CA1707 // Identifiers should not contain underscores
 
@@ -187,8 +190,6 @@ public sealed class TuringSmartScreenRevisionC : IDisposable
     }
 #pragma warning restore CA1822 // Mark members as static
 
-    public const int HEIGHT = 480;
-    public const int WIDTH = 800;
     public void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer)
     {
         var cBuffer = (TuringSmartScreenBufferC)buffer;
@@ -198,8 +199,7 @@ public sealed class TuringSmartScreenRevisionC : IDisposable
         }
         else
         {
-            var isFullScreen = height == HEIGHT && width == WIDTH;
-            var isRotated = width == HEIGHT && height == WIDTH;
+            var isFullScreen = height == Height && width == Width;
             if (!isFullScreen)
             {
                 DisplayPartialImage(x, y, width, height, cBuffer);
@@ -213,7 +213,7 @@ public sealed class TuringSmartScreenRevisionC : IDisposable
             }
             else
             {
-                if (x != 0 || y != 0 || width != WIDTH || height != HEIGHT)
+                if (x != 0 || y != 0 || width != Width || height != Height)
                 {
                     throw new InvalidOperationException("Invalid parameters for full screen image");
                 }

@@ -6,12 +6,18 @@ using System.IO.Ports;
 
 public sealed class TuringSmartScreenRevisionC2 : IDisposable
 {
+    public const int Width = 800;
+    public const int Height = 480;
+
     private const int WriteSize = 250;
     private const int ReadSize = 1024;
     private const int ReadHelloSize = 23;
 
     private static readonly byte[] CommandHello = [0x01, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0xc5, 0xd3];
     private static readonly byte[] CommandSetBrightness = [0x7b, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00];
+    private static readonly byte[] CommandDisplayBitmap = [0xc8, 0xef, 0x69, 0x00, 0x17, 0x70];
+    private static readonly byte[] CommandPreUpdateBitmap = [0x86, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01];
+    private static readonly byte[] CommandQueryStatus = [0xcf, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01];
 
     public enum Orientation : byte
     {
@@ -85,7 +91,7 @@ public sealed class TuringSmartScreenRevisionC2 : IDisposable
         }
     }
 
-    private ReadOnlySpan<byte> ReadResponse(int length)
+    private ReadOnlySpan<byte> ReadResponse(int length = ReadSize)
     {
         var offset = 0;
         while (offset < length)
@@ -157,128 +163,54 @@ public sealed class TuringSmartScreenRevisionC2 : IDisposable
         Flush();
     }
 
-    //        var cmd = new List<byte>
-    //        {
-    //            0x7b,
-    //            0xef,
-    //            0x69,
-    //            0x00,
-    //            0x00,
-    //            0x00,
-    //            0x01,
-    //            0x00,
-    //            0x00,
-    //            0x00,
-    //            (byte)level
-    //        };
-    //        WriteCommand(cmd.ToArray());
-    //    }
+    public void DisplayBitmap(int x, int y, int width, int height, byte[] bitmap)
+    {
+        if ((x == 0) && (y == 0) && (width == Width) && (height == Height))
+        {
+            DisplayFullBitmap(bitmap);
+        }
+        else
+        {
+            DisplayPartialBitmap(x, y, width, height, bitmap);
+        }
+    }
 
-    // TODO DisplayBitmap
+    private void DisplayFullBitmap(byte[] bitmap)
+    {
+        // TODO debug
+        // Start
+        Write(0x2c);
+        Flush(0x2c);
 
-    //    public void Reset() => WriteCommand(RESTART);
+        // DisplayBitmap
+        Write(CommandDisplayBitmap);
+        Flush();
 
-    //    public void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer)
-    //    {
-    //        var cBuffer = (TuringSmartScreenBufferC)buffer;
-    //        if (cBuffer.IsEmpty())
-    //        {
-    //            ClearScreen();
-    //        }
-    //        else
-    //        {
-    //            var isFullScreen = height == HEIGHT && width == WIDTH;
-    //            //var isRotated = width == HEIGHT && height == WIDTH;
-    //            if (!isFullScreen)
-    //            {
-    //                DisplayPartialImage(x, y, width, height, cBuffer);
-    //                WriteCommand(QUERY_STATUS);
-    //                var resp = ReadResponse();
-    //                if (resp?.Contains("needReSend:1", StringComparison.InvariantCulture) ?? false)
-    //                {
-    //                    DisplayPartialImage(x, y, width, height, cBuffer);
-    //                    WriteCommand(QUERY_STATUS);
-    //                }
-    //            }
-    //            else
-    //            {
-    //                if (x != 0 || y != 0 || width != WIDTH || height != HEIGHT)
-    //                {
-    //                    throw new InvalidOperationException("Invalid parameters for full screen image");
-    //                }
-    //                WriteCommand(START_DISPLAY_BITMAP, 0x2c);
-    //                WriteCommand(DISPLAY_BITMAP);
-    //                var blockSize = 249;
-    //                var currentPosition = 0;
-    //                while (currentPosition < cBuffer.Length)
-    //                {
-    //                    var block = cBuffer.ImgBuffer.Skip(currentPosition).Take(blockSize).ToArray();
-    //                    WriteCommand(block);
-    //                    currentPosition += blockSize;
-    //                }
-    //                WriteCommand(PRE_UPDATE_BITMAP);
-    //                ReadResponse();
-    //                WriteCommand(QUERY_STATUS);
-    //                ReadResponse();
-    //            }
-    //        }
-    //    }
+        // Payload
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                var offset = ((y * Width) + x) * 3;
+                Write(bitmap.AsSpan(offset, 3));
+                Write(0xff);
+            }
+        }
+        Flush();
 
-    //private static byte[] ConvertAndPad(int number, int fixedLength)
-    //{
-    //    var byteArray = BitConverter.GetBytes(number);
-    //    // Apply zero padding if necessary
-    //    Array.Resize(ref byteArray, fixedLength);
-    //    Array.Reverse(byteArray);
-    //    return byteArray;
-    //}
+        // PreUpdateBitmap
+        Write(CommandPreUpdateBitmap);
+        Flush();
+        ReadResponse();
 
-    //internal static (byte[] Data, byte[] UpdateSize) GeneratePartialUpdateFromBuffer(int height, int width, int x, int y, byte[] image, int channelCount = 4)
-    //{
-    //    var data = new List<byte>();
+        // QueryStatus
+        Write(CommandQueryStatus);
+        Flush();
+        ReadResponse();
+    }
 
-    //    for (var h = 0; h < height; h++)
-    //    {
-    //        data.AddRange(ConvertAndPad(((x + h) * 800) + y, 3));
-    //        data.AddRange(ConvertAndPad(width, 2));
-    //        for (var w = 0; w < width; w++)
-    //        {
-    //            var indexR = ((h * width) + w) * channelCount;
-    //            data.Add(image[indexR]);
-    //            var indexG = (((h * width) + w) * channelCount) + 1;
-    //            data.Add(image[indexG]);
-    //            var indexB = (((h * width) + w) * channelCount) + 2;
-    //            data.Add(image[indexB]);
-    //        }
-    //    }
-    //    var updSize = ConvertAndPad(data.Count + 2, 2);
-    //    if (data.Count > 250)
-    //    {
-    //        var newMsg = new List<byte>();
-    //        for (var i = 0; i <= data.Count; i++)
-    //        {
-    //            if (i % 249 == 0)
-    //            {
-    //                newMsg.AddRange(data.GetRange(i, Math.Min(249, data.Count - i)));
-    //                newMsg.Add(0);
-    //            }
-    //        }
-    //        // remove last padding 0
-    //        newMsg.RemoveAt(newMsg.Count - 1);
-    //        data = newMsg;
-    //    }
-
-    //    data.Add(0xef);
-    //    data.Add(0x69);
-    //    return (data.ToArray(), updSize);
-    //}
-
-    //private void DisplayPartialImage(int x, int y, int width, int height, TuringSmartScreenBufferC buffer)
-    //{
-    //    var (data, updSize) = GeneratePartialUpdateFromBuffer(height, width, x, y, buffer.ImgBuffer);
-    //    var cmd = new List<byte>(UPDATE_BITMAP);
-    //    cmd.AddRange(updSize);
-    //    WriteCommand(cmd);
-    //    WriteCommand(data);
-    //}
+    private void DisplayPartialBitmap(int x, int y, int width, int height, byte[] bitmap)
+    {
+        // TODO
+    }
 }

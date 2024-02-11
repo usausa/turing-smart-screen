@@ -4,8 +4,8 @@ internal sealed class ScreenWrapperRevisionA : ScreenBase
 {
     private readonly TuringSmartScreenRevisionA screen;
 
-    public ScreenWrapperRevisionA(TuringSmartScreenRevisionA screen, int width, int height)
-        : base(width, height)
+    public ScreenWrapperRevisionA(TuringSmartScreenRevisionA screen)
+        : base(TuringSmartScreenRevisionA.Width, TuringSmartScreenRevisionA.Height)
     {
         this.screen = screen;
     }
