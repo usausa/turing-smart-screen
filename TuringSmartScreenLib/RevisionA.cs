@@ -1,5 +1,6 @@
 namespace TuringSmartScreenLib;
 
+using System.Buffers;
 using System.IO.Ports;
 
 public sealed class TuringSmartScreenRevisionA : IDisposable
@@ -14,6 +15,8 @@ public sealed class TuringSmartScreenRevisionA : IDisposable
 
     private readonly SerialPort port;
 
+    private byte[] writeBuffer;
+
     public TuringSmartScreenRevisionA(string name)
     {
         port = new SerialPort(name)
@@ -26,11 +29,18 @@ public sealed class TuringSmartScreenRevisionA : IDisposable
             StopBits = StopBits.One,
             Parity = Parity.None
         };
+        writeBuffer = ArrayPool<byte>.Shared.Rent(16);
     }
 
     public void Dispose()
     {
         Close();
+
+        if (writeBuffer.Length > 0)
+        {
+            ArrayPool<byte>.Shared.Return(writeBuffer);
+            writeBuffer = [];
+        }
     }
 
     public void Close()
@@ -51,41 +61,35 @@ public sealed class TuringSmartScreenRevisionA : IDisposable
     private void WriteCommand(byte command)
     {
         const int commandLength = 6;
-        using var buffer = new ByteBuffer(commandLength);
-        var span = buffer.GetSpan();
-        span[5] = command;
-        buffer.Advance(commandLength);
+        writeBuffer.AsSpan(0, commandLength).Clear();
+        writeBuffer[5] = command;
 
-        port.Write(buffer.Buffer, 0, buffer.WrittenCount);
+        port.Write(writeBuffer, 0, commandLength);
     }
 
     private void WriteCommand(byte command, int level)
     {
         const int commandLength = 6;
-        using var buffer = new ByteBuffer(commandLength);
-        var span = buffer.GetSpan();
-        span[0] = (byte)(level >> 2);
-        span[1] = (byte)((level & 3) << 6);
-        span[5] = command;
-        buffer.Advance(commandLength);
+        writeBuffer.AsSpan(0, commandLength).Clear();
+        writeBuffer[0] = (byte)(level >> 2);
+        writeBuffer[1] = (byte)((level & 3) << 6);
+        writeBuffer[5] = command;
 
-        port.Write(buffer.Buffer, 0, buffer.WrittenCount);
+        port.Write(writeBuffer, 0, commandLength);
     }
 
     private void WriteCommand(byte command, byte orientation, int width, int height)
     {
         const int commandLength = 11;
-        using var buffer = new ByteBuffer(commandLength);
-        var span = buffer.GetSpan();
-        span[5] = command;
-        span[6] = (byte)(orientation + 100);
-        span[7] = (byte)(width >> 8);
-        span[8] = (byte)(width & 255);
-        span[9] = (byte)(height >> 8);
-        span[10] = (byte)(height & 255);
-        buffer.Advance(commandLength);
+        writeBuffer.AsSpan(0, commandLength).Clear();
+        writeBuffer[5] = command;
+        writeBuffer[6] = (byte)(orientation + 100);
+        writeBuffer[7] = (byte)(width >> 8);
+        writeBuffer[8] = (byte)(width & 255);
+        writeBuffer[9] = (byte)(height >> 8);
+        writeBuffer[10] = (byte)(height & 255);
 
-        port.Write(buffer.Buffer, 0, buffer.WrittenCount);
+        port.Write(writeBuffer, 0, commandLength);
     }
 
     private void WriteCommand(byte command, int x, int y, int width, int height, byte[] data)
@@ -94,17 +98,15 @@ public sealed class TuringSmartScreenRevisionA : IDisposable
         var ey = y + height - 1;
 
         const int commandLength = 6;
-        using var buffer = new ByteBuffer(commandLength);
-        var span = buffer.GetSpan();
-        span[0] = (byte)(x >> 2);
-        span[1] = (byte)(((x & 3) << 6) + (y >> 4));
-        span[2] = (byte)(((y & 15) << 4) + (ex >> 6));
-        span[3] = (byte)(((ex & 63) << 2) + (ey >> 8));
-        span[4] = (byte)(ey & 255);
-        span[5] = command;
-        buffer.Advance(commandLength);
+        writeBuffer.AsSpan(0, commandLength).Clear();
+        writeBuffer[0] = (byte)(x >> 2);
+        writeBuffer[1] = (byte)(((x & 3) << 6) + (y >> 4));
+        writeBuffer[2] = (byte)(((y & 15) << 4) + (ex >> 6));
+        writeBuffer[3] = (byte)(((ex & 63) << 2) + (ey >> 8));
+        writeBuffer[4] = (byte)(ey & 255);
+        writeBuffer[5] = command;
 
-        port.Write(buffer.Buffer, 0, buffer.WrittenCount);
+        port.Write(writeBuffer, 0, commandLength);
         port.Write(data, 0, width * height * 2);
     }
 
