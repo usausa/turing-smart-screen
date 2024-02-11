@@ -7,22 +7,10 @@ public sealed class TuringSmartScreenRevisionC2 : IDisposable
 {
     private static readonly byte[] CommandHello = [0x01, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0xc5, 0xd3];
 
-    // TODO
-    //#pragma warning disable SA1310 // Field names should not contain underscore - disabled to have constants match python names
-    //#pragma warning disable CA1707 // Identifiers should not contain underscores
-
-    //    //public static readonly byte[] OnExit = { 0x87, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
-
     //    //public static readonly byte[] OPTIONS = { 0x7d, 0xef, 0x69, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x2d };
     //    public static readonly byte[] RESTART = [0x84, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01];
-    //    public static readonly byte[] TURNOFF = [0x83, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01];
-    //    //public static readonly byte[] TURNON = { 0x83, 0xef, 0x69, 0x00, 0x00, 0x00, 0x00 };
 
     private static readonly byte[] CommandSetBrightness = { 0x7b, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
-
-    //    // STOP COMMANDS
-    //    public static readonly byte[] STOP_VIDEO = [0x79, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01];
-    //    public static readonly byte[] STOP_MEDIA = [0x96, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01];
 
     //    // IMAGE QUERY STATUS
     //    public static readonly byte[] QUERY_STATUS = [0xcf, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01];
@@ -41,8 +29,6 @@ public sealed class TuringSmartScreenRevisionC2 : IDisposable
     //    //public static readonly byte[] FLIP_180 = { 0x01 };
     //    //public static readonly byte[] NO_FLIP = { 0x00 };
     //    //public static readonly byte[] SEND_PAYLOAD = { 0xFF };
-    //#pragma warning restore SA1310 // Field names should not contain underscore
-    //#pragma warning restore CA1707 // Identifiers should not contain underscores
 
     public enum Orientation : byte
     {
@@ -127,24 +113,7 @@ public sealed class TuringSmartScreenRevisionC2 : IDisposable
         port.Write(buffer.Buffer, 0, buffer.WrittenCount);
     }
 
-    // TODO Reset
-
     // TODO Clear
-
-    // TODO ScreenOff()
-    //    public void ScreenOff()
-    //    {
-    //        WriteCommand(STOP_VIDEO);
-    //        WriteCommand(STOP_MEDIA);
-    //        WriteCommand(TURNOFF);
-    //    }
-
-    // TODO ScreenOn()
-    //    public void ScreenOn()
-    //    {
-    //        WriteCommand(STOP_VIDEO);
-    //        WriteCommand(STOP_MEDIA);
-    //    }
 
     public void SetBrightness(int level)
     {
@@ -177,13 +146,6 @@ public sealed class TuringSmartScreenRevisionC2 : IDisposable
     // TODO DisplayBitmap
 
     //    public void Reset() => WriteCommand(RESTART);
-
-    //#pragma warning disable CA1822 // Mark members as static
-    //    public void Clear()
-    //    {
-    //        // nothing to do
-    //    }
-    //#pragma warning restore CA1822 // Mark members as static
 
     //    public void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer)
     //    {
