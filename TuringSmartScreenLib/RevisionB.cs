@@ -94,15 +94,22 @@ public sealed class TuringSmartScreenRevisionB : IDisposable
     private ReadOnlySpan<byte> ReadResponse(int length)
     {
         var offset = 0;
-        while (offset < length)
+        try
         {
-            var read = port.Read(readBuffer, offset, length - offset);
-            if (read <= 0)
+            while (offset < length)
             {
-                break;
-            }
+                var read = port.Read(readBuffer, offset, length - offset);
+                if (read <= 0)
+                {
+                    break;
+                }
 
-            offset += read;
+                offset += read;
+            }
+        }
+        catch (IOException)
+        {
+            // Ignore
         }
 
         return readBuffer.AsSpan(0, offset);

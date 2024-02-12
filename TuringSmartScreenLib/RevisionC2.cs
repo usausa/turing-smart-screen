@@ -17,15 +17,18 @@ public sealed unsafe class TuringSmartScreenRevisionC2 : IDisposable
     private static readonly byte[] CommandSetBrightness = [0x7b, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00];
     private static readonly byte[] CommandDisplayBitmap = [0xc8, 0xef, 0x69, 0x00, 0x17, 0x70];
     private static readonly byte[] CommandPreUpdateBitmap = [0x86, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01];
+    private static readonly byte[] CommandUpdateBitmap = [0xcc, 0xef, 0x69, 0x00, 0x00];
     private static readonly byte[] CommandQueryStatus = [0xcf, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01];
 
-    public enum Orientation : byte
-    {
-        Portrait = 0,
-        ReversePortrait = 1,
-        Landscape = 2,
-        ReverseLandscape = 3
-    }
+    private static readonly byte[] CommandUpdateBitmapTerminate = [0xef, 0x69];
+
+    //public enum Orientation : byte
+    //{
+    //    Portrait = 0,
+    //    ReversePortrait = 1,
+    //    Landscape = 2,
+    //    ReverseLandscape = 3
+    //}
 
     private readonly SerialPort port;
 
@@ -94,15 +97,22 @@ public sealed unsafe class TuringSmartScreenRevisionC2 : IDisposable
     private ReadOnlySpan<byte> ReadResponse(int length = ReadSize)
     {
         var offset = 0;
-        while (offset < length)
+        try
         {
-            var read = port.Read(readBuffer, offset, length - offset);
-            if (read <= 0)
+            while (offset < length)
             {
-                break;
-            }
+                var read = port.Read(readBuffer, offset, length - offset);
+                if (read <= 0)
+                {
+                    break;
+                }
 
-            offset += read;
+                offset += read;
+            }
+        }
+        catch (IOException)
+        {
+            // Ignore
         }
 
         return readBuffer.AsSpan(0, offset);
@@ -244,6 +254,48 @@ public sealed unsafe class TuringSmartScreenRevisionC2 : IDisposable
 
     private void DisplayPartialBitmap(int x, int y, int width, int height, byte[] bitmap)
     {
-        // TODO
+        var header = (Span<byte>)stackalloc byte[5];
+        header[3] = (byte)((width >> 8) & 0xff);
+        header[4] = (byte)(width & 0xff);
+
+        var bitmapSize = (((width * 3) + header.Length) * height) + CommandUpdateBitmapTerminate.Length;
+        var size = (Span<byte>)stackalloc byte[2];
+        size[0] = (byte)((bitmapSize >> 8) & 0xff);
+        size[1] = (byte)(bitmapSize & 0xff);
+
+        for (var i = 0; i < 2; i++)
+        {
+            // UpdateBitmap
+            Write(CommandUpdateBitmap);
+            Write(size);
+            Flush();
+
+            // Payload
+            for (var h = 0; h < height; h++)
+            {
+                var position = ((x + h) * Width) + y;
+                header[0] = (byte)((position >> 16) & 0xff);
+                header[1] = (byte)((position >> 8) & 0xff);
+                header[2] = (byte)(position & 0xff);
+                Write(header);
+                for (var w = 0; w < width; w++)
+                {
+                    var offset = ((h * width) + w) * 3;
+                    Write(bitmap.AsSpan(offset, 3));
+                }
+            }
+            Write(CommandUpdateBitmapTerminate);
+            Flush();
+
+            // UpdateBitmap
+            Write(CommandQueryStatus);
+            Flush();
+
+            var response = ReadResponse();
+            if ((response.Length != ReadSize) || (response.IndexOf("needReSend:0"u8) >= 0))
+            {
+                break;
+            }
+        }
     }
 }
