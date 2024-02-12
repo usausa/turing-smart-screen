@@ -1,65 +1,36 @@
 namespace TuringSmartScreenLib;
 
 using System;
+using System.Buffers;
 using System.IO.Ports;
 
-public sealed class TuringSmartScreenRevisionC : IDisposable
+public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
 {
     public const int Width = 800;
     public const int Height = 480;
 
-#pragma warning disable SA1310 // Field names should not contain underscore - disabled to have constants match python names
-#pragma warning disable CA1707 // Identifiers should not contain underscores
+    private const int WriteSize = 250;
+    private const int ReadSize = 1024;
+    private const int ReadHelloSize = 23;
 
-    // see https://github.com/mathoudebine/turing-smart-screen-python/blob/main/library/lcd/lcd_comm_rev_c.py for reference
-    public static readonly byte[] OnExit = { 0x87, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
+    private static readonly byte[] CommandHello = [0x01, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0xc5, 0xd3];
+    private static readonly byte[] CommandSetBrightness = [0x7b, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00];
+    private static readonly byte[] CommandDisplayBitmap = [0xc8, 0xef, 0x69, 0x00, 0x17, 0x70];
+    private static readonly byte[] CommandPreUpdateBitmap = [0x86, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01];
+    private static readonly byte[] CommandUpdateBitmap = [0xcc, 0xef, 0x69, 0x00, 0x00];
+    private static readonly byte[] CommandQueryStatus = [0xcf, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01];
 
-    public static readonly byte[] HELLO = { 0x01, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0xc5, 0xd3 };
-    public static readonly byte[] OPTIONS = { 0x7d, 0xef, 0x69, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x2d };
-    public static readonly byte[] RESTART = { 0x84, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
-    public static readonly byte[] TURNOFF = { 0x83, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
-    public static readonly byte[] TURNON = { 0x83, 0xef, 0x69, 0x00, 0x00, 0x00, 0x00 };
-
-    public static readonly byte[] SET_BRIGHTNESS = { 0x7b, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00 };
-
-    // STOP COMMANDS
-    public static readonly byte[] STOP_VIDEO = { 0x79, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
-    public static readonly byte[] STOP_MEDIA = { 0x96, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
-
-    // IMAGE QUERY STATUS
-    public static readonly byte[] QUERY_STATUS = { 0xcf, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
-
-    // STATIC IMAGE
-    public static readonly byte[] START_DISPLAY_BITMAP = { 0x2c };
-    public static readonly byte[] PRE_UPDATE_BITMAP = { 0x86, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
-    public static readonly byte[] UPDATE_BITMAP = { 0xcc, 0xef, 0x69, 0x00, 0x00 };
-
-    public static readonly byte[] RESTARTSCREEN = { 0x84, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01 };
-    public static readonly byte[] DISPLAY_BITMAP = { 0xc8, 0xef, 0x69, 0x00, 0x17, 0x70 };
-
-    public static readonly byte[] STARTMODE_DEFAULT = { 0x00 };
-    public static readonly byte[] STARTMODE_IMAGE = { 0x01 };
-    public static readonly byte[] STARTMODE_VIDEO = { 0x02 };
-    public static readonly byte[] FLIP_180 = { 0x01 };
-    public static readonly byte[] NO_FLIP = { 0x00 };
-    public static readonly byte[] SEND_PAYLOAD = { 0xFF };
-#pragma warning restore SA1310 // Field names should not contain underscore
-#pragma warning restore CA1707 // Identifiers should not contain underscores
-
-    public enum Orientation : byte
-    {
-        Portrait = 0,
-        ReversePortrait = 1,
-        Landscape = 2,
-        ReverseLandscape = 3
-    }
+    private static readonly byte[] CommandUpdateBitmapTerminate = [0xef, 0x69];
 
     private readonly SerialPort port;
-    private readonly bool debugOutput;
-    private string? currentResponse;
-    private readonly AutoResetEvent dataReceivedEvent = new(false);
 
-    public TuringSmartScreenRevisionC(string name, bool debugOutput = false)
+    private byte[] writeBuffer;
+
+    private byte[] readBuffer;
+
+    private int writeOffset;
+
+    public TuringSmartScreenRevisionC(string name)
     {
         port = new SerialPort(name)
         {
@@ -71,37 +42,24 @@ public sealed class TuringSmartScreenRevisionC : IDisposable
             StopBits = StopBits.One,
             Parity = Parity.None
         };
-        this.debugOutput = debugOutput;
+        writeBuffer = ArrayPool<byte>.Shared.Rent(WriteSize);
+        readBuffer = ArrayPool<byte>.Shared.Rent(ReadSize);
     }
 
     public void Dispose()
     {
         Close();
-        dataReceivedEvent?.Dispose();
-    }
 
-    public void Open()
-    {
-        port.Open();
-        port.DiscardInBuffer();
-        port.DiscardOutBuffer();
-        port.DataReceived += (sender, e) =>
+        if (writeBuffer.Length > 0)
         {
-            currentResponse = port.ReadExisting();
-            if (debugOutput)
-            {
-                Console.WriteLine($"Received:'{currentResponse}'");
-            }
-
-            dataReceivedEvent.Set();
-        };
-        WriteCommand(HELLO);
-        var resp = ReadResponse();
-        if (resp is null || !resp.StartsWith("chs_5inch", StringComparison.InvariantCulture))
-        {
-            throw new InvalidOperationException($"Invalid response '{resp}' received from 5 Inch Turing Screen on init");
+            ArrayPool<byte>.Shared.Return(writeBuffer);
+            writeBuffer = [];
         }
-        WriteCommand(STOP_VIDEO);
+        if (readBuffer.Length > 0)
+        {
+            ArrayPool<byte>.Shared.Return(readBuffer);
+            readBuffer = [];
+        }
     }
 
     public void Close()
@@ -112,191 +70,224 @@ public sealed class TuringSmartScreenRevisionC : IDisposable
         }
     }
 
-    private void WriteCommand(IEnumerable<byte> command, byte padValue = 0x00)
+    public void Open()
     {
-        var l = command.ToList();
-        var msgLength = l.Count;
-        if (msgLength % 250 != 0)
+        port.Open();
+        port.DiscardInBuffer();
+        port.DiscardOutBuffer();
+
+        Write(CommandHello);
+        Flush();
+
+        var response = ReadResponse(ReadHelloSize);
+        if ((response.Length != ReadHelloSize) || !response[..9].SequenceEqual("chs_5inch"u8))
         {
-            for (var i = 0; i < ((250 * Math.Ceiling(1.0 * msgLength / 250)) - msgLength); i++)
+            throw new IOException($"Unknown response. response=[{Convert.ToHexString(response)}]");
+        }
+    }
+
+    private ReadOnlySpan<byte> ReadResponse(int length = ReadSize)
+    {
+        var offset = 0;
+        try
+        {
+            while (offset < length)
             {
-                l.Add(padValue);
+                var read = port.Read(readBuffer, offset, length - offset);
+                if (read <= 0)
+                {
+                    break;
+                }
+
+                offset += read;
             }
-            command = l;
         }
-        port.Write(command.ToArray(), 0, command.Count());
-    }
-
-    private string? ReadResponse()
-    {
-        var received = dataReceivedEvent.WaitOne(2000);
-        if (!received)
+        catch (IOException)
         {
-            throw new TimeoutException("No answer from device");
+            // Ignore
         }
 
-        return currentResponse;
+        return readBuffer.AsSpan(0, offset);
     }
 
-    private void WriteCommand(byte command)
+    private void Write(ReadOnlySpan<byte> values, byte pad = 0x00)
     {
-        throw new NotImplementedException();
-    }
-    public void Reset() => WriteCommand(RESTART);
+        while (writeOffset + values.Length > WriteSize - 1)
+        {
+            var block = values[..(WriteSize - 1 - writeOffset)];
+            block.CopyTo(writeBuffer.AsSpan(writeOffset, block.Length));
+            writeOffset += block.Length;
 
-#pragma warning disable CA1822 // Mark members as static
-    public void Clear()
-    {
-        // nothing to do
-    }
-#pragma warning restore CA1822 // Mark members as static
+            FlushInternal(pad);
 
-    public void ScreenOff()
-    {
-        WriteCommand(STOP_VIDEO);
-        WriteCommand(STOP_MEDIA);
-        WriteCommand(TURNOFF);
+            values = values[block.Length..];
+        }
+
+        if (values.Length > 0)
+        {
+            values.CopyTo(writeBuffer.AsSpan(writeOffset));
+            writeOffset += values.Length;
+        }
     }
 
-    public void ScreenOn()
+    private void Write(byte value, byte pad = 0x00)
     {
-        WriteCommand(STOP_VIDEO);
-        WriteCommand(STOP_MEDIA);
+        if (writeOffset + 1 > WriteSize - 1)
+        {
+            FlushInternal(pad);
+        }
+
+        writeBuffer[writeOffset] = value;
+        writeOffset++;
+    }
+
+    private void Flush(byte pad = 0x00)
+    {
+        if (writeOffset > 0)
+        {
+            FlushInternal(pad);
+        }
+    }
+
+    private void FlushInternal(byte pad)
+    {
+        writeBuffer.AsSpan(writeOffset, WriteSize - writeOffset).Fill(pad);
+        port.Write(writeBuffer, 0, WriteSize);
+        writeOffset = 0;
+    }
+
+    public void Clear(byte r = 0, byte g = 0, byte b = 0)
+    {
+        // Start
+        Write(0x2c);
+        Flush(0x2c);
+
+        // DisplayBitmap
+        Write(CommandDisplayBitmap);
+        Flush();
+
+        // Payload
+        var pattern = (Span<byte>)stackalloc byte[4];
+        pattern[0] = b;
+        pattern[1] = g;
+        pattern[2] = r;
+        pattern[3] = 0xff;
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                Write(pattern);
+            }
+        }
+        Flush();
+
+        // PreUpdateBitmap
+        Write(CommandPreUpdateBitmap);
+        Flush();
+        ReadResponse();
+
+        // QueryStatus
+        Write(CommandQueryStatus);
+        Flush();
+        ReadResponse();
     }
 
     public void SetBrightness(int level)
     {
-        var cmd = new List<byte>
-        {
-            0x7b,
-            0xef,
-            0x69,
-            0x00,
-            0x00,
-            0x00,
-            0x01,
-            0x00,
-            0x00,
-            0x00,
-            (byte)level
-        };
-        WriteCommand(cmd.ToArray());
+        Write(CommandSetBrightness);
+        Write((byte)level);
+        Flush();
     }
 
-#pragma warning disable CA1822 // Mark members as static
-    public void SetOrientation(Orientation orientation, int width, int height)
+    public void DisplayBitmap(int x, int y, int width, int height, byte[] bitmap)
     {
-        // ignored - rotation is not handled here
-    }
-#pragma warning restore CA1822 // Mark members as static
-
-    public void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer)
-    {
-        var cBuffer = (TuringSmartScreenBufferC)buffer;
-        if (cBuffer.IsEmpty())
+        if ((x == 0) && (y == 0) && (width == Width) && (height == Height))
         {
-            ClearScreen();
+            DisplayFullBitmap(bitmap);
         }
         else
         {
-            var isFullScreen = height == Height && width == Width;
-            if (!isFullScreen)
-            {
-                DisplayPartialImage(x, y, width, height, cBuffer);
-                WriteCommand(QUERY_STATUS);
-                var resp = ReadResponse();
-                if (resp?.Contains("needReSend:1", StringComparison.InvariantCulture) ?? false)
-                {
-                    DisplayPartialImage(x, y, width, height, cBuffer);
-                    WriteCommand(QUERY_STATUS);
-                }
-            }
-            else
-            {
-                if (x != 0 || y != 0 || width != Width || height != Height)
-                {
-                    throw new InvalidOperationException("Invalid parameters for full screen image");
-                }
-                WriteCommand(START_DISPLAY_BITMAP, 0x2c);
-                WriteCommand(DISPLAY_BITMAP);
-                var blockSize = 249;
-                var currentPosition = 0;
-                while (currentPosition < cBuffer.Length)
-                {
-                    var block = cBuffer.ImgBuffer.Skip(currentPosition).Take(blockSize).ToArray();
-                    WriteCommand(block);
-                    currentPosition += blockSize;
-                }
-                WriteCommand(PRE_UPDATE_BITMAP);
-                ReadResponse();
-                WriteCommand(QUERY_STATUS);
-                ReadResponse();
-            }
+            DisplayPartialBitmap(x, y, width, height, bitmap);
         }
     }
 
-#pragma warning disable CA1822 // Mark members as static
-    private void ClearScreen()
+    private void DisplayFullBitmap(byte[] bitmap)
     {
-        // no API available for this
-    }
-#pragma warning restore CA1822 // Mark members as static
+        // Start
+        Write(0x2c);
+        Flush(0x2c);
 
-    private static byte[] ConvertAndPad(int number, int fixedLength)
-    {
-        var byteArray = BitConverter.GetBytes(number);
-        // Apply zero padding if necessary
-        Array.Resize(ref byteArray, fixedLength);
-        Array.Reverse(byteArray);
-        return byteArray;
-    }
+        // DisplayBitmap
+        Write(CommandDisplayBitmap);
+        Flush();
 
-    internal static (byte[] Data, byte[] UpdateSize) GeneratePartialUpdateFromBuffer(int height, int width, int x, int y, byte[] image, int channelCount = 4)
-    {
-        var data = new List<byte>();
-
-        for (var h = 0; h < height; h++)
+        // Payload
+        for (var y = 0; y < Height; y++)
         {
-            data.AddRange(ConvertAndPad(((x + h) * 800) + y, 3));
-            data.AddRange(ConvertAndPad(width, 2));
-            for (var w = 0; w < width; w++)
+            for (var x = 0; x < Width; x++)
             {
-                var indexR = ((h * width) + w) * channelCount;
-                data.Add(image[indexR]);
-                var indexG = (((h * width) + w) * channelCount) + 1;
-                data.Add(image[indexG]);
-                var indexB = (((h * width) + w) * channelCount) + 2;
-                data.Add(image[indexB]);
+                var offset = ((y * Width) + x) * 3;
+                Write(bitmap.AsSpan(offset, 3));
+                Write(0xff);
             }
         }
-        var updSize = ConvertAndPad(data.Count + 2, 2);
-        if (data.Count > 250)
-        {
-            var newMsg = new List<byte> { };
-            for (var i = 0; i <= data.Count; i++)
-            {
-                if (i % 249 == 0)
-                {
-                    newMsg.AddRange(data.GetRange(i, Math.Min(249, data.Count - i)));
-                    newMsg.Add(0);
-                }
-            }
-            // remove last padding 0
-            newMsg.RemoveAt(newMsg.Count - 1);
-            data = newMsg;
-        }
+        Flush();
 
-        data.Add(0xef);
-        data.Add(0x69);
-        return (data.ToArray(), updSize);
+        // PreUpdateBitmap
+        Write(CommandPreUpdateBitmap);
+        Flush();
+        ReadResponse();
+
+        // QueryStatus
+        Write(CommandQueryStatus);
+        Flush();
+        ReadResponse();
     }
 
-    private void DisplayPartialImage(int x, int y, int width, int height, TuringSmartScreenBufferC buffer)
+    private void DisplayPartialBitmap(int x, int y, int width, int height, byte[] bitmap)
     {
-        var (data, updSize) = GeneratePartialUpdateFromBuffer(height, width, x, y, buffer.ImgBuffer);
-        var cmd = new List<byte>(UPDATE_BITMAP);
-        cmd.AddRange(updSize);
-        WriteCommand(cmd);
-        WriteCommand(data);
+        var header = (Span<byte>)stackalloc byte[5];
+        header[3] = (byte)((width >> 8) & 0xff);
+        header[4] = (byte)(width & 0xff);
+
+        var bitmapSize = (((width * 3) + header.Length) * height) + CommandUpdateBitmapTerminate.Length;
+        var size = (Span<byte>)stackalloc byte[2];
+        size[0] = (byte)((bitmapSize >> 8) & 0xff);
+        size[1] = (byte)(bitmapSize & 0xff);
+
+        for (var i = 0; i < 2; i++)
+        {
+            // UpdateBitmap
+            Write(CommandUpdateBitmap);
+            Write(size);
+            Flush();
+
+            // Payload
+            for (var h = 0; h < height; h++)
+            {
+                var position = ((x + h) * Width) + y;
+                header[0] = (byte)((position >> 16) & 0xff);
+                header[1] = (byte)((position >> 8) & 0xff);
+                header[2] = (byte)(position & 0xff);
+                Write(header);
+                for (var w = 0; w < width; w++)
+                {
+                    var offset = ((h * width) + w) * 3;
+                    Write(bitmap.AsSpan(offset, 3));
+                }
+            }
+            Write(CommandUpdateBitmapTerminate);
+            Flush();
+
+            // UpdateBitmap
+            Write(CommandQueryStatus);
+            Flush();
+
+            var response = ReadResponse();
+            if ((response.Length != ReadSize) || (response.IndexOf("needReSend:0"u8) >= 0))
+            {
+                break;
+            }
+        }
     }
 }

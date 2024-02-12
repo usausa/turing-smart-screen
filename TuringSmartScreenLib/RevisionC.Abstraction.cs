@@ -1,10 +1,10 @@
 namespace TuringSmartScreenLib;
 
-internal sealed class ScreenWrapperC : ScreenBase
+internal sealed class ScreenWrapperRevisionC : ScreenBase
 {
     private readonly TuringSmartScreenRevisionC screen;
 
-    public ScreenWrapperC(TuringSmartScreenRevisionC screen)
+    public ScreenWrapperRevisionC(TuringSmartScreenRevisionC screen)
         : base(TuringSmartScreenRevisionC.Width, TuringSmartScreenRevisionC.Height)
     {
         this.screen = screen;
@@ -12,38 +12,34 @@ internal sealed class ScreenWrapperC : ScreenBase
 
     public override void Dispose() => screen.Dispose();
 
-    public override void Reset() => screen.Reset();
+    public override void Reset()
+    {
+        // Do Nothing
+    }
 
     public override void Clear() => screen.Clear();
 
-    public override void ScreenOff() => screen.ScreenOff();
+    public override void ScreenOff()
+    {
+        // Emulation
+        SetBrightness(0);
+    }
 
-    public override void ScreenOn() => screen.ScreenOn();
+    public override void ScreenOn()
+    {
+        // Emulation
+        SetBrightness(100);
+    }
 
     public override void SetBrightness(byte level) => screen.SetBrightness(level);
 
     protected override bool SetOrientation(ScreenOrientation orientation)
     {
-        switch (orientation)
-        {
-            case ScreenOrientation.Portrait:
-                screen.SetOrientation(TuringSmartScreenRevisionC.Orientation.Portrait, Width, Height);
-                return true;
-            case ScreenOrientation.ReversePortrait:
-                screen.SetOrientation(TuringSmartScreenRevisionC.Orientation.ReversePortrait, Width, Height);
-                return true;
-            case ScreenOrientation.Landscape:
-                screen.SetOrientation(TuringSmartScreenRevisionC.Orientation.Landscape, Width, Height);
-                return true;
-            case ScreenOrientation.ReverseLandscape:
-                screen.SetOrientation(TuringSmartScreenRevisionC.Orientation.ReverseLandscape, Width, Height);
-                return true;
-        }
-
+        // TODO Emulation ?
         return false;
     }
 
-    public override IScreenBuffer CreateBuffer(int width, int height) => new TuringSmartScreenBufferC();
+    public override IScreenBuffer CreateBuffer(int width, int height) => new TuringSmartScreenBufferC(width, height);
 
-    public override void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, width, height, buffer);
+    public override void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, width, height, ((TuringSmartScreenBufferC)buffer).Buffer);
 }
