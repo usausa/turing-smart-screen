@@ -17,11 +17,9 @@ screen.SetBrightness(100);
 screen.Clear();
 
 using var bitmap1 = SKBitmap.Decode("test1.png");
-using var buffer1 = new TuringSmartScreenBufferC(800, 480);
-buffer1.ReadFrom(bitmap1);
-screen.DisplayBitmap(0, 0, 800, 480, buffer1);
+using var buffer1 = screen.CreateBufferFrom(bitmap1);
+screen.DisplayBuffer(0, 0, buffer1);
 
 using var bitmap2 = SKBitmap.Decode("test2-crop.png");
-using var buffer2 = new TuringSmartScreenBufferC(277, 75);
-buffer2.ReadFrom(bitmap2);
-screen.DisplayBitmap(30, 50, buffer2.Width, buffer2.Height, buffer2);
+using var buffer2 = screen.CreateBufferFrom(bitmap2);
+screen.DisplayBuffer(30, 50, buffer2);

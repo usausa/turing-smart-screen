@@ -66,5 +66,5 @@ internal abstract class ScreenBase : IScreen
 
     public abstract IScreenBuffer CreateBuffer(int width, int height);
 
-    public abstract void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer);
+    public abstract void DisplayBuffer(int x, int y, IScreenBuffer buffer);
 }

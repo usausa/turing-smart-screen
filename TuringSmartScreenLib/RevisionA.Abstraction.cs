@@ -27,16 +27,16 @@ internal sealed class ScreenWrapperRevisionA : ScreenBase
         switch (orientation)
         {
             case ScreenOrientation.Portrait:
-                screen.SetOrientation(TuringSmartScreenRevisionA.Orientation.Portrait, Width, Height);
+                screen.SetOrientation(TuringSmartScreenRevisionA.Orientation.Portrait);
                 return true;
             case ScreenOrientation.ReversePortrait:
-                screen.SetOrientation(TuringSmartScreenRevisionA.Orientation.ReversePortrait, Width, Height);
+                screen.SetOrientation(TuringSmartScreenRevisionA.Orientation.ReversePortrait);
                 return true;
             case ScreenOrientation.Landscape:
-                screen.SetOrientation(TuringSmartScreenRevisionA.Orientation.Landscape, Width, Height);
+                screen.SetOrientation(TuringSmartScreenRevisionA.Orientation.Landscape);
                 return true;
             case ScreenOrientation.ReverseLandscape:
-                screen.SetOrientation(TuringSmartScreenRevisionA.Orientation.ReverseLandscape, Width, Height);
+                screen.SetOrientation(TuringSmartScreenRevisionA.Orientation.ReverseLandscape);
                 return true;
         }
 
@@ -45,5 +45,5 @@ internal sealed class ScreenWrapperRevisionA : ScreenBase
 
     public override IScreenBuffer CreateBuffer(int width, int height) => new TuringSmartScreenBufferA(width, height);
 
-    public override void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, width, height, ((TuringSmartScreenBufferA)buffer).Buffer);
+    public override void DisplayBuffer(int x, int y, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, ((TuringSmartScreenBufferA)buffer).Buffer, buffer.Width, buffer.Height);
 }

@@ -199,7 +199,7 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
         Flush();
     }
 
-    public void DisplayBitmap(int x, int y, int width, int height, byte[] bitmap)
+    public void DisplayBitmap(int x, int y, byte[] bitmap, int width, int height)
     {
         if ((x == 0) && (y == 0) && (width == Width) && (height == Height))
         {
@@ -207,7 +207,7 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
         }
         else
         {
-            DisplayPartialBitmap(x, y, width, height, bitmap);
+            DisplayPartialBitmap(x, y, bitmap, width, height);
         }
     }
 
@@ -244,7 +244,7 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
         ReadResponse();
     }
 
-    private void DisplayPartialBitmap(int x, int y, int width, int height, byte[] bitmap)
+    private void DisplayPartialBitmap(int x, int y, byte[] bitmap, int width, int height)
     {
         var header = (Span<byte>)stackalloc byte[5];
         header[3] = (byte)((width >> 8) & 0xff);

@@ -123,9 +123,9 @@ public sealed class TuringSmartScreenRevisionA : IDisposable
 
     public void SetBrightness(int level) => WriteCommand(110, level);
 
-    public void SetOrientation(Orientation orientation, int width, int height) =>
-        WriteCommand(121, (byte)orientation, width, height);
+    public void SetOrientation(Orientation orientation) =>
+        WriteCommand(121, (byte)orientation, Width, Height);
 
-    public void DisplayBitmap(int x, int y, int width, int height, byte[] bitmap) =>
+    public void DisplayBitmap(int x, int y, byte[] bitmap, int width, int height) =>
         WriteCommand(197, x, y, width, height, bitmap);
 }

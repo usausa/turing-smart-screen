@@ -20,5 +20,5 @@ public interface IScreen : IDisposable
 
     IScreenBuffer CreateBuffer(int width, int height);
 
-    void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer);
+    void DisplayBuffer(int x, int y, IScreenBuffer buffer);
 }

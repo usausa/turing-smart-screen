@@ -41,5 +41,5 @@ internal sealed class ScreenWrapperRevisionC : ScreenBase
 
     public override IScreenBuffer CreateBuffer(int width, int height) => new TuringSmartScreenBufferC(width, height);
 
-    public override void DisplayBitmap(int x, int y, int width, int height, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, width, height, ((TuringSmartScreenBufferC)buffer).Buffer);
+    public override void DisplayBuffer(int x, int y, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, ((TuringSmartScreenBufferC)buffer).Buffer, buffer.Width, buffer.Height);
 }
