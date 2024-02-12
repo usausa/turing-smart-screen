@@ -3,7 +3,7 @@
 | Package | Info | Description |
 |-|-|-|
 | TuringSmartScreenLib | [![NuGet Badge](https://buildstats.info/nuget/TuringSmartScreenLib)](https://www.nuget.org/packages/TuringSmartScreenLib/) | Core |
-| TuringSmartScreenLib.Helpers.SkiaSharp | [![NuGet Badge](https://buildstats.info/nuget/TuringSmartScreenLib.Helpers)](https://www.nuget.org/packages/TuringSmartScreenLib.Helpers.SkiaSharp/) | Helpers |
+| TuringSmartScreenLib.Helpers.SkiaSharp | [![NuGet Badge](https://buildstats.info/nuget/TuringSmartScreenLib.Helpers.SkiaSharp)](https://www.nuget.org/packages/TuringSmartScreenLib.Helpers.SkiaSharp/) | Helpers |
 
 ## What is this?
 
