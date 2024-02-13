@@ -5,9 +5,6 @@ using System.IO.Ports;
 
 public sealed class TuringSmartScreenRevisionA : IDisposable
 {
-    public const int Width = 320;
-    public const int Height = 480;
-
     public enum Orientation : byte
     {
         Portrait = 0,
@@ -19,6 +16,12 @@ public sealed class TuringSmartScreenRevisionA : IDisposable
     private readonly SerialPort port;
 
     private byte[] writeBuffer;
+
+#pragma warning disable CA1822
+    public int Width => 320;
+
+    public int Height => 480;
+#pragma warning restore CA1822
 
     public TuringSmartScreenRevisionA(string name)
     {

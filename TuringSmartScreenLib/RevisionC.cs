@@ -6,9 +6,6 @@ using System.IO.Ports;
 
 public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
 {
-    public const int Width = 800;
-    public const int Height = 480;
-
     private const int WriteSize = 250;
     private const int ReadSize = 1024;
     private const int ReadHelloSize = 23;
@@ -29,6 +26,12 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
     private byte[] readBuffer;
 
     private int writeOffset;
+
+#pragma warning disable CA1822
+    public int Width => 800;
+
+    public int Height => 480;
+#pragma warning restore CA1822
 
     public TuringSmartScreenRevisionC(string name)
     {

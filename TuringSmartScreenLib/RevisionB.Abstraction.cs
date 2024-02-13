@@ -5,7 +5,7 @@ internal abstract class ScreenWrapperRevisionB : ScreenBase
     private readonly TuringSmartScreenRevisionB screen;
 
     protected ScreenWrapperRevisionB(TuringSmartScreenRevisionB screen)
-        : base(TuringSmartScreenRevisionB.Width, TuringSmartScreenRevisionB.Height)
+        : base(screen.Width, screen.Height)
     {
         this.screen = screen;
     }

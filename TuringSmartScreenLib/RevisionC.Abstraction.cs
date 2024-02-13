@@ -5,7 +5,7 @@ internal sealed class ScreenWrapperRevisionC : ScreenBase
     private readonly TuringSmartScreenRevisionC screen;
 
     public ScreenWrapperRevisionC(TuringSmartScreenRevisionC screen)
-        : base(TuringSmartScreenRevisionC.Width, TuringSmartScreenRevisionC.Height)
+        : base(screen.Width, screen.Height)
     {
         this.screen = screen;
     }
