@@ -3,22 +3,30 @@ namespace TuringSmartScreenTool.Commands;
 using System.CommandLine;
 using System.CommandLine.Invocation;
 
-public sealed class OnCommand : Command
+using TuringSmartScreenTool.Components;
+
+public sealed class OffCommand : Command
 {
-    public OnCommand()
-        : base("on", "Screen ON")
+    public OffCommand()
+        : base("off", "Screen OFF")
     {
     }
 
     public sealed class CommandHandler : BaseCommandHandler
     {
+        private readonly IScreenResolver screenResolver;
+
+        public CommandHandler(IScreenResolver screenResolver)
+        {
+            this.screenResolver = screenResolver;
+        }
+
         public override Task<int> InvokeAsync(InvocationContext context)
         {
+            using var screen = screenResolver.Resolve(Revision, Port);
+            screen.ScreenOff();
+
             return Task.FromResult(0);
         }
     }
 }
-// TODO OFF
-//offCommand.Handler = CommandHandler.Create((string revision, string port) =>
-//    using var screen = ScreenFactory.Create(GetScreenType(revision), port);
-//    screen.ScreenOff();

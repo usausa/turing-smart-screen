@@ -4,7 +4,7 @@ using System.CommandLine.Invocation;
 
 public abstract class BaseCommandHandler : ICommandHandler
 {
-    public required string Host { get; set; }
+    public required string Revision { get; set; }
 
     public required string Port { get; set; }
 
