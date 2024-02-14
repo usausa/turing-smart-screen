@@ -3,6 +3,7 @@ namespace TuringSmartScreenLib;
 using System;
 using System.Buffers;
 using System.IO.Ports;
+using System.Reflection;
 
 public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
 {
@@ -69,7 +70,18 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
     {
         if (port.IsOpen)
         {
-            port.Close();
+            try
+            {
+                port.Close();
+            }
+            catch (IOException)
+            {
+                // Ignore
+            }
+            catch (TargetInvocationException)
+            {
+                // Ignore
+            }
         }
     }
 

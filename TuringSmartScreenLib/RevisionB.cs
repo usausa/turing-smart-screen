@@ -2,6 +2,7 @@ namespace TuringSmartScreenLib;
 
 using System.Buffers;
 using System.IO.Ports;
+using System.Reflection;
 
 public sealed class TuringSmartScreenRevisionB : IDisposable
 {
@@ -47,7 +48,18 @@ public sealed class TuringSmartScreenRevisionB : IDisposable
     {
         if (port.IsOpen)
         {
-            port.Close();
+            try
+            {
+                port.Close();
+            }
+            catch (IOException)
+            {
+                // Ignore
+            }
+            catch (TargetInvocationException)
+            {
+                // Ignore
+            }
         }
 
         if (writeBuffer.Length > 0)

@@ -3,6 +3,8 @@ namespace TuringSmartScreenTool.Commands;
 using System.CommandLine;
 using System.CommandLine.Invocation;
 
+using TuringSmartScreenTool.Components;
+
 public sealed class ResetCommand : Command
 {
     public ResetCommand()
@@ -12,20 +14,20 @@ public sealed class ResetCommand : Command
 
     public sealed class CommandHandler : BaseCommandHandler
     {
+        private readonly IScreenResolver screenResolver;
+
+        public CommandHandler(IScreenResolver screenResolver)
+        {
+            this.screenResolver = screenResolver;
+        }
+
         public override Task<int> InvokeAsync(InvocationContext context)
         {
+            using var screen = screenResolver.Resolve(Revision, Port);
+
+            screen.Reset();
+
             return Task.FromResult(0);
         }
     }
 }
-// TODO reset
-//resetCommand.Handler = CommandHandler.Create((string revision, string port) =>
-//    try
-//    {
-//        using var screen = ScreenFactory.Create(GetScreenType(revision), port);
-//        screen.Reset();
-//    }
-//    catch (IOException)
-//    {
-//        // Do Nothing
-//    }

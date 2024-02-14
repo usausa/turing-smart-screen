@@ -3,6 +3,8 @@ namespace TuringSmartScreenTool.Commands;
 using System.CommandLine;
 using System.CommandLine.Invocation;
 
+using TuringSmartScreenTool.Components;
+
 public sealed class ClearCommand : Command
 {
     public ClearCommand()
@@ -12,13 +14,19 @@ public sealed class ClearCommand : Command
 
     public sealed class CommandHandler : BaseCommandHandler
     {
+        private readonly IScreenResolver screenResolver;
+
+        public CommandHandler(IScreenResolver screenResolver)
+        {
+            this.screenResolver = screenResolver;
+        }
+
         public override Task<int> InvokeAsync(InvocationContext context)
         {
+            using var screen = screenResolver.Resolve(Revision, Port);
+            screen.Clear();
+
             return Task.FromResult(0);
         }
     }
 }
-// TODO Clear
-//clearCommand.Handler = CommandHandler.Create((string revision, string port) =>
-//    using var screen = ScreenFactory.Create(GetScreenType(revision), port);
-//    screen.Clear();
