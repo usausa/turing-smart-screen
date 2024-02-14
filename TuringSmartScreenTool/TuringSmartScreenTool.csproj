@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <CodeAnalysisRuleSet>..\Analyzers.ruleset</CodeAnalysisRuleSet>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>tsstool</ToolCommandName>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageId>TuringSmartScreenTool</PackageId>
+    <Title>TuringSmartScreenTool</Title>
+    <Description>Turing Smart Screen tool</Description>
+    <PackageTags>turing-smart-screen hardware serial port tools</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" Version="2.88.7" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+    <PackageReference Include="System.CommandLine.Hosting" Version="0.4.0-alpha.22272.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TuringSmartScreenLib.Helpers.SkiaSharp\TuringSmartScreenLib.Helpers.SkiaSharp.csproj" />
+    <ProjectReference Include="..\TuringSmartScreenLib\TuringSmartScreenLib.csproj" />
+  </ItemGroup>
+
+</Project>

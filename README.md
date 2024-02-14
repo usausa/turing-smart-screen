@@ -28,3 +28,26 @@ screen.DisplayBuffer(0, 0, buffer);
 ```
 
 <img src="Images/image.jpg" width="50%" title="image">
+
+# TuringSmartScreenTool
+
+CLI for turing smart screen.
+
+## Install
+
+```
+> dotnet tool install -g TuringSmartScreenTool
+```
+
+## Usage
+
+```
+> tsstool reset -r a -p COM10
+> tsstool clear -r a -p COM10
+> tsstool on -p COM10
+> tsstool off -p COM10
+> tsstool bright -p COM10 -l 192
+> tsstool image -p COM10 -f genbaneko.png
+> tsstool fill -p COM10 -c ff0000
+> tsstool text -p COM10 -t TEST -x 80 -y 40 -s 96 -f Arial -c ff0000 -b 0000ff
+```

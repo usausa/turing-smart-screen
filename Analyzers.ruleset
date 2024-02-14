@@ -28,6 +28,7 @@
     <Rule Id="CA1002" Action="Hidden" />
     <Rule Id="CA1014" Action="Hidden" />
     <Rule Id="CA1028" Action="Hidden" />
+    <Rule Id="CA1034" Action="Hidden" />
     <Rule Id="CA1062" Action="Hidden" />
     <Rule Id="CA1305" Action="Hidden" />
     <Rule Id="CA1716" Action="Hidden" />
