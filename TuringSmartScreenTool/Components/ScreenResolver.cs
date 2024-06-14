@@ -1,7 +1,5 @@
 namespace TuringSmartScreenTool.Components;
 
-using TuringSmartScreenLib;
-
 public interface IScreenResolver
 {
     IScreen Resolve(string revision, string port);

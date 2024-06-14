@@ -1,7 +1,5 @@
 namespace TuringSmartScreenTool.Commands;
 
-using System.CommandLine.Invocation;
-
 public abstract class BaseCommandHandler : ICommandHandler
 {
     public required string Revision { get; set; }

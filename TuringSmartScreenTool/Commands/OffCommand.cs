@@ -1,10 +1,5 @@
 namespace TuringSmartScreenTool.Commands;
 
-using System.CommandLine;
-using System.CommandLine.Invocation;
-
-using TuringSmartScreenTool.Components;
-
 public sealed class OffCommand : Command
 {
     public OffCommand()

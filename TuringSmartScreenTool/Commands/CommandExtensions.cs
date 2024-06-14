@@ -1,6 +1,5 @@
 namespace TuringSmartScreenTool.Commands;
 
-using System.CommandLine;
 using System.CommandLine.Hosting;
 
 using Microsoft.Extensions.Hosting;

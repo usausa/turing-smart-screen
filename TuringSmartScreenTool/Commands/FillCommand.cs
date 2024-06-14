@@ -1,12 +1,5 @@
 namespace TuringSmartScreenTool.Commands;
 
-using System.CommandLine;
-using System.CommandLine.Invocation;
-
-using SkiaSharp;
-
-using TuringSmartScreenTool.Components;
-
 public sealed class FillCommand : Command
 {
     public FillCommand()

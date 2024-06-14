@@ -1,14 +1,5 @@
 namespace TuringSmartScreenTool.Commands;
 
-using System.CommandLine;
-using System.CommandLine.Invocation;
-
-using SkiaSharp;
-
-using TuringSmartScreenLib.Helpers.SkiaSharp;
-
-using TuringSmartScreenTool.Components;
-
 public sealed class ImageCommand : Command
 {
     public ImageCommand()

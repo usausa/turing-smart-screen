@@ -1,12 +1,5 @@
 namespace TuringSmartScreenTool.Commands;
 
-using System.CommandLine;
-using System.CommandLine.Invocation;
-
-using TuringSmartScreenLib;
-
-using TuringSmartScreenTool.Components;
-
 public sealed class OrientationCommand : Command
 {
     public OrientationCommand()
@@ -29,23 +22,14 @@ public sealed class OrientationCommand : Command
         public override Task<int> InvokeAsync(InvocationContext context)
         {
             using var screen = screenResolver.Resolve(Revision, Port);
-            switch (Mode)
+            screen.Orientation = Mode switch
             {
-                case "l":
-                case "landscape":
-                    screen.Orientation = ScreenOrientation.Landscape;
-                    break;
-                case "p":
-                case "portrait":
-                    screen.Orientation = ScreenOrientation.Portrait;
-                    break;
-                case "rl":
-                    screen.Orientation = ScreenOrientation.ReverseLandscape;
-                    break;
-                case "rp":
-                    screen.Orientation = ScreenOrientation.ReversePortrait;
-                    break;
-            }
+                "l" or "landscape" => ScreenOrientation.Landscape,
+                "p" or "portrait" => ScreenOrientation.Portrait,
+                "rl" => ScreenOrientation.ReverseLandscape,
+                "rp" => ScreenOrientation.ReversePortrait,
+                _ => screen.Orientation
+            };
 
             return Task.FromResult(0);
         }
