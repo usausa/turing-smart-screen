@@ -5,7 +5,7 @@ using SkiaSharp;
 using TuringSmartScreenLib;
 using TuringSmartScreenLib.Helpers.SkiaSharp;
 
-public static class Program
+internal static class Program
 {
     private const int Margin = 2;
 

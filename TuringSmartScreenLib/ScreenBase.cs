@@ -6,13 +6,15 @@ internal abstract class ScreenBase : IScreen
 
     private readonly int height;
 
+#pragma warning disable IDE0032
     private ScreenOrientation orientation = ScreenOrientation.Portrait;
+#pragma warning restore IDE0032
 
     public int Width
     {
         get
         {
-            if ((orientation == ScreenOrientation.Portrait) || (orientation == ScreenOrientation.ReversePortrait))
+            if (orientation is ScreenOrientation.Portrait or ScreenOrientation.ReversePortrait)
             {
                 return width;
             }
@@ -24,7 +26,7 @@ internal abstract class ScreenBase : IScreen
     {
         get
         {
-            if ((orientation == ScreenOrientation.Portrait) || (orientation == ScreenOrientation.ReversePortrait))
+            if (orientation is ScreenOrientation.Portrait or ScreenOrientation.ReversePortrait)
             {
                 return height;
             }
