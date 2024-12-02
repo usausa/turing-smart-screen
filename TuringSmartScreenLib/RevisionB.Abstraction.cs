@@ -62,6 +62,8 @@ internal abstract class ScreenWrapperRevisionB : ScreenBase
     public override IScreenBuffer CreateBuffer(int width, int height) => new TuringSmartScreenBufferB(width, height);
 
     public override void DisplayBuffer(int x, int y, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, ((TuringSmartScreenBufferB)buffer).Buffer, buffer.Width, buffer.Height);
+
+    public override bool CanDisplayPartialBitmap() => true;
 }
 
 internal sealed class ScreenWrapperRevisionB0 : ScreenWrapperRevisionB
