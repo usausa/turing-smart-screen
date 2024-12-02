@@ -27,6 +27,13 @@ public static class ScreenFactory
             return new ScreenWrapperRevisionC(screen);
         }
 
+        if (type == ScreenType.RevisionE)
+        {
+            var screen = new TuringSmartScreenRevisionE(name);
+            screen.Open();
+            return new ScreenWrapperRevisionE(screen);
+        }
+
         throw new NotSupportedException("Unsupported type.");
     }
 }

@@ -4,5 +4,6 @@ public enum ScreenType
 {
     RevisionA,
     RevisionB,
-    RevisionC
+    RevisionC,
+    RevisionE
 }
