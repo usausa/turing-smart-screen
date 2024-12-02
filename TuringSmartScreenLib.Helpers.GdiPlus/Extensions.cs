@@ -1,7 +1,9 @@
-namespace TuringSmartScreenLib.Helpers.GDI;
+namespace TuringSmartScreenLib.Helpers.GdiPlus;
 
 using System.Drawing;
+using System.Runtime.Versioning;
 
+[SupportedOSPlatform("windows")]
 public static class Extensions
 {
     public static IScreenBuffer CreateBufferFrom(this IScreen screen, Bitmap bitmap)

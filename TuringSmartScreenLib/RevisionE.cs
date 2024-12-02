@@ -98,7 +98,7 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
         var expectedResponseData = "chs_88inch"u8;
         if ((response.Length != ReadHelloSize) || !response[..10].SequenceEqual(expectedResponseData))
         {
-            throw new IOException($"Unknown response. result={(response.Length != ReadHelloSize)},{!response[..10].SequenceEqual(expectedResponseData)} length={response.Length} expected={ReadHelloSize} response=[{Convert.ToHexString(response[..10])}] expected=[{Convert.ToHexString(expectedResponseData)}]");
+            throw new IOException($"Unknown response. response=[{Convert.ToHexString(response)}]");
         }
     }
 

@@ -26,7 +26,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Example2", "Example2\Exampl
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TuringSmartScreenTool", "TuringSmartScreenTool\TuringSmartScreenTool.csproj", "{7DED3D32-4071-41BC-913E-A6BE94B4F6A9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TuringSmartScreenLib.Helpers.GDI", "TuringSmartScreenLib.Helpers.GDI\TuringSmartScreenLib.Helpers.GDI.csproj", "{6E826D66-B8A4-4B69-A1BF-D92FA8A27B01}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TuringSmartScreenLib.Helpers.GdiPlus", "TuringSmartScreenLib.Helpers.GdiPlus\TuringSmartScreenLib.Helpers.GdiPlus.csproj", "{6E826D66-B8A4-4B69-A1BF-D92FA8A27B01}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
