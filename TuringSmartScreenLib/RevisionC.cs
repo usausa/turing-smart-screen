@@ -2,8 +2,10 @@ namespace TuringSmartScreenLib;
 
 using System;
 using System.Buffers;
+using System.Buffers.Binary;
 using System.IO.Ports;
 using System.Reflection;
+using System.Text;
 
 public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
 {
@@ -17,6 +19,7 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
     private static readonly byte[] CommandPreUpdateBitmap = [0x86, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01];
     private static readonly byte[] CommandUpdateBitmap = [0xcc, 0xef, 0x69, 0x00, 0x00];
     private static readonly byte[] CommandQueryStatus = [0xcf, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01];
+    private static readonly byte[] CommandRestart = [0x84, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01];
 
     private static readonly byte[] CommandUpdateBitmapTerminate = [0xef, 0x69];
 
@@ -214,15 +217,26 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
         Flush();
     }
 
+    public void Reset()
+    {
+        Write(CommandRestart);
+        Flush();
+    }
+
+    private int count;
+
     public void DisplayBitmap(int x, int y, byte[] bitmap, int width, int height)
     {
         if ((x == 0) && (y == 0) && (width == Width) && (height == Height))
         {
             DisplayFullBitmap(bitmap);
+            count = 0;
+            CanDisplayPartialBitmap = true;
         }
         else
         {
-            DisplayPartialBitmap(x, y, bitmap, width, height);
+            DisplayPartialBitmap(x, y, bitmap, width, height, count);
+            count++;
         }
     }
 
@@ -259,7 +273,9 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
         ReadResponse();
     }
 
-    private void DisplayPartialBitmap(int x, int y, byte[] bitmap, int width, int height)
+    public bool CanDisplayPartialBitmap { get => field; private set; }
+
+    private void DisplayPartialBitmap(int x, int y, byte[] bitmap, int width, int height, int count)
     {
         var header = (Span<byte>)stackalloc byte[5];
         header[3] = (byte)((width >> 8) & 0xff);
@@ -270,39 +286,41 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
         size[0] = (byte)((bitmapSize >> 8) & 0xff);
         size[1] = (byte)(bitmapSize & 0xff);
 
-        for (var i = 0; i < 2; i++)
+        Span<byte> countBytes = stackalloc byte[4];
+        BinaryPrimitives.WriteInt32BigEndian(countBytes, count);
+
+        // UpdateBitmap
+        Write(CommandUpdateBitmap);
+        Write(size);
+        Write([0x00, 0x00, 0x00]);
+        Write(countBytes);
+        Flush();
+
+        // Payload
+        for (var h = 0; h < height; h++)
         {
-            // UpdateBitmap
-            Write(CommandUpdateBitmap);
-            Write(size);
-            Flush();
-
-            // Payload
-            for (var h = 0; h < height; h++)
+            var position = ((y + h) * Width) + x;
+            header[0] = (byte)((position >> 16) & 0xff);
+            header[1] = (byte)((position >> 8) & 0xff);
+            header[2] = (byte)(position & 0xff);
+            Write(header);
+            for (var w = 0; w < width; w++)
             {
-                var position = ((x + h) * Width) + y;
-                header[0] = (byte)((position >> 16) & 0xff);
-                header[1] = (byte)((position >> 8) & 0xff);
-                header[2] = (byte)(position & 0xff);
-                Write(header);
-                for (var w = 0; w < width; w++)
-                {
-                    var offset = ((h * width) + w) * 3;
-                    Write(bitmap.AsSpan(offset, 3));
-                }
+                var offset = ((h * width) + w) * 3;
+                Write(bitmap.AsSpan(offset, 3));
             }
-            Write(CommandUpdateBitmapTerminate);
-            Flush();
+        }
+        Write(CommandUpdateBitmapTerminate);
+        Flush();
 
-            // UpdateBitmap
-            Write(CommandQueryStatus);
-            Flush();
+        //UpdateBitmap
+        Write(CommandQueryStatus);
+        Flush();
 
-            var response = ReadResponse();
-            if ((response.Length != ReadSize) || (response.IndexOf("needReSend:0"u8) >= 0))
-            {
-                break;
-            }
+        var response = ReadResponse();
+        if ((response.Length != ReadSize) || (response.IndexOf("needReSend:1"u8) >= 0))
+        {
+            CanDisplayPartialBitmap = false;
         }
     }
 }

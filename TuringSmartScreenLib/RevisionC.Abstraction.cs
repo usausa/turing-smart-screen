@@ -12,10 +12,7 @@ internal sealed class ScreenWrapperRevisionC : ScreenBase
 
     public override void Dispose() => screen.Dispose();
 
-    public override void Reset()
-    {
-        // Do Nothing
-    }
+    public override void Reset() => screen.Reset();
 
     public override void Clear() => screen.Clear();
 
@@ -42,4 +39,6 @@ internal sealed class ScreenWrapperRevisionC : ScreenBase
     public override IScreenBuffer CreateBuffer(int width, int height) => new TuringSmartScreenBufferC(width, height);
 
     public override void DisplayBuffer(int x, int y, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, ((TuringSmartScreenBufferC)buffer).Buffer, buffer.Width, buffer.Height);
+
+    public override bool CanDisplayPartialBitmap() => screen.CanDisplayPartialBitmap;
 }
