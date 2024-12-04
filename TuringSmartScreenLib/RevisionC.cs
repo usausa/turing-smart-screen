@@ -2,6 +2,7 @@ namespace TuringSmartScreenLib;
 
 using System;
 using System.Buffers;
+using System.Buffers.Binary;
 using System.IO.Ports;
 using System.Reflection;
 
@@ -27,6 +28,8 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
     private byte[] readBuffer;
 
     private int writeOffset;
+
+    private int renderCount;
 
 #pragma warning disable CA1822
     public int Width => 800;
@@ -219,10 +222,12 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
         if ((x == 0) && (y == 0) && (width == Width) && (height == Height))
         {
             DisplayFullBitmap(bitmap);
+            renderCount = 0;
         }
         else
         {
             DisplayPartialBitmap(x, y, bitmap, width, height);
+            renderCount++;
         }
     }
 
@@ -270,11 +275,16 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
         size[0] = (byte)((bitmapSize >> 8) & 0xff);
         size[1] = (byte)(bitmapSize & 0xff);
 
+        Span<byte> countBytes = stackalloc byte[4];
+        BinaryPrimitives.WriteInt32BigEndian(countBytes, renderCount);
+
         for (var i = 0; i < 2; i++)
         {
             // UpdateBitmap
             Write(CommandUpdateBitmap);
             Write(size);
+            Write([0x00, 0x00, 0x00]);
+            Write(countBytes);
             Flush();
 
             // Payload
