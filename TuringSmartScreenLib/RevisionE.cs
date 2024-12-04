@@ -215,7 +215,7 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
         Flush();
     }
 
-    public void DisplayBitmap(int x, int y, byte[] bitmap, int width, int height)
+    public bool DisplayBitmap(int x, int y, byte[] bitmap, int width, int height)
     {
         if ((x == 0) && (y == 0) && (width == Width) && (height == Height))
         {
@@ -225,6 +225,8 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
         {
             DisplayPartialBitmap(x, y, bitmap, width, height);
         }
+
+        return true;
     }
 
     private void DisplayFullBitmap(byte[] bitmap)

@@ -106,6 +106,8 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
 
     private ReadOnlySpan<byte> ReadResponse(int length = ReadSize)
     {
+        port.DiscardInBuffer();
+
         var offset = 0;
         try
         {
@@ -217,18 +219,18 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
         Flush();
     }
 
-    public void DisplayBitmap(int x, int y, byte[] bitmap, int width, int height)
+    public bool DisplayBitmap(int x, int y, byte[] bitmap, int width, int height)
     {
         if ((x == 0) && (y == 0) && (width == Width) && (height == Height))
         {
             DisplayFullBitmap(bitmap);
             renderCount = 0;
+            return true;
         }
-        else
-        {
-            DisplayPartialBitmap(x, y, bitmap, width, height);
-            renderCount++;
-        }
+
+        var result = DisplayPartialBitmap(x, y, bitmap, width, height);
+        renderCount++;
+        return result;
     }
 
     private void DisplayFullBitmap(byte[] bitmap)
@@ -264,7 +266,7 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
         ReadResponse();
     }
 
-    private void DisplayPartialBitmap(int x, int y, byte[] bitmap, int width, int height)
+    private bool DisplayPartialBitmap(int x, int y, byte[] bitmap, int width, int height)
     {
         var header = (Span<byte>)stackalloc byte[5];
         header[3] = (byte)((width >> 8) & 0xff);
@@ -278,41 +280,35 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
         Span<byte> countBytes = stackalloc byte[4];
         BinaryPrimitives.WriteInt32BigEndian(countBytes, renderCount);
 
-        for (var i = 0; i < 2; i++)
+        // UpdateBitmap
+        Write(CommandUpdateBitmap);
+        Write(size);
+        Write([0x00, 0x00, 0x00]);
+        Write(countBytes);
+        Flush();
+
+        // Payload
+        for (var h = 0; h < height; h++)
         {
-            // UpdateBitmap
-            Write(CommandUpdateBitmap);
-            Write(size);
-            Write([0x00, 0x00, 0x00]);
-            Write(countBytes);
-            Flush();
-
-            // Payload
-            for (var h = 0; h < height; h++)
+            var position = ((x + h) * Width) + y;
+            header[0] = (byte)((position >> 16) & 0xff);
+            header[1] = (byte)((position >> 8) & 0xff);
+            header[2] = (byte)(position & 0xff);
+            Write(header);
+            for (var w = 0; w < width; w++)
             {
-                var position = ((x + h) * Width) + y;
-                header[0] = (byte)((position >> 16) & 0xff);
-                header[1] = (byte)((position >> 8) & 0xff);
-                header[2] = (byte)(position & 0xff);
-                Write(header);
-                for (var w = 0; w < width; w++)
-                {
-                    var offset = ((h * width) + w) * 3;
-                    Write(bitmap.AsSpan(offset, 3));
-                }
-            }
-            Write(CommandUpdateBitmapTerminate);
-            Flush();
-
-            // UpdateBitmap
-            Write(CommandQueryStatus);
-            Flush();
-
-            var response = ReadResponse();
-            if ((response.Length != ReadSize) || (response.IndexOf("needReSend:0"u8) >= 0))
-            {
-                break;
+                var offset = ((h * width) + w) * 3;
+                Write(bitmap.AsSpan(offset, 3));
             }
         }
+        Write(CommandUpdateBitmapTerminate);
+        Flush();
+
+        // UpdateBitmap
+        Write(CommandQueryStatus);
+        Flush();
+
+        var response = ReadResponse();
+        return response.IndexOf("needReSend:0"u8) >= 0;
     }
 }

@@ -141,6 +141,9 @@ public sealed class TuringSmartScreenRevisionA : IDisposable
     public void SetOrientation(Orientation orientation) =>
         WriteCommand(121, (byte)orientation, Width, Height);
 
-    public void DisplayBitmap(int x, int y, byte[] bitmap, int width, int height) =>
+    public bool DisplayBitmap(int x, int y, byte[] bitmap, int width, int height)
+    {
         WriteCommand(197, x, y, width, height, bitmap);
+        return true;
+    }
 }
