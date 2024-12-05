@@ -23,7 +23,14 @@ screen.DisplayBuffer(0, 0, buffer1);
 using var bitmap2 = SKBitmap.Decode("test2-crop.png");
 using var buffer2 = screen.CreateBufferFrom(bitmap2);
 
-for (var i = 0; i < screen.Height - buffer2.Height; i++)
-{
-    screen.DisplayBuffer(i, i, buffer2);
-}
+//display at top left corner
+screen.DisplayBuffer(0, 0, buffer2);
+
+//display at bottom left corner
+screen.DisplayBuffer(0, screen.Height - bitmap2.Height, buffer2);
+
+//display at top right corner
+screen.DisplayBuffer(screen.Width - bitmap2.Width, 0, buffer2);
+
+//display at bottom right corner
+screen.DisplayBuffer(screen.Width - bitmap2.Width, screen.Height - bitmap2.Height, buffer2);
