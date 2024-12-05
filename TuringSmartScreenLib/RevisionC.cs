@@ -106,8 +106,6 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
 
     private ReadOnlySpan<byte> ReadResponse(int length = ReadSize)
     {
-        port.DiscardInBuffer();
-
         var offset = 0;
         try
         {
