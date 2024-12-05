@@ -290,7 +290,7 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
         // Payload
         for (var h = 0; h < height; h++)
         {
-            var position = ((x + h) * Width) + y;
+            var position = ((y + h) * Width) + x;
             header[0] = (byte)((position >> 16) & 0xff);
             header[1] = (byte)((position >> 8) & 0xff);
             header[2] = (byte)(position & 0xff);
