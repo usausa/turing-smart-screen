@@ -28,6 +28,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TuringSmartScreenTool", "Tu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TuringSmartScreenLib.Helpers.GdiPlus", "TuringSmartScreenLib.Helpers.GdiPlus\TuringSmartScreenLib.Helpers.GdiPlus.csproj", "{6E826D66-B8A4-4B69-A1BF-D92FA8A27B01}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Example3", "Example3\Example3.csproj", "{DC39973E-F146-4257-A57D-0FB62E83FB52}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -58,6 +60,10 @@ Global
 		{6E826D66-B8A4-4B69-A1BF-D92FA8A27B01}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6E826D66-B8A4-4B69-A1BF-D92FA8A27B01}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6E826D66-B8A4-4B69-A1BF-D92FA8A27B01}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DC39973E-F146-4257-A57D-0FB62E83FB52}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DC39973E-F146-4257-A57D-0FB62E83FB52}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DC39973E-F146-4257-A57D-0FB62E83FB52}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DC39973E-F146-4257-A57D-0FB62E83FB52}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
