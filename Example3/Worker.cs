@@ -14,10 +14,8 @@ internal sealed class Worker : BackgroundService
         screen.SetBrightness(100);
         screen.Clear();
 
-#pragma warning disable CA1416
         using var bitmap = SKBitmap.Decode("space.jpg");
         using var buffer = screen.CreateBufferFrom(bitmap);
-#pragma warning restore CA1416
 
         screen.DisplayBuffer(0, 0, buffer);
 
