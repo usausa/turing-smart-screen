@@ -120,6 +120,10 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
                 offset += read;
             }
         }
+        catch (TimeoutException)
+        {
+            // Ignore
+        }
         catch (IOException)
         {
             // Ignore

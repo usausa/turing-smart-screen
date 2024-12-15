@@ -122,6 +122,10 @@ public sealed class TuringSmartScreenRevisionB : IDisposable
                 offset += read;
             }
         }
+        catch (TimeoutException)
+        {
+            // Ignore
+        }
         catch (IOException)
         {
             // Ignore
