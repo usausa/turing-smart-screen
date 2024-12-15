@@ -121,6 +121,10 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
                 offset += read;
             }
         }
+        catch (TimeoutException)
+        {
+            // Ignore
+        }
         catch (IOException)
         {
             // Ignore
@@ -216,6 +220,7 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
         Write(CommandSetBrightness);
         Write((byte)level);
         Flush();
+        ReadResponse(1);
     }
 
     public bool DisplayBitmap(int x, int y, byte[] bitmap, int width, int height)
@@ -229,7 +234,6 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
 
         var result = DisplayPartialBitmap(x, y, bitmap, width, height);
         renderCount++;
-        port.DiscardOutBuffer();
         return result;
     }
 
