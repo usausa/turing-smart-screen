@@ -18,10 +18,10 @@ internal sealed class Worker : BackgroundService
         using var bitmap = SKBitmap.Decode("space.jpg");
         using var buffer = screen.CreateBufferFrom(bitmap);
 
-        using var logoBitmap = SKBitmap.Decode("logo.png");
-        using var logoBuffer = screen.CreateBufferFrom(logoBitmap);
-
         screen.DisplayBuffer(0, 0, buffer);
+
+        using var logoBuffer = screen.CreateBuffer(100, 100);
+        logoBuffer.Clear(64, 64, 64);
 
         // TODO check
         Debug.WriteLine("*Partial");
