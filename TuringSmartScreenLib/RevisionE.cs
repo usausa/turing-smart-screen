@@ -10,7 +10,7 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
 {
     private const int WriteSize = 250;
     private const int ReadSize = 1024;
-    private const int ReadHelloSize = 23;
+    private const int ReadHelloSize = 24;
 
     private static readonly byte[] CommandHello = [0x01, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0xc5, 0xd3];
     private static readonly byte[] CommandSetBrightness = [0x7b, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00];
@@ -220,7 +220,6 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
         Write(CommandSetBrightness);
         Write((byte)level);
         Flush();
-        ReadResponse(1);
     }
 
     public bool DisplayBitmap(int x, int y, byte[] bitmap, int width, int height)
