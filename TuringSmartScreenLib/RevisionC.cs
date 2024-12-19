@@ -306,7 +306,7 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
         Write(CommandUpdateBitmapTerminate);
         Flush();
 
-        // UpdateBitmap
+        // QueryStatus
         Write(CommandQueryStatus);
         Flush();
 

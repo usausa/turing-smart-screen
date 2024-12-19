@@ -253,7 +253,7 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
             {
                 var offset = ((y * Width) + x) * 3;
                 Write(bitmap.AsSpan(offset, 3));
-                Write(0xff);
+                Write(0xff); // TODO alpha?
             }
         }
         Flush();
@@ -302,13 +302,13 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
             {
                 var offset = ((h * width) + w) * 3;
                 Write(bitmap.AsSpan(offset, 3));
-                Write([0xff]);
+                Write([0xff]); // TODO alpha?
             }
         }
         Write(CommandUpdateBitmapTerminate);
         Flush();
 
-        // UpdateBitmap
+        // QueryStatus
         Write(CommandQueryStatus);
         Flush();
 
