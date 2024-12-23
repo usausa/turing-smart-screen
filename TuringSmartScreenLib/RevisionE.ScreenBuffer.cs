@@ -49,7 +49,7 @@ public sealed class TuringSmartScreenBufferE : IScreenBuffer
     {
         if ((r == g) && (r == b))
         {
-            buffer.AsSpan(0, width * height * 2).Fill(r);
+            buffer.AsSpan(0, width * height * 3).Fill(r);
         }
         else
         {
