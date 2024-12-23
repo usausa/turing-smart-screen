@@ -20,14 +20,15 @@ internal sealed class Worker : BackgroundService
 
         screen.DisplayBuffer(0, 0, buffer);
 
-        using var logoBuffer = screen.CreateBuffer(100, 100);
-        logoBuffer.Clear(64, 64, 64);
+        using var logoBuffer = screen.CreateBuffer(480, 16);
+        logoBuffer.Clear(255, 255, 255);
 
         // TODO check
         Debug.WriteLine("*Partial");
-        for (var i = 0; i < 10; i++)
+        for (var i = 0; i < 600; i++)
         {
-            Debug.WriteLine(screen.DisplayBuffer(0, i, logoBuffer));
+            screen.DisplayBuffer(0, i * 2, logoBuffer);
+            //await Task.Delay(50, stoppingToken);
         }
 
         while (!stoppingToken.IsCancellationRequested)
