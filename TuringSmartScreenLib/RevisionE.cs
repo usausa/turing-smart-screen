@@ -247,13 +247,13 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
         Flush();
 
         // Payload
+        // TODO rotate support
         for (var y = 0; y < Height; y++)
         {
             for (var x = 0; x < Width; x++)
             {
-                var offset = ((y * Width) + x) * 3;
-                Write(bitmap.AsSpan(offset, 3));
-                Write(0xff); // TODO alpha?
+                var offset = ((y * Width) + x) * 4;
+                Write(bitmap.AsSpan(offset, 4));
             }
         }
         Flush();
@@ -271,6 +271,7 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
 
     private bool DisplayPartialBitmap(int x, int y, byte[] bitmap, int width, int height)
     {
+        // TODO rotate support
         var header = (Span<byte>)stackalloc byte[5];
         header[3] = (byte)((width >> 8) & 0xff);
         header[4] = (byte)(width & 0xff);
@@ -291,6 +292,7 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
         Flush();
 
         // Payload
+        // TODO rotate support
         for (var h = 0; h < height; h++)
         {
             var position = ((y + h) * Width) + x;
@@ -300,9 +302,8 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
             Write(header);
             for (var w = 0; w < width; w++)
             {
-                var offset = ((h * width) + w) * 3;
-                Write(bitmap.AsSpan(offset, 3));
-                Write([0xff]); // TODO alpha?
+                var offset = ((h * width) + w) * 4;
+                Write(bitmap.AsSpan(offset, 4));
             }
         }
         Write(CommandUpdateBitmapTerminate);

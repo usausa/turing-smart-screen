@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 #pragma warning disable IDE0032
 // ReSharper disable ConvertToAutoProperty
-public sealed class TuringSmartScreenBufferC : IScreenBuffer
+public sealed class ScreenBufferBgr32 : IScreenBuffer
 {
     private readonly int width;
 
@@ -19,11 +19,11 @@ public sealed class TuringSmartScreenBufferC : IScreenBuffer
 
     internal byte[] Buffer => buffer;
 
-    public TuringSmartScreenBufferC(int width, int height)
+    public ScreenBufferBgr32(int width, int height)
     {
         this.width = width;
         this.height = height;
-        buffer = ArrayPool<byte>.Shared.Rent(width * height * 3);
+        buffer = ArrayPool<byte>.Shared.Rent(width * height * 4);
         buffer.AsSpan().Clear();
     }
 
@@ -39,26 +39,22 @@ public sealed class TuringSmartScreenBufferC : IScreenBuffer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetPixel(int x, int y, byte r, byte g, byte b)
     {
-        var offset = ((y * width) + x) * 3;
+        var offset = ((y * width) + x) * 4;
         buffer[offset] = b;
         buffer[offset + 1] = g;
         buffer[offset + 2] = r;
+        buffer[offset + 3] = 255;
     }
 
     public void Clear(byte r = 0, byte g = 0, byte b = 0)
     {
-        if ((r == g) && (r == b))
+        // TODO optimize
+        for (var offset = 0; offset < width * height * 4; offset += 4)
         {
-            buffer.AsSpan(0, width * height * 2).Fill(r);
-        }
-        else
-        {
-            for (var offset = 0; offset < width * height * 3; offset += 3)
-            {
-                buffer[offset] = b;
-                buffer[offset + 1] = g;
-                buffer[offset + 2] = r;
-            }
+            buffer[offset] = b;
+            buffer[offset + 1] = g;
+            buffer[offset + 2] = r;
+            buffer[offset + 3] = 255;
         }
     }
 }

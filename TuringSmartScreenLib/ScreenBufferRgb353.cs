@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 #pragma warning disable IDE0032
 // ReSharper disable ConvertToAutoProperty
-public sealed class TuringSmartScreenBufferA : IScreenBuffer
+public sealed class ScreenBufferRgb353 : IScreenBuffer
 {
     private readonly int width;
 
@@ -20,7 +20,7 @@ public sealed class TuringSmartScreenBufferA : IScreenBuffer
 
     internal byte[] Buffer => buffer;
 
-    public TuringSmartScreenBufferA(int width, int height)
+    public ScreenBufferRgb353(int width, int height)
     {
         this.width = width;
         this.height = height;

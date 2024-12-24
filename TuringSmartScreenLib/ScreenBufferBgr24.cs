@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 #pragma warning disable IDE0032
 // ReSharper disable ConvertToAutoProperty
-public sealed class TuringSmartScreenBufferE : IScreenBuffer
+public sealed class ScreenBufferBgr24 : IScreenBuffer
 {
     private readonly int width;
 
@@ -19,7 +19,7 @@ public sealed class TuringSmartScreenBufferE : IScreenBuffer
 
     internal byte[] Buffer => buffer;
 
-    public TuringSmartScreenBufferE(int width, int height)
+    public ScreenBufferBgr24(int width, int height)
     {
         this.width = width;
         this.height = height;
@@ -47,9 +47,10 @@ public sealed class TuringSmartScreenBufferE : IScreenBuffer
 
     public void Clear(byte r = 0, byte g = 0, byte b = 0)
     {
+        // TODO optimize
         if ((r == g) && (r == b))
         {
-            buffer.AsSpan(0, width * height * 3).Fill(r);
+            buffer.AsSpan(0, width * height * 2).Fill(r);
         }
         else
         {
