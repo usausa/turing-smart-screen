@@ -46,14 +46,14 @@ internal abstract class ScreenWrapperRevisionB : ScreenBase
                 screen.SetOrientation(TuringSmartScreenRevisionB.Orientation.Portrait);
                 return true;
             case ScreenOrientation.ReversePortrait:
-                // TODO Emulation ?
-                return false;
+                screen.SetOrientation(TuringSmartScreenRevisionB.Orientation.Portrait);
+                return true;
             case ScreenOrientation.Landscape:
                 screen.SetOrientation(TuringSmartScreenRevisionB.Orientation.Landscape);
                 return true;
             case ScreenOrientation.ReverseLandscape:
-                // TODO Emulation ?
-                return false;
+                screen.SetOrientation(TuringSmartScreenRevisionB.Orientation.Landscape);
+                return true;
         }
 
         return false;
@@ -61,6 +61,7 @@ internal abstract class ScreenWrapperRevisionB : ScreenBase
 
     public override IScreenBuffer CreateBuffer(int width, int height) => new ScreenBufferBgr353(width, height);
 
+    // TODO rotate
     public override bool DisplayBuffer(int x, int y, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, ((ScreenBufferBgr353)buffer).Buffer, buffer.Width, buffer.Height);
 }
 

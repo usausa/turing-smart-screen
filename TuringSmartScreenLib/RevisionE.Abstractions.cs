@@ -33,13 +33,10 @@ internal sealed class ScreenWrapperRevisionE : ScreenBase
 
     public override void SetBrightness(byte level) => screen.SetBrightness(level);
 
-    protected override bool SetOrientation(ScreenOrientation orientation)
-    {
-        // TODO Emulation ?
-        return false;
-    }
+    protected override bool SetOrientation(ScreenOrientation orientation) => true;
 
     public override IScreenBuffer CreateBuffer(int width, int height) => new ScreenBufferBgra8888(width, height);
 
+    // TODO rotate
     public override bool DisplayBuffer(int x, int y, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, ((ScreenBufferBgra8888)buffer).Buffer, buffer.Width, buffer.Height);
 }

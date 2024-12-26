@@ -287,7 +287,7 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
         // UpdateBitmap
         Write(CommandUpdateBitmap);
         Write(size);
-        Write([0x00, 0x00, 0x00]);
+        Write(stackalloc byte[3]);
         Write(countBytes);
         Flush();
 
