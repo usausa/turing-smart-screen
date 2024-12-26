@@ -47,19 +47,22 @@ public sealed class ScreenBufferBgr24 : IScreenBuffer
 
     public void Clear(byte r = 0, byte g = 0, byte b = 0)
     {
-        // TODO optimize
-        if ((r == g) && (r == b))
+        buffer[0] = r;
+        buffer[1] = g;
+        buffer[2] = b;
+
+        var length = 3;
+        var size = Width * Height * 3;
+        while (length < size - length)
         {
-            buffer.AsSpan(0, width * height * 2).Fill(r);
+            buffer.AsSpan(0, length).CopyTo(buffer.AsSpan(length));
+
+            length += length;
         }
-        else
+
+        if (length < size)
         {
-            for (var offset = 0; offset < width * height * 3; offset += 3)
-            {
-                buffer[offset] = b;
-                buffer[offset + 1] = g;
-                buffer[offset + 2] = r;
-            }
+            buffer.AsSpan(0, size - length).CopyTo(buffer.AsSpan(length));
         }
     }
 }
