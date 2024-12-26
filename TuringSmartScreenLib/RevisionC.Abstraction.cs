@@ -39,7 +39,7 @@ internal sealed class ScreenWrapperRevisionC : ScreenBase
         return false;
     }
 
-    public override IScreenBuffer CreateBuffer(int width, int height) => new ScreenBufferBgr24(width, height);
+    public override IScreenBuffer CreateBuffer(int width, int height) => new ScreenBufferBgr888(width, height);
 
-    public override bool DisplayBuffer(int x, int y, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, ((ScreenBufferBgr24)buffer).Buffer, buffer.Width, buffer.Height);
+    public override bool DisplayBuffer(int x, int y, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, ((ScreenBufferBgr888)buffer).Buffer, buffer.Width, buffer.Height);
 }

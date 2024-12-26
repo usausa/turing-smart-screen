@@ -8,5 +8,7 @@ public interface IScreenBuffer : IDisposable
 
     void SetPixel(int x, int y, byte r, byte g, byte b);
 
-    void Clear(byte r = 0, byte g = 0, byte b = 0);
+    void Clear();
+
+    void Clear(byte r, byte g, byte b);
 }

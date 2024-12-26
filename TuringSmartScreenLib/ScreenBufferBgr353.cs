@@ -45,19 +45,25 @@ public sealed class ScreenBufferBgr353 : IScreenBuffer
         BinaryPrimitives.WriteInt16BigEndian(buffer.AsSpan(offset), (short)rgb);
     }
 
-    public void Clear(byte r = 0, byte g = 0, byte b = 0)
+    public void Clear() => Clear(0, 0, 0);
+
+    public void Clear(byte r, byte g, byte b)
     {
-        if ((r == g) && (r == b))
+        var rgb = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
+        BinaryPrimitives.WriteInt16BigEndian(buffer.AsSpan(), (short)rgb);
+
+        var length = 2;
+        var size = Width * Height * 2;
+        while (length < size - length)
         {
-            buffer.AsSpan(0, width * height * 2).Fill(r);
+            buffer.AsSpan(0, length).CopyTo(buffer.AsSpan(length));
+
+            length += length;
         }
-        else
+
+        if (length < size)
         {
-            var rgb = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
-            for (var offset = 0; offset < width * height * 2; offset += 2)
-            {
-                BinaryPrimitives.WriteInt16BigEndian(buffer.AsSpan(offset), (short)rgb);
-            }
+            buffer.AsSpan(0, size - length).CopyTo(buffer.AsSpan(length));
         }
     }
 }

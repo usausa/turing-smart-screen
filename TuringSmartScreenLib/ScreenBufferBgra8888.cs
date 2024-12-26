@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 
 #pragma warning disable IDE0032
 // ReSharper disable ConvertToAutoProperty
-public sealed class ScreenBufferBgr24 : IScreenBuffer
+public sealed class ScreenBufferBgra8888 : IScreenBuffer
 {
     private readonly int width;
 
@@ -19,11 +19,11 @@ public sealed class ScreenBufferBgr24 : IScreenBuffer
 
     internal byte[] Buffer => buffer;
 
-    public ScreenBufferBgr24(int width, int height)
+    public ScreenBufferBgra8888(int width, int height)
     {
         this.width = width;
         this.height = height;
-        buffer = ArrayPool<byte>.Shared.Rent(width * height * 3);
+        buffer = ArrayPool<byte>.Shared.Rent(width * height * 4);
         buffer.AsSpan().Clear();
     }
 
@@ -39,20 +39,24 @@ public sealed class ScreenBufferBgr24 : IScreenBuffer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetPixel(int x, int y, byte r, byte g, byte b)
     {
-        var offset = ((y * width) + x) * 3;
+        var offset = ((y * width) + x) * 4;
         buffer[offset] = b;
         buffer[offset + 1] = g;
         buffer[offset + 2] = r;
+        buffer[offset + 3] = 255;
     }
 
-    public void Clear(byte r = 0, byte g = 0, byte b = 0)
+    public void Clear() => Clear(0, 0, 0);
+
+    public void Clear(byte r, byte g, byte b)
     {
         buffer[0] = r;
         buffer[1] = g;
         buffer[2] = b;
+        buffer[3] = 255;
 
-        var length = 3;
-        var size = Width * Height * 3;
+        var length = 4;
+        var size = Width * Height * 4;
         while (length < size - length)
         {
             buffer.AsSpan(0, length).CopyTo(buffer.AsSpan(length));
