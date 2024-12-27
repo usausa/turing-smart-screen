@@ -43,14 +43,10 @@ internal abstract class ScreenWrapperRevisionB : ScreenBase
         switch (orientation)
         {
             case ScreenOrientation.Portrait:
-                screen.SetOrientation(TuringSmartScreenRevisionB.Orientation.Portrait);
-                return true;
             case ScreenOrientation.ReversePortrait:
                 screen.SetOrientation(TuringSmartScreenRevisionB.Orientation.Portrait);
                 return true;
             case ScreenOrientation.Landscape:
-                screen.SetOrientation(TuringSmartScreenRevisionB.Orientation.Landscape);
-                return true;
             case ScreenOrientation.ReverseLandscape:
                 screen.SetOrientation(TuringSmartScreenRevisionB.Orientation.Landscape);
                 return true;
@@ -61,8 +57,9 @@ internal abstract class ScreenWrapperRevisionB : ScreenBase
 
     public override IScreenBuffer CreateBuffer(int width, int height) => new ScreenBufferBgr353(width, height);
 
-    // TODO rotate
-    public override bool DisplayBuffer(int x, int y, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, ((ScreenBufferBgr353)buffer).Buffer, buffer.Width, buffer.Height);
+    public override bool DisplayBuffer(int x, int y, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, ((ScreenBufferBgr353)buffer).Buffer, buffer.Width, buffer.Height, IsReverse());
+
+    private bool IsReverse() => Orientation is ScreenOrientation.ReversePortrait or ScreenOrientation.ReverseLandscape;
 }
 
 internal sealed class ScreenWrapperRevisionB0 : ScreenWrapperRevisionB

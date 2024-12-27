@@ -222,21 +222,21 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
         Flush();
     }
 
-    public bool DisplayBitmap(int x, int y, byte[] bitmap, int width, int height)
+    public bool DisplayBitmap(int x, int y, byte[] bitmap, int width, int height, RotateOption option = RotateOption.None)
     {
         if ((x == 0) && (y == 0) && (width == Width) && (height == Height))
         {
-            DisplayFullBitmap(bitmap);
+            DisplayFullBitmap(bitmap, option);
             renderCount = 0;
             return true;
         }
 
-        var result = DisplayPartialBitmap(x, y, bitmap, width, height);
+        var result = DisplayPartialBitmap(x, y, bitmap, width, height, option);
         renderCount++;
         return result;
     }
 
-    private void DisplayFullBitmap(byte[] bitmap)
+    private void DisplayFullBitmap(byte[] bitmap, RotateOption option)
     {
         // Start
         Write(0x2c);
@@ -269,7 +269,7 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
         ReadResponse();
     }
 
-    private bool DisplayPartialBitmap(int x, int y, byte[] bitmap, int width, int height)
+    private bool DisplayPartialBitmap(int x, int y, byte[] bitmap, int width, int height, RotateOption option)
     {
         // TODO rotate support
         var header = (Span<byte>)stackalloc byte[5];

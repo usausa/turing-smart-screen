@@ -37,6 +37,14 @@ internal sealed class ScreenWrapperRevisionC : ScreenBase
 
     public override IScreenBuffer CreateBuffer(int width, int height) => new ScreenBufferBgr888(width, height);
 
-    // TODO rotate
-    public override bool DisplayBuffer(int x, int y, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, ((ScreenBufferBgr888)buffer).Buffer, buffer.Width, buffer.Height);
+    public override bool DisplayBuffer(int x, int y, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, ((ScreenBufferBgr888)buffer).Buffer, buffer.Width, buffer.Height, CalcRotateOption());
+
+    private RotateOption CalcRotateOption() =>
+        Orientation switch
+        {
+            ScreenOrientation.Landscape => RotateOption.Rotate90,
+            ScreenOrientation.ReversePortrait => RotateOption.Rotate180,
+            ScreenOrientation.ReverseLandscape => RotateOption.Rotate270,
+            _ => RotateOption.None
+        };
 }
