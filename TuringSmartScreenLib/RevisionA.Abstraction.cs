@@ -5,7 +5,7 @@ internal sealed class ScreenWrapperRevisionA : ScreenBase
     private readonly TuringSmartScreenRevisionA screen;
 
     public ScreenWrapperRevisionA(TuringSmartScreenRevisionA screen)
-        : base(screen.Width, screen.Height)
+        : base(screen.Width, screen.Height, ScreenOrientation.Portrait)
     {
         this.screen = screen;
     }
@@ -21,6 +21,9 @@ internal sealed class ScreenWrapperRevisionA : ScreenBase
     public override void ScreenOn() => screen.ScreenOn();
 
     public override void SetBrightness(byte level) => screen.SetBrightness(255 - (byte)((float)level / 100 * 255));
+
+    protected override bool IsRotated(ScreenOrientation orientation) =>
+        orientation is ScreenOrientation.Landscape or ScreenOrientation.ReverseLandscape;
 
     protected override bool SetOrientation(ScreenOrientation orientation)
     {

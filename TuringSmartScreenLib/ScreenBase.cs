@@ -6,33 +6,11 @@ internal abstract class ScreenBase : IScreen
 
     private readonly int height;
 
-#pragma warning disable IDE0032
-    private ScreenOrientation orientation = ScreenOrientation.Portrait;
-#pragma warning restore IDE0032
+    private ScreenOrientation orientation;
 
-    public int Width
-    {
-        get
-        {
-            if (orientation is ScreenOrientation.Portrait or ScreenOrientation.ReversePortrait)
-            {
-                return width;
-            }
-            return height;
-        }
-    }
+    public int Width => IsRotated(orientation) ? height : width;
 
-    public int Height
-    {
-        get
-        {
-            if (orientation is ScreenOrientation.Portrait or ScreenOrientation.ReversePortrait)
-            {
-                return height;
-            }
-            return width;
-        }
-    }
+    public int Height => IsRotated(orientation) ? width : height;
 
     public ScreenOrientation Orientation
     {
@@ -46,11 +24,14 @@ internal abstract class ScreenBase : IScreen
         }
     }
 
-    protected ScreenBase(int width, int height)
+    protected ScreenBase(int width, int height, ScreenOrientation orientation)
     {
         this.width = width;
         this.height = height;
+        this.orientation = orientation;
     }
+
+    protected abstract bool IsRotated(ScreenOrientation orientation);
 
     protected abstract bool SetOrientation(ScreenOrientation orientation);
 

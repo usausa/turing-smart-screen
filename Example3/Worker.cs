@@ -18,22 +18,27 @@ internal sealed class Worker : BackgroundService
         using var bitmap = SKBitmap.Decode("space.jpg");
         using var buffer = screen.CreateBufferFrom(bitmap);
 
+        using var bitmap2 = SKBitmap.Decode("test.png");
+        using var buffer2 = screen.CreateBufferFrom(bitmap2);
+
         screen.DisplayBuffer(0, 0, buffer);
 
-        using var logoBuffer = screen.CreateBuffer(480, 16);
+        using var logoBuffer = screen.CreateBuffer(100, 200);
         logoBuffer.Clear(255, 255, 255);
 
-        // TODO check
-        Debug.WriteLine("*Partial");
-        for (var i = 0; i < 600; i++)
-        {
-            screen.DisplayBuffer(0, i * 2, logoBuffer);
-            //await Task.Delay(50, stoppingToken);
-        }
+        screen.DisplayBuffer(0, 0, buffer2);
 
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            await Task.Delay(1000, stoppingToken);
-        }
+        // TODO check
+        //Debug.WriteLine("*Partial");
+        //for (var i = 0; i < 600; i++)
+        //{
+        //    screen.DisplayBuffer(0, i * 2, buffer2);
+        //    await Task.Delay(50, stoppingToken);
+        //}
+
+        //while (!stoppingToken.IsCancellationRequested)
+        //{
+        //    await Task.Delay(1000, stoppingToken);
+        //}
     }
 }

@@ -11,6 +11,7 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
     private const int WriteSize = 250;
     private const int ReadSize = 1024;
     private const int ReadHelloSize = 24;
+    private const int PartialBlockSize = 80;
 
     private static readonly byte[] CommandHello = [0x01, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0xc5, 0xd3];
     private static readonly byte[] CommandSetBrightness = [0x7b, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00];
@@ -98,8 +99,7 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
         Flush();
 
         var response = ReadResponse(ReadHelloSize);
-        var expectedResponseData = "chs_88inch"u8;
-        if ((response.Length != ReadHelloSize) || !response[..10].SequenceEqual(expectedResponseData))
+        if ((response.Length != ReadHelloSize) || !response.StartsWith("chs_88inch"u8))
         {
             throw new IOException($"Unknown response. response=[{Convert.ToHexString(response)}]");
         }
@@ -231,9 +231,19 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
             return true;
         }
 
-        var result = DisplayPartialBitmap(x, y, bitmap, width, height, option);
-        renderCount++;
-        return result;
+        for (var oy = 0; oy < height; oy += PartialBlockSize)
+        {
+            for (var ox = 0; ox < width; ox += PartialBlockSize)
+            {
+                if (!DisplayPartialBitmap(x + ox, y + oy, Math.Min(width - ox, PartialBlockSize), Math.Min(height - oy, PartialBlockSize), bitmap, ox, oy, width, option))
+                {
+                    return false;
+                }
+                renderCount++;
+            }
+        }
+
+        return true;
     }
 
     private void DisplayFullBitmap(byte[] bitmap, RotateOption option)
@@ -269,14 +279,14 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
         ReadResponse();
     }
 
-    private bool DisplayPartialBitmap(int x, int y, byte[] bitmap, int width, int height, RotateOption option)
+    private bool DisplayPartialBitmap(int x, int y, int w, int h, byte[] bitmap, int sx, int sy, int width, RotateOption option)
     {
         // TODO rotate support
         var header = (Span<byte>)stackalloc byte[5];
-        header[3] = (byte)((width >> 8) & 0xff);
-        header[4] = (byte)(width & 0xff);
+        header[3] = (byte)((w >> 8) & 0xff);
+        header[4] = (byte)(w & 0xff);
 
-        var bitmapSize = (((width * 4) + header.Length) * height) + CommandUpdateBitmapTerminate.Length;
+        var bitmapSize = (((w * 4) + header.Length) * h) + CommandUpdateBitmapTerminate.Length;
         var size = (Span<byte>)stackalloc byte[2];
         size[0] = (byte)((bitmapSize >> 8) & 0xff);
         size[1] = (byte)(bitmapSize & 0xff);
@@ -293,16 +303,16 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
 
         // Payload
         // TODO rotate support
-        for (var h = 0; h < height; h++)
+        for (var oy = 0; oy < h; oy++)
         {
-            var position = ((y + h) * Width) + x;
+            var position = ((y + oy) * Width) + x;
             header[0] = (byte)((position >> 16) & 0xff);
             header[1] = (byte)((position >> 8) & 0xff);
             header[2] = (byte)(position & 0xff);
             Write(header);
-            for (var w = 0; w < width; w++)
+            for (var ox = 0; ox < w; ox++)
             {
-                var offset = ((h * width) + w) * 4;
+                var offset = (((sy + oy) * width) + (sx + ox)) * 4;
                 Write(bitmap.AsSpan(offset, 4));
             }
         }
@@ -314,6 +324,6 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
         Flush();
 
         var response = ReadResponse();
-        return response.IndexOf("needReSend:0"u8) >= 0;
+        return response.StartsWith("needReSend:0"u8);
     }
 }
