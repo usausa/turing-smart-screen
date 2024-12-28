@@ -1,5 +1,9 @@
 namespace TuringSmartScreenLib;
 
+using System.Buffers;
+using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
+
 internal abstract class ScreenWrapperRevisionB : ScreenBase
 {
     private readonly TuringSmartScreenRevisionB screen;
@@ -17,9 +21,21 @@ internal abstract class ScreenWrapperRevisionB : ScreenBase
         // Do Nothing
     }
 
-    public override void Clear()
+    public override void Clear() => Clear(0, 0, 0);
+
+    public override void Clear(byte r, byte g, byte b)
     {
-        // TODO Emulation ?
+        // Emulation
+        var buffer = ArrayPool<byte>.Shared.Rent(Width * Height * 2);
+
+        var pattern = (Span<byte>)stackalloc byte[2];
+        var rgb = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
+        BinaryPrimitives.WriteInt16BigEndian(pattern, (short)rgb);
+        Helper.Fill(buffer, pattern);
+
+        screen.DisplayBitmap(0, 0, buffer, Width, Height);
+
+        ArrayPool<byte>.Shared.Return(buffer);
     }
 
     public override void ScreenOff()
@@ -60,7 +76,27 @@ internal abstract class ScreenWrapperRevisionB : ScreenBase
 
     public override IScreenBuffer CreateBuffer(int width, int height) => new ScreenBufferBgr353(width, height);
 
-    public override bool DisplayBuffer(int x, int y, IScreenBuffer buffer) => screen.DisplayBitmap(x, y, ((ScreenBufferBgr353)buffer).Buffer, buffer.Width, buffer.Height, IsReverse());
+    public override bool DisplayBuffer(int x, int y, IScreenBuffer buffer)
+    {
+        var bitmap = ((ScreenBufferBgr353)buffer).Buffer;
+
+        if (IsReverse())
+        {
+            var size = buffer.Width * buffer.Height * 2;
+            var reverseBitmap = ArrayPool<byte>.Shared.Rent(size);
+            for (var offset = 0; offset < size; offset += 2)
+            {
+                bitmap.AsSpan(offset, 2).CopyTo(reverseBitmap.AsSpan(size - offset - 2));
+            }
+
+            var result = screen.DisplayBitmap(Width - x - buffer.Width, Height - y - buffer.Height, reverseBitmap, buffer.Width, buffer.Height);
+
+            ArrayPool<byte>.Shared.Return(reverseBitmap);
+            return result;
+        }
+
+        return screen.DisplayBitmap(x, y, bitmap, buffer.Width, buffer.Height);
+    }
 
     private bool IsReverse() => Orientation is ScreenOrientation.ReversePortrait or ScreenOrientation.ReverseLandscape;
 }

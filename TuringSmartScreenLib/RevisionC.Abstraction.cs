@@ -19,6 +19,8 @@ internal sealed class ScreenWrapperRevisionC : ScreenBase
 
     public override void Clear() => screen.Clear();
 
+    public override void Clear(byte r, byte g, byte b) => screen.Clear(r, g, b);
+
     public override void ScreenOff()
     {
         // Emulation

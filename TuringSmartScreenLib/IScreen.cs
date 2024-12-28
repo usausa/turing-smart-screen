@@ -12,6 +12,8 @@ public interface IScreen : IDisposable
 
     void Clear();
 
+    void Clear(byte r, byte g, byte b);
+
     void ScreenOff();
 
     void ScreenOn();

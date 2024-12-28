@@ -1,10 +1,12 @@
 namespace TuringSmartScreenLib;
 
+using System;
 using System.Buffers;
+using System.Buffers.Binary;
 using System.IO.Ports;
 using System.Reflection;
 
-public sealed class TuringSmartScreenRevisionB : IDisposable
+public sealed unsafe class TuringSmartScreenRevisionB : IDisposable
 {
     private static readonly byte[] CommandHello = [0xCA, (byte)'H', (byte)'E', (byte)'L', (byte)'L', (byte)'O', 0, 0, 0, 0xCA];
 
@@ -145,7 +147,7 @@ public sealed class TuringSmartScreenRevisionB : IDisposable
         port.Write(writeBuffer, 0, commandLength);
     }
 
-    private void WriteCommand(byte command, int x, int y, int width, int height, byte[] data, bool reverse)
+    private void WriteCommand(byte command, int x, int y, int width, int height)
     {
         var ex = x + width - 1;
         var ey = y + height - 1;
@@ -164,17 +166,16 @@ public sealed class TuringSmartScreenRevisionB : IDisposable
         writeBuffer[9] = command;
 
         port.Write(writeBuffer, 0, commandLength);
-        // TODO Emulation
-        port.Write(data, 0, width * height * 2);
     }
 
     public void SetBrightness(byte level) => WriteCommand(0xCE, level);
 
     public void SetOrientation(Orientation orientation) => WriteCommand(0xCB, (byte)orientation);
 
-    public bool DisplayBitmap(int x, int y, byte[] bitmap, int width, int height, bool reverse = false)
+    public bool DisplayBitmap(int x, int y, byte[] bitmap, int width, int height)
     {
-        WriteCommand(0xCC, x, y, width, height, bitmap, reverse);
+        WriteCommand(0xCC, x, y, width, height);
+        port.Write(bitmap, 0, width * height * 2);
         return true;
     }
 }

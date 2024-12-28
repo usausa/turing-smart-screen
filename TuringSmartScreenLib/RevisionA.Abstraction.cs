@@ -1,5 +1,8 @@
 namespace TuringSmartScreenLib;
 
+using System.Buffers.Binary;
+using System.Buffers;
+
 internal sealed class ScreenWrapperRevisionA : ScreenBase
 {
     private readonly TuringSmartScreenRevisionA screen;
@@ -15,6 +18,21 @@ internal sealed class ScreenWrapperRevisionA : ScreenBase
     public override void Reset() => screen.Reset();
 
     public override void Clear() => screen.Clear();
+
+    public override void Clear(byte r, byte g, byte b)
+    {
+        // Emulation
+        var buffer = ArrayPool<byte>.Shared.Rent(Width * Height * 2);
+
+        var pattern = (Span<byte>)stackalloc byte[2];
+        var rgb = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
+        BinaryPrimitives.WriteInt16LittleEndian(pattern, (short)rgb);
+        Helper.Fill(buffer, pattern);
+
+        screen.DisplayBitmap(0, 0, buffer, Width, Height);
+
+        ArrayPool<byte>.Shared.Return(buffer);
+    }
 
     public override void ScreenOff() => screen.ScreenOff();
 

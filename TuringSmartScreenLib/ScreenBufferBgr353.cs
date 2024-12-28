@@ -49,22 +49,10 @@ public sealed class ScreenBufferBgr353 : IScreenBuffer
 
     public void Clear(byte r, byte g, byte b)
     {
+        var pattern = (Span<byte>)stackalloc byte[2];
         var rgb = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
-        BinaryPrimitives.WriteInt16BigEndian(buffer.AsSpan(), (short)rgb);
-
-        var length = 2;
-        var size = Width * Height * 2;
-        while (length < size - length)
-        {
-            buffer.AsSpan(0, length).CopyTo(buffer.AsSpan(length));
-
-            length += length;
-        }
-
-        if (length < size)
-        {
-            buffer.AsSpan(0, size - length).CopyTo(buffer.AsSpan(length));
-        }
+        BinaryPrimitives.WriteInt16BigEndian(pattern, (short)rgb);
+        Helper.Fill(buffer, pattern);
     }
 }
 // ReSharper restore ConvertToAutoProperty

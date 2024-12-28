@@ -15,10 +15,12 @@ internal static class Program
     public static void Main()
     {
         // Create screen
-        using var screen = ScreenFactory.Create(ScreenType.RevisionA, "COM9");
+        using var screen = ScreenFactory.Create(ScreenType.RevisionB, "COM9");
 
         screen.SetBrightness(100);
-        screen.Orientation = ScreenOrientation.Landscape;
+        screen.Orientation = ScreenOrientation.ReverseLandscape;
+
+        screen.Clear();
 
         // Clear
         using var clearBuffer = screen.CreateBuffer();

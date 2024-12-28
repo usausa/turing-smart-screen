@@ -179,7 +179,16 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
         writeOffset = 0;
     }
 
-    public void Clear(byte r = 0, byte g = 0, byte b = 0)
+    public void SetBrightness(int level)
+    {
+        Write(CommandSetBrightness);
+        Write((byte)level);
+        Flush();
+    }
+
+    public void Clear() => Clear(0, 0, 0);
+
+    public void Clear(byte r, byte g, byte b)
     {
         // Start
         Write(0x2c);
@@ -213,13 +222,6 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
         Write(CommandQueryStatus);
         Flush();
         ReadResponse();
-    }
-
-    public void SetBrightness(int level)
-    {
-        Write(CommandSetBrightness);
-        Write((byte)level);
-        Flush();
     }
 
     private bool IsFullBitmap(int width, int height, RotateOption option)
@@ -296,6 +298,7 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
 
     private bool DisplayPartialBitmap(int x, int y, int w, int h, byte[] bitmap, int bitmapX, int bitmapY, int bitmapWidth, RotateOption option)
     {
+        // TODO re
         var (width, height, startX, startY) = option switch
         {
             RotateOption.Rotate90 => (h, w, Width - 1 - y - h, x),
@@ -334,6 +337,7 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
 
             for (var ox = 0; ox < width; ox++)
             {
+                // TODO re
                 var (px, py) = option switch
                 {
                     RotateOption.Rotate90 => (bitmapX + oy, bitmapY + h - 1 - ox),

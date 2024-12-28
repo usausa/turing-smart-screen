@@ -41,6 +41,8 @@ internal abstract class ScreenBase : IScreen
 
     public abstract void Clear();
 
+    public abstract void Clear(byte r, byte g, byte b);
+
     public abstract void ScreenOff();
 
     public abstract void ScreenOn();
