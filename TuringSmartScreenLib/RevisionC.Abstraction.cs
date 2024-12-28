@@ -45,9 +45,9 @@ internal sealed class ScreenWrapperRevisionC : ScreenBase
     private RotateOption CalcRotateOption() =>
         Orientation switch
         {
-            ScreenOrientation.Landscape => RotateOption.Rotate90,
-            ScreenOrientation.ReversePortrait => RotateOption.Rotate180,
-            ScreenOrientation.ReverseLandscape => RotateOption.Rotate270,
+            ScreenOrientation.Portrait => RotateOption.Rotate270,
+            ScreenOrientation.ReversePortrait => RotateOption.Rotate90,
+            ScreenOrientation.ReverseLandscape => RotateOption.Rotate180,
             _ => RotateOption.None
         };
 }

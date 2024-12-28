@@ -308,7 +308,7 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
         header[3] = (byte)((width >> 8) & 0xff);
         header[4] = (byte)(width & 0xff);
 
-        var bitmapSize = (((width * 4) + header.Length) * height) + CommandUpdateBitmapTerminate.Length;
+        var bitmapSize = (((width * 3) + header.Length) * height) + CommandUpdateBitmapTerminate.Length;
         var size = (Span<byte>)stackalloc byte[2];
         size[0] = (byte)((bitmapSize >> 8) & 0xff);
         size[1] = (byte)(bitmapSize & 0xff);
