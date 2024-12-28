@@ -2,11 +2,10 @@ namespace TuringSmartScreenLib;
 
 using System;
 using System.Buffers;
-using System.Buffers.Binary;
 using System.IO.Ports;
 using System.Reflection;
 
-public sealed unsafe class TuringSmartScreenRevisionB : IDisposable
+public sealed class TuringSmartScreenRevisionB : IDisposable
 {
     private static readonly byte[] CommandHello = [0xCA, (byte)'H', (byte)'E', (byte)'L', (byte)'L', (byte)'O', 0, 0, 0, 0xCA];
 
