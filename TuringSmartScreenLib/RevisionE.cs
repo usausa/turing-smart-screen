@@ -222,9 +222,18 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
         Flush();
     }
 
+    private bool IsFullBitmap(int width, int height, RotateOption option)
+    {
+        if (option is RotateOption.None or RotateOption.Rotate180)
+        {
+            return width == Width && height == Height;
+        }
+        return width == Height && height == Width;
+    }
+
     public bool DisplayBitmap(int x, int y, byte[] bitmap, int width, int height, RotateOption option = RotateOption.None)
     {
-        if ((x == 0) && (y == 0) && (width == Width) && (height == Height))
+        if ((x == 0) && (y == 0) && IsFullBitmap(width, height, option))
         {
             DisplayFullBitmap(bitmap, option);
             renderCount = 0;
@@ -257,13 +266,18 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
         Flush();
 
         // Payload
-        // TODO rotate support
         for (var y = 0; y < Height; y++)
         {
             for (var x = 0; x < Width; x++)
             {
-                var offset = ((y * Width) + x) * 4;
-                Write(bitmap.AsSpan(offset, 4));
+                var offset = option switch
+                {
+                    RotateOption.Rotate90 => ((Width - 1 - x) * Height) + y,
+                    RotateOption.Rotate270 => (x * Height) + (Height - 1 - y),
+                    RotateOption.Rotate180 => ((Height - 1 - y) * Width) + (Width - 1 - x),
+                    _ => (y * Width) + x
+                };
+                Write(bitmap.AsSpan(offset * 4, 4));
             }
         }
         Flush();
@@ -279,14 +293,21 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
         ReadResponse();
     }
 
-    private bool DisplayPartialBitmap(int x, int y, int w, int h, byte[] bitmap, int sx, int sy, int width, RotateOption option)
+    private bool DisplayPartialBitmap(int x, int y, int w, int h, byte[] bitmap, int bitmapX, int bitmapY, int bitmapWidth, RotateOption option)
     {
-        // TODO rotate support
-        var header = (Span<byte>)stackalloc byte[5];
-        header[3] = (byte)((w >> 8) & 0xff);
-        header[4] = (byte)(w & 0xff);
+        var (width, height, startX, startY) = option switch
+        {
+            RotateOption.Rotate90 => (h, w, Width - 1 - y - h, x),
+            RotateOption.Rotate270 => (h, w, y, Height - 1 - x - w),
+            RotateOption.Rotate180 => (w, h, Width - 1 - x - w, Height - 1 - y - h),
+            _ => (w, h, x, y)
+        };
 
-        var bitmapSize = (((w * 4) + header.Length) * h) + CommandUpdateBitmapTerminate.Length;
+        var header = (Span<byte>)stackalloc byte[5];
+        header[3] = (byte)((width >> 8) & 0xff);
+        header[4] = (byte)(width & 0xff);
+
+        var bitmapSize = (((width * 4) + header.Length) * height) + CommandUpdateBitmapTerminate.Length;
         var size = (Span<byte>)stackalloc byte[2];
         size[0] = (byte)((bitmapSize >> 8) & 0xff);
         size[1] = (byte)(bitmapSize & 0xff);
@@ -302,18 +323,25 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
         Flush();
 
         // Payload
-        // TODO rotate support
-        for (var oy = 0; oy < h; oy++)
+        for (var oy = 0; oy < height; oy++)
         {
-            var position = ((y + oy) * Width) + x;
+            var position = ((startY + oy) * Width) + startX;
             header[0] = (byte)((position >> 16) & 0xff);
             header[1] = (byte)((position >> 8) & 0xff);
             header[2] = (byte)(position & 0xff);
             Write(header);
-            for (var ox = 0; ox < w; ox++)
+
+            for (var ox = 0; ox < width; ox++)
             {
-                var offset = (((sy + oy) * width) + (sx + ox)) * 4;
-                Write(bitmap.AsSpan(offset, 4));
+                var (px, py) = option switch
+                {
+                    RotateOption.Rotate90 => (bitmapX + oy, bitmapY + h - 1 - ox),
+                    RotateOption.Rotate270 => (bitmapX + w - 1 - oy, bitmapY + ox),
+                    RotateOption.Rotate180 => (bitmapX + w - 1 - ox, bitmapY + h - 1 - oy),
+                    _ => (bitmapX + ox, bitmapY + oy)
+                };
+
+                Write(bitmap.AsSpan(((py * bitmapWidth) + px) * 4, 4));
             }
         }
         Write(CommandUpdateBitmapTerminate);

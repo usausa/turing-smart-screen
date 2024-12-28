@@ -1,7 +1,5 @@
 namespace Example3;
 
-using System.Diagnostics;
-
 using SkiaSharp;
 
 using TuringSmartScreenLib;
@@ -12,8 +10,9 @@ internal sealed class Worker : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         using var screen = ScreenFactory.Create(ScreenType.RevisionE, "COM12");
-        screen.SetBrightness(100);
+        screen.Orientation = ScreenOrientation.Landscape;
         screen.Clear();
+        screen.SetBrightness(100);
 
         using var bitmap = SKBitmap.Decode("space.jpg");
         using var buffer = screen.CreateBufferFrom(bitmap);
@@ -23,18 +22,11 @@ internal sealed class Worker : BackgroundService
 
         screen.DisplayBuffer(0, 0, buffer);
 
-        using var logoBuffer = screen.CreateBuffer(100, 200);
-        logoBuffer.Clear(255, 255, 255);
-
-        screen.DisplayBuffer(0, 0, buffer2);
-
-        // TODO check
-        //Debug.WriteLine("*Partial");
-        //for (var i = 0; i < 600; i++)
-        //{
-        //    screen.DisplayBuffer(0, i * 2, buffer2);
-        //    await Task.Delay(50, stoppingToken);
-        //}
+        for (var i = 0; i < screen.Height - bitmap2.Height; i++)
+        {
+            screen.DisplayBuffer(i * 3, i, buffer2);
+            await Task.Delay(0, stoppingToken);
+        }
 
         //while (!stoppingToken.IsCancellationRequested)
         //{
