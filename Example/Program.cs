@@ -30,17 +30,16 @@ internal static class Program
         // Paint
         using var paint = new SKPaint();
         paint.IsAntialias = true;
-        paint.TextSize = 96;
         paint.Color = SKColors.Red;
+        using var font = new SKFont();
+        font.Size = 96;
 
         // Calc image size
         var imageWidth = 0;
         var imageHeight = 0;
         for (var i = 0; i < 10; i++)
         {
-            var rect = default(SKRect);
-            paint.MeasureText($"{i}", ref rect);
-
+            font.MeasureText($"{i}", out var rect);
             imageWidth = Math.Max(imageWidth, (int)Math.Floor(rect.Width));
             imageHeight = Math.Max(imageHeight, (int)Math.Floor(rect.Height));
         }
@@ -55,7 +54,7 @@ internal static class Program
             using var bitmap = new SKBitmap(imageWidth, imageHeight);
             using var canvas = new SKCanvas(bitmap);
             canvas.Clear(SKColors.White);
-            canvas.DrawText($"{i}", Margin, imageHeight - Margin, paint);
+            canvas.DrawText($"{i}", Margin, imageHeight - Margin, font, paint);
             canvas.Flush();
 
             var buffer = screen.CreateBuffer(imageWidth, imageHeight);

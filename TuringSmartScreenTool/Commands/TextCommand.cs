@@ -42,24 +42,24 @@ public sealed class TextCommand : Command
             using var screen = screenResolver.Resolve(Revision, Port);
 
             using var paint = new SKPaint();
+            using var font = new SKFont();
             paint.IsAntialias = true;
-            if (Size > 0)
-            {
-                paint.TextSize = Size;
-            }
             if (!String.IsNullOrEmpty(Font))
             {
-                paint.Typeface = SKTypeface.FromFamilyName(Font);
+                font.Typeface = SKTypeface.FromFamilyName(Font);
+            }
+            if (Size > 0)
+            {
+                font.Size = Size;
             }
             paint.Color = SKColor.Parse(Color);
 
-            var rect = default(SKRect);
-            paint.MeasureText(Text, ref rect);
+            font.MeasureText(Text, out var rect);
 
             using var bitmap = new SKBitmap((int)Math.Floor(rect.Width), (int)Math.Floor(rect.Height));
             using var canvas = new SKCanvas(bitmap);
             canvas.Clear(SKColor.Parse(Background));
-            canvas.DrawText(Text, 0, rect.Height, paint);
+            canvas.DrawText(Text, 0, rect.Height, font, paint);
             canvas.Flush();
 
             using var buffer = screen.CreateBufferFrom(bitmap);
