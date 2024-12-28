@@ -297,12 +297,11 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
 
     private bool DisplayPartialBitmap(int x, int y, int w, int h, byte[] bitmap, int bitmapX, int bitmapY, int bitmapWidth, RotateOption option)
     {
-        // TODO re
         var (width, height, startX, startY) = option switch
         {
-            RotateOption.Rotate90 => (h, w, Width - 1 - y - h, x),
-            RotateOption.Rotate270 => (h, w, y, Height - 1 - x - w),
-            RotateOption.Rotate180 => (w, h, Width - 1 - x - w, Height - 1 - y - h),
+            RotateOption.Rotate90 => (h, w, Width - y - h, x),
+            RotateOption.Rotate270 => (h, w, y, Height - x - w),
+            RotateOption.Rotate180 => (w, h, Width - x - w, Height - y - h),
             _ => (w, h, x, y)
         };
 
@@ -336,7 +335,6 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
 
             for (var ox = 0; ox < width; ox++)
             {
-                // TODO re
                 var (px, py) = option switch
                 {
                     RotateOption.Rotate90 => (bitmapX + oy, bitmapY + h - 1 - ox),
@@ -344,7 +342,6 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
                     RotateOption.Rotate180 => (bitmapX + w - 1 - ox, bitmapY + h - 1 - oy),
                     _ => (bitmapX + ox, bitmapY + oy)
                 };
-
                 Write(bitmap.AsSpan(((py * bitmapWidth) + px) * 4, 4));
             }
         }

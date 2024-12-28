@@ -51,11 +51,11 @@ public sealed class ScreenBufferBgra8888 : IScreenBuffer
     public void Clear(byte r, byte g, byte b)
     {
         var pattern = (Span<byte>)stackalloc byte[4];
-        buffer[0] = r;
-        buffer[1] = g;
-        buffer[2] = b;
-        buffer[3] = 255;
-        Helper.Fill(buffer, pattern);
+        pattern[0] = b;
+        pattern[1] = g;
+        pattern[2] = r;
+        pattern[3] = 255;
+        Helper.Fill(buffer.AsSpan(0, Width * Height * 4), pattern);
     }
 }
 // ReSharper restore ConvertToAutoProperty
