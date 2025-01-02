@@ -5,17 +5,31 @@ root = true
 
 [*]
 charset = utf-8
-
 indent_size = 4
 indent_style = space
 tab_width = 4
-
 end_of_line = crlf
 insert_final_newline = true
 trim_trailing_whitespace = true
 
+[*.sln]
+indent_style = tab
+indent_size = 4
+
 [*.csproj]
 indent_size = 2
+
+[*.{props,targets}]
+indent_size = 2
+
+[*.cs}]
+indent_size = 4
+
+[*.razor]
+indent_size = 4
+
+[*.xaml]
+indent_size = 4
 
 [*.json]
 indent_size = 2
@@ -25,13 +39,6 @@ indent_size = 2
 
 [*.md]
 trim_trailing_whitespace = false
-
-[*.{cs,razor}]
-charset = utf-8
-
-indent_size = 4
-indent_style = space
-tab_width = 4
 
 ###############################
 # .NET Coding Conventions     #
@@ -126,7 +133,7 @@ csharp_style_conditional_delegate_call = true:warning
 csharp_style_prefer_parameter_null_checking = true:silent
 
 # Modifier preferences
-csharp_prefer_static_anonymous_function = true:suggestion
+csharp_prefer_static_anonymous_function = true:warning
 csharp_prefer_static_local_function = true:warning
 csharp_preferred_modifier_order = public,private,protected,internal,static,extern,new,virtual,abstract,sealed,override,readonly,unsafe,required,volatile,async:warning
 csharp_style_prefer_readonly_struct = true:warning

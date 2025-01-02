@@ -7,7 +7,26 @@ using TuringSmartScreenLib.Helpers.SkiaSharp;
 
 internal sealed class Worker : BackgroundService
 {
+    private readonly IHostApplicationLifetime appLifetime;
+
+    public Worker(IHostApplicationLifetime appLifetime)
+    {
+        this.appLifetime = appLifetime;
+    }
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        try
+        {
+            await ExecuteCoreAsync(stoppingToken);
+        }
+        finally
+        {
+            appLifetime.StopApplication();
+        }
+    }
+
+    private static async ValueTask ExecuteCoreAsync(CancellationToken stoppingToken)
     {
         using var screen = ScreenFactory.Create(ScreenType.RevisionE, "COM12");
         screen.Orientation = ScreenOrientation.Landscape;
