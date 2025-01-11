@@ -3,12 +3,11 @@
   <IncludeAll Action="Warning" />
   <Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">
     <Rule Id="SA1005" Action="Hidden" />
-    <!-- https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3687 -->
-    <Rule Id="SA1010" Action="Hidden" />
     <Rule Id="SA1101" Action="Hidden" />
     <Rule Id="SA1121" Action="Hidden" />
     <Rule Id="SA1201" Action="Hidden" />
     <Rule Id="SA1202" Action="Hidden" />
+    <Rule Id="SA1203" Action="Hidden" />
     <Rule Id="SA1204" Action="Hidden" />
     <Rule Id="SA1210" Action="Hidden" />
     <Rule Id="SA1214" Action="Hidden" />
