@@ -1,0 +1,20 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitattributes" />
+    <File Path=".gitignore" />
+    <File Path="Analyzers.ruleset" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Build.targets" />
+    <File Path="LICENSE" />
+    <File Path="README.md" />
+    <File Path="TuringSmartScreenLib.sln.DotSettings" />
+  </Folder>
+  <Project Path="TuringSmartScreenLib/TuringSmartScreenLib.csproj" />
+  <Project Path="TuringSmartScreenLib.Helpers.GdiPlus/TuringSmartScreenLib.Helpers.GdiPlus.csproj" />
+  <Project Path="TuringSmartScreenLib.Helpers.SkiaSharp/TuringSmartScreenLib.Helpers.SkiaSharp.csproj" />
+  <Project Path="TuringSmartScreenTool/TuringSmartScreenTool.csproj" />
+  <Project Path="Example/Example.csproj" />
+  <Project Path="Example2/Example2.csproj" />
+  <Project Path="Example3/Example3.csproj" />
+</Solution>
