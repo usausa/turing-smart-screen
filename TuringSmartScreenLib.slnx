@@ -17,4 +17,5 @@
   <Project Path="Example/Example.csproj" />
   <Project Path="Example2/Example2.csproj" />
   <Project Path="Example3/Example3.csproj" />
+  <Project Path="WorkUsb/WorkUsb.csproj" Id="6e5a26b0-ad2a-4294-9bf6-d64d40005143" />
 </Solution>
