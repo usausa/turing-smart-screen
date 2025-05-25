@@ -1,9 +1,13 @@
+// ReSharper disable MemberCanBePrivate.Global
+// ReSharper disable UnusedMethodReturnValue.Global
+#pragma warning disable CA1031
+#pragma warning disable CA1303
+#pragma warning disable CA1515
 namespace WorkUsb;
 
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics;
-using System.Text;
 
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
@@ -26,19 +30,52 @@ internal static class Program
     }
 }
 
-public class TuringDevice : IDisposable
+public sealed class TuringDevice : IDisposable
 {
-    private const int VENDOR_ID = 0x1cbe;
-    private const int PRODUCT_ID = 0x0088;
-    private const int CMD_PACKET_SIZE = 500;
-    private const int FULL_PACKET_SIZE = 512;
-    private static readonly byte[] DES_KEY_BYTES = Encoding.ASCII.GetBytes("slv3tuzx");
-    private static readonly byte[] MAGIC_BYTES = [161, 26];
-    private readonly BufferedBlockCipher _cipher = new(new CbcBlockCipher(new DesEngine()));
+    private const int VendorId = 0x1cbe;
+    private const int ProductId = 0x0088;
+    private const int CmdPacketSize = 500;
+    private const int FullPacketSize = 512;
 
-    private UsbDevice? _device;
-    private UsbEndpointReader? _reader;
-    private UsbEndpointWriter? _writer;
+    private static readonly byte[] DesKeyBytes = "slv3tuzx"u8.ToArray();
+    private static readonly byte[] MagicBytes = [161, 26];
+
+    private readonly BufferedBlockCipher cipher = new(new CbcBlockCipher(new DesEngine()));
+
+    private UsbDevice? device;
+    private UsbEndpointReader? reader;
+    private UsbEndpointWriter? writer;
+
+    public void Dispose()
+    {
+        // Clean up resources
+        if (reader != null)
+        {
+            reader.Dispose();
+            reader = null;
+        }
+
+        if (writer != null)
+        {
+            writer.Dispose();
+            writer = null;
+        }
+
+        if (device != null)
+        {
+            if (device is IUsbDevice wholeUsbDevice)
+            {
+                // Release interface
+                wholeUsbDevice.ReleaseInterface(0);
+            }
+
+            ((IDisposable)device).Dispose();
+            device = null;
+        }
+
+        // Force garbage collection to ensure device resources are released
+        UsbDevice.Exit();
+    }
 
     public bool Initialize()
     {
@@ -47,10 +84,10 @@ public class TuringDevice : IDisposable
         try
         {
             // Find and open the USB device
-            var finder = new UsbDeviceFinder(VENDOR_ID, PRODUCT_ID);
-            _device = UsbDevice.OpenUsbDevice(finder);
+            var finder = new UsbDeviceFinder(VendorId, ProductId);
+            device = UsbDevice.OpenUsbDevice(finder);
 
-            if (_device == null)
+            if (device == null)
             {
                 Trace.WriteLine("Device not found.");
                 return false;
@@ -59,7 +96,7 @@ public class TuringDevice : IDisposable
             Trace.WriteLine("Device found.");
             // If this is a "whole" USB device (like a composite device),
             // it needs to be properly configured first
-            if (_device is IUsbDevice wholeUsbDevice)
+            if (device is IUsbDevice wholeUsbDevice)
             {
                 // Select the first configuration and claim interface 0
                 wholeUsbDevice.SetConfiguration(1);
@@ -67,10 +104,10 @@ public class TuringDevice : IDisposable
             }
 
             // Get endpoints for reading and writing
-            _reader = _device.OpenEndpointReader(ReadEndpointID.Ep01);
-            _writer = _device.OpenEndpointWriter(WriteEndpointID.Ep01);
+            reader = device.OpenEndpointReader(ReadEndpointID.Ep01);
+            writer = device.OpenEndpointWriter(WriteEndpointID.Ep01);
 
-            if (_reader == null || _writer == null)
+            if (reader == null || writer == null)
             {
                 Console.WriteLine("Failed to open endpoints.");
                 return false;
@@ -86,12 +123,12 @@ public class TuringDevice : IDisposable
         }
     }
 
-    public byte[] BuildCommandPacketHeader(byte commandId)
+    public static byte[] BuildCommandPacketHeader(byte commandId)
     {
-        var packet = ArrayPool<byte>.Shared.Rent(CMD_PACKET_SIZE);
+        var packet = ArrayPool<byte>.Shared.Rent(CmdPacketSize);
         try
         {
-            Array.Clear(packet, 0, CMD_PACKET_SIZE);
+            Array.Clear(packet, 0, CmdPacketSize);
 
             packet[0] = commandId;
             packet[2] = 0x1A;
@@ -108,8 +145,8 @@ public class TuringDevice : IDisposable
                 unchecked((uint)timestamp));
 
             // Create a copy to return (since we need to return the rented array)
-            var result = new byte[CMD_PACKET_SIZE];
-            Buffer.BlockCopy(packet, 0, result, 0, CMD_PACKET_SIZE);
+            var result = new byte[CmdPacketSize];
+            Buffer.BlockCopy(packet, 0, result, 0, CmdPacketSize);
             return result;
         }
         finally
@@ -118,10 +155,10 @@ public class TuringDevice : IDisposable
         }
     }
 
-    public byte[] EncryptWithDES(byte[] data)
+    public byte[] EncryptWithDes(byte[] data)
     {
-        var keyParam = new KeyParameter(DES_KEY_BYTES);
-        _cipher.Init(true, new ParametersWithIV(keyParam, DES_KEY_BYTES));
+        var keyParam = new KeyParameter(DesKeyBytes);
+        cipher.Init(true, new ParametersWithIV(keyParam, DesKeyBytes));
 
         var paddedLen = (data.Length + 7) & ~7;    // round up to multiple of 8
         var padded = ArrayPool<byte>.Shared.Rent(paddedLen);
@@ -130,12 +167,12 @@ public class TuringDevice : IDisposable
             Array.Clear(padded, 0, paddedLen);     // Ensure padding bytes are zeroed
             data.CopyTo(padded, 0);
 
-            var outputSize = _cipher.GetOutputSize(paddedLen);
+            var outputSize = cipher.GetOutputSize(paddedLen);
             var encrypted = ArrayPool<byte>.Shared.Rent(outputSize);
             try
             {
-                var len = _cipher.ProcessBytes(padded, 0, paddedLen, encrypted, 0);
-                var finalLen = len + _cipher.DoFinal(encrypted, len);
+                var len = cipher.ProcessBytes(padded, 0, paddedLen, encrypted, 0);
+                var finalLen = len + cipher.DoFinal(encrypted, len);
 
                 // Return only the actual encrypted data
                 var result = new byte[finalLen];
@@ -155,20 +192,20 @@ public class TuringDevice : IDisposable
 
     public byte[] EncryptCommandPacket(byte[] data)
     {
-        var encrypted = EncryptWithDES(data);
+        var encrypted = EncryptWithDes(data);
 
-        var finalPacket = ArrayPool<byte>.Shared.Rent(FULL_PACKET_SIZE);
-        Array.Clear(finalPacket, 0, FULL_PACKET_SIZE);
+        var finalPacket = ArrayPool<byte>.Shared.Rent(FullPacketSize);
+        Array.Clear(finalPacket, 0, FullPacketSize);
 
-        Buffer.BlockCopy(encrypted, 0, finalPacket, 0, Math.Min(encrypted.Length, FULL_PACKET_SIZE - 2));
+        Buffer.BlockCopy(encrypted, 0, finalPacket, 0, Math.Min(encrypted.Length, FullPacketSize - 2));
 
         // Add magic bytes at the end
-        finalPacket[FULL_PACKET_SIZE - 2] = MAGIC_BYTES[0];  // 161
-        finalPacket[FULL_PACKET_SIZE - 1] = MAGIC_BYTES[1];  // 26
+        finalPacket[FullPacketSize - 2] = MagicBytes[0];  // 161
+        finalPacket[FullPacketSize - 1] = MagicBytes[1];  // 26
 
         // Create a copy to return (since we need to return the rented array)
-        var result = new byte[FULL_PACKET_SIZE];
-        Buffer.BlockCopy(finalPacket, 0, result, 0, FULL_PACKET_SIZE);
+        var result = new byte[FullPacketSize];
+        Buffer.BlockCopy(finalPacket, 0, result, 0, FullPacketSize);
 
         ArrayPool<byte>.Shared.Return(finalPacket);
         return result;
@@ -203,15 +240,16 @@ public class TuringDevice : IDisposable
                 0x00, 0x04, 0x67, 0x41, 0x4d, 0x41, 0x00, 0x00, 0xb1, 0x8f, 0x0b, 0xfc, 0x61, 0x05, 0x00, 0x00,
                 0x00, 0x09, 0x70, 0x48, 0x59, 0x73, 0x00, 0x00, 0x0e, 0xc3, 0x00, 0x00, 0x0e, 0xc3, 0x01, 0xc7,
                 0x6f, 0xa8, 0x64, 0x00, 0x00, 0x0e, 0x0c, 0x49, 0x44, 0x41, 0x54, 0x78, 0x5e, 0xed, 0xc1, 0x01,
-                0x0d, 0x00, 0x00, 0x00, 0xc2, 0xa0, 0xf7, 0x4f, 0x6d, 0x0f, 0x07, 0x14, 0x00, 0x00, 0x00, 0x00,
+                0x0d, 0x00, 0x00, 0x00, 0xc2, 0xa0, 0xf7, 0x4f, 0x6d, 0x0f, 0x07, 0x14, 0x00, 0x00, 0x00, 0x00
             ];
         // Add 3568 zero bytes
         Array.Resize(ref imgData, imgData.Length + 3568);
         // Add PNG end chunk
-        var endChunk = new byte[] {
-                0x00, 0xf0, 0x66, 0x4a, 0xc8, 0x00, 0x01, 0x11, 0x9d, 0x82, 0x0a, 0x00, 0x00, 0x00, 0x00, 0x49,
-                0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82
-            };
+        var endChunk = new byte[]
+        {
+            0x00, 0xf0, 0x66, 0x4a, 0xc8, 0x00, 0x01, 0x11, 0x9d, 0x82, 0x0a, 0x00, 0x00, 0x00, 0x00, 0x49,
+            0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82
+        };
         Array.Resize(ref imgData, imgData.Length + endChunk.Length);
         Array.Copy(endChunk, 0, imgData, imgData.Length - endChunk.Length, endChunk.Length);
 
@@ -232,14 +270,15 @@ public class TuringDevice : IDisposable
 
     public bool WriteToDevice(byte[] data, int timeout = 2000)
     {
-        if (_writer == null || _reader == null)
+        if (writer == null || reader == null)
+        {
             return false;
+        }
 
         try
         {
             // Write the data
-            var transferLength = 0;
-            var ec = _writer.Write(data, timeout, out transferLength);
+            var ec = writer.Write(data, timeout, out var transferLength);
 
             if (ec != ErrorCode.None)
             {
@@ -251,7 +290,7 @@ public class TuringDevice : IDisposable
 
             // Read the response
             var readBuffer = new byte[512];
-            ec = _reader.Read(readBuffer, timeout, out transferLength);
+            ec = reader.Read(readBuffer, timeout, out transferLength);
 
             if (ec != ErrorCode.None && ec != ErrorCode.IoTimedOut)
             {
@@ -275,18 +314,22 @@ public class TuringDevice : IDisposable
 
     public void ReadFlush(int maxAttempts = 5)
     {
-        if (_reader == null)
+        if (reader == null)
+        {
             return;
+        }
 
         for (var i = 0; i < maxAttempts; i++)
         {
             try
             {
                 var readBuffer = new byte[512];
-                var ec = _reader.Read(readBuffer, 200, out var transferLength);
+                var ec = reader.Read(readBuffer, 200, out var transferLength);
 
                 if (ec == ErrorCode.IoTimedOut || transferLength == 0)
+                {
                     break;
+                }
 
                 Console.WriteLine($"Flushed {transferLength} bytes");
             }
@@ -301,36 +344,5 @@ public class TuringDevice : IDisposable
     {
         SendSyncCommand();
         Thread.Sleep(200);
-    }
-
-    public void Dispose()
-    {
-        // Clean up resources
-        if (_reader != null)
-        {
-            _reader.Dispose();
-            _reader = null;
-        }
-
-        if (_writer != null)
-        {
-            _writer.Dispose();
-            _writer = null;
-        }
-
-        if (_device != null)
-        {
-            if (_device is IUsbDevice wholeUsbDevice)
-            {
-                // Release interface
-                wholeUsbDevice.ReleaseInterface(0);
-            }
-
-            _device.Close();
-            _device = null;
-        }
-
-        // Force garbage collection to ensure device resources are released
-        UsbDevice.Exit();
     }
 }
