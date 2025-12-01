@@ -22,7 +22,7 @@ indent_size = 2
 [*.{props,targets}]
 indent_size = 2
 
-[*.cs}]
+[*.cs]
 indent_size = 4
 
 [*.razor]
