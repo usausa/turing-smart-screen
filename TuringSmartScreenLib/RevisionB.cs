@@ -45,6 +45,22 @@ public sealed class TuringSmartScreenRevisionB : IDisposable
         readBuffer = ArrayPool<byte>.Shared.Rent(16);
     }
 
+    public void Dispose()
+    {
+        Close();
+
+        if (writeBuffer.Length > 0)
+        {
+            ArrayPool<byte>.Shared.Return(writeBuffer);
+            writeBuffer = [];
+        }
+        if (readBuffer.Length > 0)
+        {
+            ArrayPool<byte>.Shared.Return(readBuffer);
+            readBuffer = [];
+        }
+    }
+
     public void Close()
     {
         if (port.IsOpen)
@@ -62,22 +78,6 @@ public sealed class TuringSmartScreenRevisionB : IDisposable
                 // Ignore
             }
         }
-
-        if (writeBuffer.Length > 0)
-        {
-            ArrayPool<byte>.Shared.Return(writeBuffer);
-            writeBuffer = [];
-        }
-        if (readBuffer.Length > 0)
-        {
-            ArrayPool<byte>.Shared.Return(readBuffer);
-            readBuffer = [];
-        }
-    }
-
-    public void Dispose()
-    {
-        Close();
     }
 
     public void Open()
