@@ -1,24 +1,22 @@
-using System.CommandLine.Builder;
-using System.CommandLine.Hosting;
-using System.CommandLine.Parsing;
-
 using Microsoft.Extensions.DependencyInjection;
 
-using TuringSmartScreenTool.Commands;
+using Smart.CommandLine.Hosting;
 
-var rootCommand = new RootCommand("Turing Smart Screen tool");
-rootCommand.Setup();
+using TuringSmartScreenTool;
 
-var builder = new CommandLineBuilder(rootCommand)
-    .UseDefaults()
-    .UseHost(host =>
+var builder = CommandHost.CreateBuilder(args);
+
+builder.Services.AddSingleton<IScreenResolver, ScreenResolver>();
+
+builder.ConfigureCommands(commands =>
+{
+    commands.ConfigureRootCommand(root =>
     {
-        host.ConfigureServices((_, service) =>
-        {
-            service.AddSingleton<IScreenResolver, ScreenResolver>();
-        });
-
-        host.UseCommandHandlers();
+        root.WithDescription("Turing Smart Screen tool");
     });
 
-return await builder.Build().InvokeAsync(args);
+    commands.AddCommands();
+});
+
+var host = builder.Build();
+return await host.RunAsync();

@@ -26,5 +26,3 @@ global using SkiaSharp;
 
 global using TuringSmartScreenLib;
 global using TuringSmartScreenLib.Helpers.SkiaSharp;
-
-global using TuringSmartScreenTool.Components;

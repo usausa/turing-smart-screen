@@ -1,4 +1,4 @@
-namespace TuringSmartScreenTool.Components;
+namespace TuringSmartScreenTool;
 
 public interface IScreenResolver
 {
