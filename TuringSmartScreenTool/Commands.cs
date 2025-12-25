@@ -25,15 +25,15 @@ public static class CommandBuilderExtensions
 
 public abstract class CommandBase
 {
-    [Option<string>("--revision", "-r", Description = "Revision", IsRequired = true)]
+    [Option<string>("--revision", "-r", Description = "Revision", Required = true)]
     public string Revision { get; set; } = default!;
 
-    [Option<string>("--port", "-p", Description = "Port", IsRequired = true)]
+    [Option<string>("--port", "-p", Description = "Port", Required = true)]
     public string Port { get; set; } = default!;
 }
 
 // On
-[Command("on", Description = "Screen ON")]
+[Command("on", "Screen ON")]
 public sealed class OnCommand : CommandBase, ICommandHandler
 {
     private readonly IScreenResolver screenResolver;
@@ -53,7 +53,7 @@ public sealed class OnCommand : CommandBase, ICommandHandler
 }
 
 // Off
-[Command("off", Description = "Screen OFF")]
+[Command("off",  "Screen OFF")]
 public sealed class OffCommand : CommandBase, ICommandHandler
 {
     private readonly IScreenResolver screenResolver;
@@ -73,12 +73,12 @@ public sealed class OffCommand : CommandBase, ICommandHandler
 }
 
 // Bright
-[Command("bright", Description = "Set brightness")]
+[Command("bright", "Set brightness")]
 public sealed class BrightCommand : CommandBase, ICommandHandler
 {
     private readonly IScreenResolver screenResolver;
 
-    [Option<byte>("--level", "-l", Description = "Level", IsRequired = true)]
+    [Option<byte>("--level", "-l", Description = "Level", Required = true)]
     public byte Level { get; set; } = default!;
 
     public BrightCommand(IScreenResolver screenResolver)
@@ -96,12 +96,12 @@ public sealed class BrightCommand : CommandBase, ICommandHandler
 }
 
 // Orientation
-[Command("orientation", Description = "Set orientation")]
+[Command("orientation", "Set orientation")]
 public sealed class OrientationCommand : CommandBase, ICommandHandler
 {
     private readonly IScreenResolver screenResolver;
 
-    [Option<string>("--mode", "-m", Description = "Mode (l|p|rl|rp)")]
+    [Option<string>("--mode", "-m", Description = "Mode", Completions = ["l", "p", "rl", "rp"])]
     public string Mode { get; set; } = default!;
 
     public OrientationCommand(IScreenResolver screenResolver)
@@ -126,7 +126,7 @@ public sealed class OrientationCommand : CommandBase, ICommandHandler
 }
 
 // Reset
-[Command("reset", Description = "Reset screen")]
+[Command("reset", "Reset screen")]
 public sealed class ResetCommand : CommandBase, ICommandHandler
 {
     private readonly IScreenResolver screenResolver;
@@ -146,7 +146,7 @@ public sealed class ResetCommand : CommandBase, ICommandHandler
 }
 
 // Clear
-[Command("clear", Description = "Clear screen")]
+[Command("clear", "Clear screen")]
 public sealed class ClearCommand : CommandBase, ICommandHandler
 {
     private readonly IScreenResolver screenResolver;
@@ -166,12 +166,12 @@ public sealed class ClearCommand : CommandBase, ICommandHandler
 }
 
 // Image
-[Command("image", Description = "Display image")]
+[Command("image", "Display image")]
 public sealed class ImageCommand : CommandBase, ICommandHandler
 {
     private readonly IScreenResolver screenResolver;
 
-    [Option<string>("--file", "-f", Description = "Filename", IsRequired = true)]
+    [Option<string>("--file", "-f", Description = "Filename", Required = true)]
     public string File { get; set; } = default!;
 
     [Option<int>("-x", Description = "Position x", DefaultValue = 0)]
@@ -200,7 +200,7 @@ public sealed class ImageCommand : CommandBase, ICommandHandler
 }
 
 // Fill
-[Command("fill", Description = "Fill screen")]
+[Command("fill", "Fill screen")]
 public sealed class FillCommand : CommandBase, ICommandHandler
 {
     private readonly IScreenResolver screenResolver;
@@ -227,12 +227,12 @@ public sealed class FillCommand : CommandBase, ICommandHandler
 }
 
 // Text
-[Command("text", Description = "Display text")]
+[Command("text", "Display text")]
 public sealed class TextCommand : CommandBase, ICommandHandler
 {
     private readonly IScreenResolver screenResolver;
 
-    [Option<string>("--text", "-t", Description = "Text", IsRequired = true)]
+    [Option<string>("--text", "-t", Description = "Text", Required = true)]
     public string Text { get; set; } = default!;
 
     [Option<int>("-x", Description = "Position x", DefaultValue = 0)]
