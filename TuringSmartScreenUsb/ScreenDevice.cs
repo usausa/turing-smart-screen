@@ -148,11 +148,15 @@ public sealed class ScreenDevice : IDisposable
     // Command
     // --------------------------------------------------------------------------------
 
-    // TODO reset?
-
     public bool Sync()
     {
         PrepareCommandHeader(10);
+        return RequestResponse();
+    }
+
+    public bool Restart()
+    {
+        PrepareCommandHeader(11);
         return RequestResponse();
     }
 
