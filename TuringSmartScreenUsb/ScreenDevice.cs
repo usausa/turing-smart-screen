@@ -119,7 +119,9 @@ public sealed class ScreenDevice : IDisposable
         encryptedBuffer[PacketSize - 2] = 0xA1;
         encryptedBuffer[PacketSize - 1] = 0x1A;
 
-        // TODO Timeout behavior ?
+        // [MEMO] Flush pending data caused by ZLP handling ?
+        reader.ReadFlush();
+
         var errorCode = writer.Write(encryptedBuffer, 0, PacketSize, WriteTimeout, out var transferLength);
         if ((errorCode != ErrorCode.None) || (transferLength != PacketSize))
         {
@@ -137,9 +139,6 @@ public sealed class ScreenDevice : IDisposable
 
         errorCode = reader.Read(readBuffer, 0, PacketSize, ReadTimeout, out transferLength);
         var result = (errorCode == ErrorCode.None) && (transferLength == PacketSize);
-
-        // TODO Discard ?
-        reader.ReadFlush();
 
         return result;
     }
@@ -187,6 +186,4 @@ public sealed class ScreenDevice : IDisposable
         BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(8, 4), imageBytes.Length);
         return RequestResponse(imageBytes);
     }
-
-    // TODO clear
 }
