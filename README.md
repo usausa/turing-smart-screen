@@ -4,6 +4,7 @@
 |-|-|-|
 | TuringSmartScreenLib | [![NuGet](https://img.shields.io/nuget/v/TuringSmartScreenLib.svg)](https://www.nuget.org/packages/TuringSmartScreenLib/) | Core |
 | TuringSmartScreenLib.Helpers.SkiaSharp | [![NuGet](https://img.shields.io/nuget/v/TuringSmartScreenLib.Helpers.SkiaSharp.svg)](https://www.nuget.org/packages/TuringSmartScreenLib.Helpers.SkiaSharp/) | Helpers |
+| TuringSmartScreenUsb | [![NuGet](https://img.shields.io/nuget/v/TuringSmartScreenUsb.svg)](https://www.nuget.org/packages/TuringSmartScreenUsb/) | Helpers |
 
 ## What is this?
 
