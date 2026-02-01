@@ -9,6 +9,28 @@
   <ItemGroup>
     <ProjectReference Include="..\TuringSmartScreenLib.Helpers.SkiaSharp\TuringSmartScreenLib.Helpers.SkiaSharp.csproj" />
     <ProjectReference Include="..\TuringSmartScreenLib\TuringSmartScreenLib.csproj" />
+    <ProjectReference Include="..\TuringSmartScreenUsb\TuringSmartScreenUsb.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" Version="3.119.1" />
+    <PackageReference Include="System.CommandLine" Version="2.0.2" />
+    <PackageReference Include="Usa.Smart.CommandLine.Hosting" Version="2.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="image-1280x480.jpg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="image-480x1920.jpg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="image-800x480.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="image-logo.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
