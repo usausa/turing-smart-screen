@@ -15,7 +15,7 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
 
     private static readonly byte[] CommandHello = [0x01, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0xc5, 0xd3];
     private static readonly byte[] CommandSetBrightness = [0x7b, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00];
-    private static readonly byte[] CommandDisplayBitmap = [0xc8, 0xef, 0x69, 0x00, 0x38, 0x40, 0x00];
+    private static readonly byte[] CommandDisplayBitmapPrefix = [0xc8, 0xef, 0x69, 0x00];
     private static readonly byte[] CommandPreUpdateBitmap = [0x86, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01];
     private static readonly byte[] CommandUpdateBitmap = [0xcc, 0xef, 0x69, 0x00, 0x00];
     private static readonly byte[] CommandQueryStatus = [0xcf, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01];
@@ -32,14 +32,24 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
 
     private int renderCount;
 
-#pragma warning disable CA1822
-    public int Width => 480;
+    public int Width { get; }
 
-    public int Height => 1920;
-#pragma warning restore CA1822
+    public int Height { get; }
 
-    public TuringSmartScreenRevisionE(string name)
+    private readonly byte[] commandDisplayBitmap;
+
+    public TuringSmartScreenRevisionE(string name, int width = 480, int height = 1920)
     {
+        Width = width;
+        Height = height;
+
+        var payloadSize = width * height * 4;
+        commandDisplayBitmap = [
+            .. CommandDisplayBitmapPrefix,
+            (byte)((payloadSize >> 16) & 0xff),
+            (byte)((payloadSize >> 8) & 0xff),
+            (byte)(payloadSize & 0xff)
+        ];
         port = new SerialPort(name)
         {
             DtrEnable = true,
@@ -99,7 +109,7 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
         Flush();
 
         var response = ReadResponse(ReadHelloSize);
-        if ((response.Length != ReadHelloSize) || !response.StartsWith("chs_88inch"u8))
+        if ((response.Length != ReadHelloSize) || !response.StartsWith("chs_"u8))
         {
             throw new IOException($"Unknown response. response=[{Convert.ToHexString(response)}]");
         }
@@ -195,7 +205,7 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
         Flush(0x2c);
 
         // DisplayBitmap
-        Write(CommandDisplayBitmap);
+        Write(commandDisplayBitmap);
         Flush();
 
         // Payload
@@ -264,7 +274,7 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
         Flush(0x2c);
 
         // DisplayBitmap
-        Write(CommandDisplayBitmap);
+        Write(commandDisplayBitmap);
         Flush();
 
         // Payload
@@ -353,6 +363,9 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
         Flush();
 
         var response = ReadResponse();
-        return response.StartsWith("needReSend:0"u8);
+        // Succeed unless the device explicitly requests a resend.
+        // Different panel models return different success responses,
+        // but all use "needReSend:1" to indicate failure.
+        return !response.StartsWith("needReSend:1"u8);
     }
 }
