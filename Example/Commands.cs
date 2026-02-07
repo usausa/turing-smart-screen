@@ -21,6 +21,7 @@ public static class CommandBuilderExtensions
         commands.AddCommand<Tss5Command>();
         commands.AddCommand<Tss8Command>();
         commands.AddCommand<Tss8UsbCommand>();
+        commands.AddCommand<Tss8StorageCommand>();
         commands.AddCommand<TrofeoCommand>();
     }
 }
@@ -115,6 +116,46 @@ public sealed class Tss8UsbCommand : ICommandHandler
         }
 
         UsbDevice.Exit();
+    }
+}
+
+//--------------------------------------------------------------------------------
+// Turing Smart Screen 8.8 Storage Management
+//--------------------------------------------------------------------------------
+[Command("tss8storage", "8.8inch storage management")]
+public sealed class Tss8StorageCommand : ICommandHandler
+{
+    [Option<string>("--port", "-p", Description = "COM Port", Required = true)]
+    public string Port { get; set; } = default!;
+
+    public ValueTask ExecuteAsync(CommandContext context)
+    {
+        using var screen = new TuringSmartScreenRevisionE(Port);
+        screen.Open();
+
+        // Query storage info
+        var storageInfo = screen.QueryStorageInfo();
+        Console.WriteLine($"Storage: {storageInfo}");
+
+        // List files
+        const string storagePath = "/mnt/UDISK/img/";
+        var files = screen.ListDirectory(storagePath);
+        Console.WriteLine($"Files in {storagePath}: {files.Count}");
+        foreach (var file in files)
+        {
+            Console.WriteLine($"  {file}");
+        }
+
+        // Upload a test file
+        var testData = "Hello from TuringSmartScreenLib!"u8.ToArray();
+        screen.UploadFile($"{storagePath}test.txt", testData);
+        Console.WriteLine("Uploaded test.txt");
+
+        // Start media playback
+        screen.StartMedia();
+        Console.WriteLine("Started media playback");
+
+        return default;
     }
 }
 
