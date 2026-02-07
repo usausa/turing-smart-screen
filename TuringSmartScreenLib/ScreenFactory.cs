@@ -2,11 +2,11 @@ namespace TuringSmartScreenLib;
 
 public static class ScreenFactory
 {
-    public static IScreen Create(ScreenType type, string name)
+    public static IScreen Create(ScreenType type, string name, int width = 0, int height = 0)
     {
         if (type == ScreenType.RevisionE)
         {
-            var screen = new TuringSmartScreenRevisionE(name);
+            var screen = new TuringSmartScreenRevisionE(name, width > 0 ? width : 480, height > 0 ? height : 1920);
             screen.Open();
             return new ScreenWrapperRevisionE(screen);
         }

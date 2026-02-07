@@ -22,6 +22,8 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
 
     private static readonly byte[] CommandUpdateBitmapTerminate = [0xef, 0x69];
 
+    private readonly byte[] commandDisplayBitmap;
+
     private readonly SerialPort port;
 
     private byte[] writeBuffer;
@@ -36,8 +38,6 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
 
     public int Height { get; }
 
-    private readonly byte[] commandDisplayBitmap;
-
     public TuringSmartScreenRevisionE(string name, int width = 480, int height = 1920)
     {
         Width = width;
@@ -50,6 +50,7 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
             (byte)((payloadSize >> 8) & 0xff),
             (byte)(payloadSize & 0xff)
         ];
+
         port = new SerialPort(name)
         {
             DtrEnable = true,
