@@ -4,7 +4,7 @@
 |-|-|-|
 | TuringSmartScreenLib | [![NuGet](https://img.shields.io/nuget/v/TuringSmartScreenLib.svg)](https://www.nuget.org/packages/TuringSmartScreenLib/) | Core |
 | TuringSmartScreenLib.Helpers.SkiaSharp | [![NuGet](https://img.shields.io/nuget/v/TuringSmartScreenLib.Helpers.SkiaSharp.svg)](https://www.nuget.org/packages/TuringSmartScreenLib.Helpers.SkiaSharp/) | Helpers |
-| LcdDriver.LcdDriver.TrofeoVision | [![NuGet](https://img.shields.io/nuget/v/LcdDriver.LcdDriver.TrofeoVision.svg)](https://www.nuget.org/packages/LcdDriver.LcdDriver.TrofeoVision/) | Thermalright Trofeo Vision usb lcd controller |
+| LcdDriver.TrofeoVision | [![NuGet](https://img.shields.io/nuget/v/LcdDriver.TrofeoVision.svg)](https://www.nuget.org/packages/LcdDriver.TrofeoVision/) | Thermalright Trofeo Vision usb lcd controller |
 | LcdDriver.TuringSmartScreen | [![NuGet](https://img.shields.io/nuget/v/LcdDriver.TuringSmartScreen.svg)](https://www.nuget.org/packages/LcdDriver.TuringSmartScreen/) | Turing-Smart-Screen usb lcd controller |
 
 ## What is this?
