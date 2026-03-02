@@ -21,5 +21,6 @@
   <Folder Name="/Tool/">
     <Project Path="TuringSmartScreenTool/TuringSmartScreenTool.csproj" />
   </Folder>
+  <Project Path="LcdDriver.TrofeoVision/LcdDriver.TrofeoVision.csproj" Id="06806419-c9de-489c-afc4-ee2066c0ae3f" />
   <Project Path="LcdDriver.TuringSmartScreen/LcdDriver.TuringSmartScreen.csproj" />
 </Solution>
