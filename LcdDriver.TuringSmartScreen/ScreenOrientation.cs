@@ -1,4 +1,4 @@
-namespace TuringSmartScreenUsb;
+namespace LcdDriver.TuringSmartScreen;
 
 public enum ScreenOrientation : byte
 {

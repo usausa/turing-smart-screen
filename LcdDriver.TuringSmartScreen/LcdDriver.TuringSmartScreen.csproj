@@ -8,10 +8,10 @@
 
   <PropertyGroup>
     <Version>0.9.1</Version>
-    <PackageId>TuringSmartScreenUsb</PackageId>
-    <Title>TuringSmartScreenUsb</Title>
+    <PackageId>LcdDriver.TuringSmartScreen</PackageId>
+    <Title>LcdDriver.TuringSmartScreen</Title>
     <Description>Turing Smart Screen controller.</Description>
-    <PackageTags>turing-smart-screen hardware usb</PackageTags>
+    <PackageTags>turing-smart-screen hardware lcd usb</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

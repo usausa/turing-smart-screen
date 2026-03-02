@@ -7,9 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\LcdDriver.TuringSmartScreen\LcdDriver.TuringSmartScreen.csproj" />
     <ProjectReference Include="..\TuringSmartScreenLib.Helpers.SkiaSharp\TuringSmartScreenLib.Helpers.SkiaSharp.csproj" />
     <ProjectReference Include="..\TuringSmartScreenLib\TuringSmartScreenLib.csproj" />
-    <ProjectReference Include="..\TuringSmartScreenUsb\TuringSmartScreenUsb.csproj" />
   </ItemGroup>
 
   <ItemGroup>

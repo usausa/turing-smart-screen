@@ -8,10 +8,10 @@ using SkiaSharp;
 
 using Smart.CommandLine.Hosting;
 
+using LcdDriver.TuringSmartScreen;
+
 using TuringSmartScreenLib;
 using TuringSmartScreenLib.Helpers.SkiaSharp;
-
-using TuringSmartScreenUsb;
 
 public static class CommandBuilderExtensions
 {
@@ -47,7 +47,7 @@ public sealed class TypeUsb8Command : ICommandHandler
             Console.WriteLine("Sync failed.");
         }
 
-        if (!screen.SetOrientation(TuringSmartScreenUsb.ScreenOrientation.Portrait))
+        if (!screen.SetOrientation(LcdDriver.TuringSmartScreen.ScreenOrientation.Portrait))
         {
             Console.WriteLine("Set orientation failed.");
         }

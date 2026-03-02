@@ -21,5 +21,5 @@
   <Folder Name="/Tool/">
     <Project Path="TuringSmartScreenTool/TuringSmartScreenTool.csproj" />
   </Folder>
-  <Project Path="TuringSmartScreenUsb/TuringSmartScreenUsb.csproj" Id="795aff4a-6c8d-4047-af08-419eedc80a37" />
+  <Project Path="LcdDriver.TuringSmartScreen/LcdDriver.TuringSmartScreen.csproj" />
 </Solution>
