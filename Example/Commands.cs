@@ -1,14 +1,14 @@
 #pragma warning disable CA1303
 namespace Example;
 
+using HidSharp;
+
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
 
 using SkiaSharp;
 
 using Smart.CommandLine.Hosting;
-
-using LcdDriver.TuringSmartScreen;
 
 using TuringSmartScreenLib;
 using TuringSmartScreenLib.Helpers.SkiaSharp;
@@ -17,18 +17,65 @@ public static class CommandBuilderExtensions
 {
     public static void AddCommands(this ICommandBuilder commands)
     {
-        commands.AddCommand<Type35Command>();
-        commands.AddCommand<Type5Command>();
-        commands.AddCommand<Type8Command>();
-        commands.AddCommand<TypeUsb8Command>();
+        commands.AddCommand<Tss35Command>();
+        commands.AddCommand<Tss5Command>();
+        commands.AddCommand<Tss8Command>();
+        commands.AddCommand<Tss8UsbCommand>();
+        commands.AddCommand<TrofeoCommand>();
+    }
+}
+
+//--------------------------------------------------------------------------------
+// Trofeo Vision
+//--------------------------------------------------------------------------------
+[Command("trofeo", "Trofeo Vision")]
+public sealed class TrofeoCommand : ICommandHandler
+{
+    public async ValueTask ExecuteAsync(CommandContext context)
+    {
+        var device = DeviceList.Local
+            .GetHidDevices(LcdDriver.TrofeoVision.ScreenDevice.VendorId, LcdDriver.TrofeoVision.ScreenDevice.ProductId)
+            .FirstOrDefault();
+        if (device is null)
+        {
+            Console.WriteLine("Device not found.");
+            return;
+        }
+
+        var jpegBytes = await File.ReadAllBytesAsync("image-1280x480.jpg");
+
+        using var screen = new LcdDriver.TrofeoVision.ScreenDevice(device);
+
+        var interval = TimeSpan.FromSeconds(1);
+        using var cts = new CancellationTokenSource();
+        Console.CancelKeyPress += (_, e) =>
+        {
+            e.Cancel = true;
+            // ReSharper disable once AccessToDisposedClosure
+            cts.Cancel();
+        };
+
+        while (!cts.Token.IsCancellationRequested)
+        {
+            screen.DrawJpeg(jpegBytes);
+
+            try
+            {
+                await Task.Delay(interval, cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+        }
     }
 }
 
 //--------------------------------------------------------------------------------
 // Turing Smart Screen 8.8 USB revision
 //--------------------------------------------------------------------------------
-[Command("usb8", "8.8inch USB")]
-public sealed class TypeUsb8Command : ICommandHandler
+[Command("tss8usb", "Turing Smart Screen 8.8inch USB")]
+public sealed class Tss8UsbCommand : ICommandHandler
 {
     public async ValueTask ExecuteAsync(CommandContext context)
     {
@@ -40,7 +87,7 @@ public sealed class TypeUsb8Command : ICommandHandler
             return;
         }
 
-        using var screen = new ScreenDevice(device);
+        using var screen = new LcdDriver.TuringSmartScreen.ScreenDevice(device);
 
         if (!screen.Sync())
         {
@@ -74,8 +121,8 @@ public sealed class TypeUsb8Command : ICommandHandler
 //--------------------------------------------------------------------------------
 // Turing Smart Screen 8.8
 //--------------------------------------------------------------------------------
-[Command("8", "8.8inch")]
-public sealed class Type8Command : ICommandHandler
+[Command("tss8", "8.8inch")]
+public sealed class Tss8Command : ICommandHandler
 {
     [Option<string>("--port", "-p", Description = "COM Port", Required = true)]
     public string Port { get; set; } = default!;
@@ -83,7 +130,7 @@ public sealed class Type8Command : ICommandHandler
     public async ValueTask ExecuteAsync(CommandContext context)
     {
         using var screen = ScreenFactory.Create(ScreenType.RevisionE, Port);
-        screen.Orientation = TuringSmartScreenLib.ScreenOrientation.Landscape;
+        screen.Orientation = ScreenOrientation.Landscape;
         screen.Clear();
         screen.SetBrightness(100);
 
@@ -106,8 +153,8 @@ public sealed class Type8Command : ICommandHandler
 //--------------------------------------------------------------------------------
 // Turing Smart Screen 5
 //--------------------------------------------------------------------------------
-[Command("5", "5inch")]
-public sealed class Type5Command : ICommandHandler
+[Command("tss5", "5inch")]
+public sealed class Tss5Command : ICommandHandler
 {
     [Option<string>("--port", "-p", Description = "COM Port", Required = true)]
     public string Port { get; set; } = default!;
@@ -165,8 +212,8 @@ public sealed class Type5Command : ICommandHandler
 //--------------------------------------------------------------------------------
 // Turing Smart Screen 3.5 type B
 //--------------------------------------------------------------------------------
-[Command("35", "3.5inch")]
-public sealed class Type35Command : ICommandHandler
+[Command("tss35", "3.5inch")]
+public sealed class Tss35Command : ICommandHandler
 {
     private const int Margin = 2;
 
@@ -181,7 +228,7 @@ public sealed class Type35Command : ICommandHandler
         using var screen = ScreenFactory.Create(ScreenType.RevisionB, Port);
 
         screen.SetBrightness(100);
-        screen.Orientation = TuringSmartScreenLib.ScreenOrientation.ReverseLandscape;
+        screen.Orientation = ScreenOrientation.ReverseLandscape;
 
         screen.Clear();
 
