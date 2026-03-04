@@ -42,9 +42,9 @@ public sealed class TrofeoCommand : ICommandHandler
             return;
         }
 
-        var jpegBytes = await File.ReadAllBytesAsync("image-1280x480.jpg");
-
         using var screen = new LcdDriver.TrofeoVision.ScreenDevice(device);
+
+        var jpegBytes = await File.ReadAllBytesAsync("image-1280x480.jpg");
 
         var interval = TimeSpan.FromSeconds(1);
         using var cts = new CancellationTokenSource();
