@@ -58,9 +58,10 @@ public sealed class ScreenDevice : IDisposable
     // Helper
     // --------------------------------------------------------------------------------
 
-    private void SendImageData(byte compressionType, ReadOnlySpan<byte> imageData)
+    private void SendImageData(byte compressionType, ReadOnlySpan<byte> imageBytes)
     {
         Span<byte> packet = stackalloc byte[HidReportSize];
+
         packet.Clear();
         packet[0] = ReportId;
 
@@ -71,29 +72,30 @@ public sealed class ScreenDevice : IDisposable
         BinaryPrimitives.WriteUInt16LittleEndian(header[8..], Width);
         BinaryPrimitives.WriteUInt16LittleEndian(header[10..], Height);
         header[12] = compressionType;
-        BinaryPrimitives.WriteInt32LittleEndian(header[16..], imageData.Length);
+        BinaryPrimitives.WriteInt32LittleEndian(header[16..], imageBytes.Length);
 
         // Send data in chunks of 512 bytes (HID report size - 1 byte for Report ID)
-        var sentDataOffset = 0;
-        var firstDataBytes = Math.Min(imageData.Length, DataPerPacket - HeaderSize);
-        if (firstDataBytes > 0)
+        var offset = 0;
+        var length = Math.Min(imageBytes.Length, DataPerPacket - HeaderSize);
+        if (length > 0)
         {
-            imageData[..firstDataBytes].CopyTo(packet[(1 + HeaderSize)..]);
-            sentDataOffset = firstDataBytes;
+            imageBytes[..length].CopyTo(packet[(1 + HeaderSize)..]);
+            offset = length;
         }
 
         stream.Write(packet);
 
-        while (sentDataOffset < imageData.Length)
+        // Send left data
+        while (offset < imageBytes.Length)
         {
             packet.Clear();
             packet[0] = ReportId;
 
-            var chunkSize = Math.Min(imageData.Length - sentDataOffset, DataPerPacket);
-            imageData.Slice(sentDataOffset, chunkSize).CopyTo(packet[1..]);
+            length = Math.Min(imageBytes.Length - offset, DataPerPacket);
+            imageBytes.Slice(offset, length).CopyTo(packet[1..]);
 
             stream.Write(packet);
-            sentDataOffset += chunkSize;
+            offset += length;
         }
     }
 }
