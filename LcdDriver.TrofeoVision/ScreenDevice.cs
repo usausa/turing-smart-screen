@@ -34,7 +34,6 @@ public sealed class ScreenDevice : IDisposable
 
     public ScreenDevice(HidDevice hidDevice)
     {
-        ArgumentNullException.ThrowIfNull(hidDevice);
         stream = hidDevice.Open();
         stream.WriteTimeout = 5000;
     }
@@ -61,9 +60,12 @@ public sealed class ScreenDevice : IDisposable
 
     private void SendImageData(byte compressionType, ReadOnlySpan<byte> imageData)
     {
-        // Build protocol header
-        Span<byte> header = stackalloc byte[HeaderSize];
-        header.Clear();
+        Span<byte> packet = stackalloc byte[HidReportSize];
+        packet.Clear();
+        packet[0] = ReportId;
+
+        // Build protocol header directly in packet
+        var header = packet.Slice(1, HeaderSize);
         HeaderMagic.CopyTo(header);
         header[4] = CommandImage;
         BinaryPrimitives.WriteUInt16LittleEndian(header[8..], Width);
@@ -72,12 +74,6 @@ public sealed class ScreenDevice : IDisposable
         BinaryPrimitives.WriteInt32LittleEndian(header[16..], imageData.Length);
 
         // Send data in chunks of 512 bytes (HID report size - 1 byte for Report ID)
-        Span<byte> packet = stackalloc byte[HidReportSize];
-
-        packet.Clear();
-        packet[0] = ReportId;
-        header.CopyTo(packet[1..]);
-
         var sentDataOffset = 0;
         var firstDataBytes = Math.Min(imageData.Length, DataPerPacket - HeaderSize);
         if (firstDataBytes > 0)
