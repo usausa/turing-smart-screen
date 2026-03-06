@@ -10,7 +10,6 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
 {
     private const int WriteSize = 250;
     private const int ReadSize = 1024;
-    private const int ReadHelloSize = 23;
     private const int PartialBlockSize = 80;
 
     private static readonly byte[] CommandHello = [0x01, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0xc5, 0xd3];
