@@ -98,11 +98,40 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
         Write(CommandHello);
         Flush();
 
-        var response = ReadResponse(ReadHelloSize);
-        if ((response.Length != ReadHelloSize) || !response.StartsWith("chs_5inch"u8))
+        var response = ReadTo();
+        if (!response.StartsWith("chs_5inch"u8))
         {
             throw new IOException($"Unknown response. response=[{Convert.ToHexString(response)}]");
         }
+    }
+
+    private ReadOnlySpan<byte> ReadTo(byte terminator = 0x00)
+    {
+        var offset = 0;
+        try
+        {
+            while (offset < readBuffer.Length)
+            {
+                var value = port.ReadByte();
+                if (value == terminator)
+                {
+                    break;
+                }
+
+                readBuffer[offset] = (byte)value;
+                offset++;
+            }
+        }
+        catch (TimeoutException)
+        {
+            // Ignore
+        }
+        catch (IOException)
+        {
+            // Ignore
+        }
+
+        return readBuffer.AsSpan(0, offset);
     }
 
     private ReadOnlySpan<byte> ReadResponse(int length = ReadSize)
