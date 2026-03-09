@@ -19,7 +19,10 @@ public static class CommandBuilderExtensions
     {
         commands.AddCommand<Tss35Command>();
         commands.AddCommand<Tss5Command>();
-        commands.AddCommand<Tss8Command>();
+        commands.AddCommand<Tss8Command>(tss8 =>
+        {
+            tss8.AddSubCommand<Tss8StorageCommand>();
+        });
         commands.AddCommand<Tss8UsbCommand>();
         commands.AddCommand<TrofeoCommand>();
     }
@@ -147,6 +150,40 @@ public sealed class Tss8Command : ICommandHandler
             screen.DisplayBuffer(i * 3, i, buffer2);
             await Task.Delay(0);
         }
+    }
+}
+
+[Command("storage", "Storage operation")]
+public sealed class Tss8StorageCommand : ICommandHandler
+{
+    private const string ImagePath = "/mnt/UDISK/img/";
+
+    [Option<string>("--port", "-p", Description = "COM Port", Required = true)]
+    public string Port { get; set; } = default!;
+
+    public async ValueTask ExecuteAsync(CommandContext context)
+    {
+        using var screen = new TuringSmartScreenRevisionE(Port);
+        screen.Open();
+
+        // Storage information
+        Console.WriteLine(screen.QueryStorageInfo());
+
+        screen.DeleteFile($"{ImagePath}image-1280x480.jpg");
+        screen.DeleteFile($"{ImagePath}image-logo.png");
+
+        screen.UploadFile($"{ImagePath}image-1280x480.jpg", await File.ReadAllBytesAsync("image-1280x480.jpg"));
+        // TODO timeout ?
+        screen.UploadFile($"{ImagePath}image-logo.png", await File.ReadAllBytesAsync("image-logo.png"));
+
+        var files = screen.ListFiles(ImagePath);
+        foreach (var file in files)
+        {
+            Console.WriteLine(file);
+        }
+
+        //screen.StartMedia();
+        //screen.StopMedia();
     }
 }
 

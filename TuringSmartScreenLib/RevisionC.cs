@@ -37,6 +37,10 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
     public int Height => 480;
 #pragma warning restore CA1822
 
+    // --------------------------------------------------------------------------------
+    // Constructor
+    // --------------------------------------------------------------------------------
+
     public TuringSmartScreenRevisionC(string name)
     {
         port = new SerialPort(name)
@@ -97,28 +101,31 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
         Write(CommandHello);
         Flush();
 
-        var response = ReadTo();
+        var response = ReadToTerminate();
         if (!response.StartsWith("chs_5inch"u8))
         {
             throw new IOException($"Unknown response. response=[{Convert.ToHexString(response)}]");
         }
     }
 
-    private ReadOnlySpan<byte> ReadTo(byte terminator = 0x00)
+    // --------------------------------------------------------------------------------
+    // Raw I/O
+    // --------------------------------------------------------------------------------
+
+    private ReadOnlySpan<byte> ReadResponse(int length = ReadSize)
     {
         var offset = 0;
         try
         {
-            while (offset < readBuffer.Length)
+            while (offset < length)
             {
-                var value = port.ReadByte();
-                if (value == terminator)
+                var read = port.Read(readBuffer, offset, length - offset);
+                if (read <= 0)
                 {
                     break;
                 }
 
-                readBuffer[offset] = (byte)value;
-                offset++;
+                offset += read;
             }
         }
         catch (TimeoutException)
@@ -133,16 +140,30 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
         return readBuffer.AsSpan(0, offset);
     }
 
-    private ReadOnlySpan<byte> ReadResponse(int length = ReadSize)
+    private ReadOnlySpan<byte> ReadToTerminate()
     {
         var offset = 0;
         try
         {
-            while (offset < length)
+            while (offset < readBuffer.Length)
             {
-                var read = port.Read(readBuffer, offset, length - offset);
+                var remainingCapacity = readBuffer.Length - offset;
+                var bytesToRead = port.BytesToRead;
+                if (bytesToRead <= 0)
+                {
+                    bytesToRead = 1;
+                }
+
+                var read = port.Read(readBuffer, offset, Math.Min(bytesToRead, remainingCapacity));
                 if (read <= 0)
                 {
+                    break;
+                }
+
+                var terminateIndex = readBuffer.AsSpan(offset, read).IndexOf((byte)0x00);
+                if (terminateIndex >= 0)
+                {
+                    offset += terminateIndex;
                     break;
                 }
 
@@ -206,6 +227,10 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
         port.Write(writeBuffer, 0, WriteSize);
         writeOffset = 0;
     }
+
+    // --------------------------------------------------------------------------------
+    // Command
+    // --------------------------------------------------------------------------------
 
     public void SetBrightness(int level)
     {
