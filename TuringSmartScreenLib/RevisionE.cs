@@ -5,7 +5,6 @@ using System.Buffers;
 using System.Buffers.Binary;
 using System.IO.Ports;
 using System.Reflection;
-using System.Text;
 
 public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
 {
@@ -21,10 +20,6 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
     private static readonly byte[] CommandQueryStatus = [0xcf, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01];
 
     private static readonly byte[] CommandUpdateBitmapTerminate = [0xef, 0x69];
-
-    private static readonly byte[] CommandQueryStorageInfo = [0x64, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01];
-    private static readonly byte[] CommandStartMedia = [0x96, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01];
-    private static readonly byte[] CommandStopMedia = [0x79, 0xef, 0x69, 0x00, 0x00, 0x00, 0x01];
 
     private readonly byte[] commandDisplayBitmap;
 
@@ -117,7 +112,7 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
         Write(CommandHello);
         Flush();
 
-        var response = ReadToTerminate();
+        var response = ReadTo();
         if (!response.StartsWith("chs_"u8))
         {
             throw new IOException($"Unknown response. response=[{Convert.ToHexString(response)}]");
@@ -156,76 +151,21 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
         return readBuffer.AsSpan(0, offset);
     }
 
-    private ReadOnlySpan<byte> ReadResponse(byte[] buffer, int length)
-    {
-        var offset = 0;
-        try
-        {
-            while (offset < length)
-            {
-                var remainingCapacity = length - offset;
-                var bytesToRead = port.BytesToRead;
-                if (bytesToRead <= 0)
-                {
-                    bytesToRead = 1;
-                }
-
-                var read = port.Read(buffer, offset, Math.Min(bytesToRead, remainingCapacity));
-                if (read <= 0)
-                {
-                    break;
-                }
-
-                var terminateIndex = buffer.AsSpan(offset, read).IndexOf((byte)0x00);
-                if (terminateIndex >= 0)
-                {
-                    offset += terminateIndex;
-                    break;
-                }
-
-                offset += read;
-            }
-        }
-        catch (TimeoutException)
-        {
-            // Ignore
-        }
-        catch (IOException)
-        {
-            // Ignore
-        }
-
-        return buffer.AsSpan(0, offset);
-    }
-
-    private ReadOnlySpan<byte> ReadToTerminate()
+    private ReadOnlySpan<byte> ReadTo(byte terminator = 0x00)
     {
         var offset = 0;
         try
         {
             while (offset < readBuffer.Length)
             {
-                var remainingCapacity = readBuffer.Length - offset;
-                var bytesToRead = port.BytesToRead;
-                if (bytesToRead <= 0)
-                {
-                    bytesToRead = 1;
-                }
-
-                var read = port.Read(readBuffer, offset, Math.Min(bytesToRead, remainingCapacity));
-                if (read <= 0)
+                var value = port.ReadByte();
+                if (value == terminator)
                 {
                     break;
                 }
 
-                var terminateIndex = readBuffer.AsSpan(offset, read).IndexOf((byte)0x00);
-                if (terminateIndex >= 0)
-                {
-                    offset += terminateIndex;
-                    break;
-                }
-
-                offset += read;
+                readBuffer[offset] = (byte)value;
+                offset++;
             }
         }
         catch (TimeoutException)
@@ -468,134 +408,5 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
         // Different panel models return different success responses,
         // but all use "needReSend:1" to indicate failure.
         return !response.StartsWith("needReSend:1"u8);
-    }
-
-    // --------------------------------------------------------------------------------
-    // Storage command
-    // --------------------------------------------------------------------------------
-
-    private void SendPathCommand(byte command, string path, ReadOnlySpan<byte> data = default)
-    {
-        var pathBytes = Encoding.ASCII.GetBytes(path);
-        Span<byte> header = stackalloc byte[10];
-        header[0] = command;
-        header[1] = 0xef;
-        header[2] = 0x69;
-        // bytes 3-5 = 0
-        header[6] = (byte)pathBytes.Length;
-        // bytes 7-9 = 0
-        Write(header);
-        Write(pathBytes);
-        if (!data.IsEmpty)
-        {
-            Write(data);
-        }
-        Flush();
-    }
-
-    public string QueryStorageInfo()
-    {
-        Write(CommandQueryStorageInfo);
-        Flush();
-        // TODO check null terminate ?
-        return Encoding.UTF8.GetString(ReadResponse(22));
-    }
-
-    public void StartMedia()
-    {
-        Write(CommandStartMedia);
-        Flush();
-        ReadResponse();
-        // TODO check response media_stop ?
-    }
-
-    public void StopMedia()
-    {
-        Write(CommandStopMedia);
-        Flush();
-        // TODO has response ?
-        //ReadResponse();
-    }
-
-    private const int ListFilesResponseSize = 10240;
-
-    private static readonly byte[] ListFilesResponsePrefix = "result:dir:file:"u8.ToArray();
-
-    public List<string> ListFiles(string path)
-    {
-        var buffer = ArrayPool<byte>.Shared.Rent(ListFilesResponseSize);
-        try
-        {
-            SendPathCommand(0x65, path);
-            var response = ReadResponse(buffer, ListFilesResponseSize);
-            if (!response.StartsWith(ListFilesResponsePrefix))
-            {
-                return [];
-            }
-
-            var files = new List<string>();
-
-            var entries = response[ListFilesResponsePrefix.Length..];
-            while (!entries.IsEmpty)
-            {
-                var index = entries.IndexOf((byte)'/');
-                if (index < 0)
-                {
-                    if (!entries.IsEmpty)
-                    {
-                        files.Add(Encoding.UTF8.GetString(entries));
-                    }
-
-                    break;
-                }
-
-                if (index > 0)
-                {
-                    files.Add(Encoding.UTF8.GetString(entries[..index]));
-                }
-
-                entries = entries[(index + 1)..];
-            }
-
-            return files;
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(buffer);
-        }
-    }
-
-    private const int UploadBlockSize = 4096;
-    //private const int UploadBlockSize = 250;
-
-    public bool UploadFile(string path, byte[] data)
-    {
-        Span<byte> sizeBytes = stackalloc byte[4];
-        BinaryPrimitives.WriteInt32LittleEndian(sizeBytes, data.Length);
-        SendPathCommand(0x6f, path, sizeBytes);
-
-        var response = ReadResponse();
-        if (!response.StartsWith("create_success"u8))
-        {
-            return false;
-        }
-
-        var offset = 0;
-        while (offset < data.Length)
-        {
-            var size = Math.Min(UploadBlockSize, data.Length - offset);
-            port.Write(data, offset, size);
-            offset += size;
-
-            // TODO response check for each block ?
-        }
-
-        return true;
-    }
-
-    public void DeleteFile(string path)
-    {
-        SendPathCommand(0x66, path);
-        // TODO response exist ?
     }
 }

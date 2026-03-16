@@ -101,7 +101,7 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
         Write(CommandHello);
         Flush();
 
-        var response = ReadToTerminate();
+        var response = ReadTo();
         if (!response.StartsWith("chs_5inch"u8))
         {
             throw new IOException($"Unknown response. response=[{Convert.ToHexString(response)}]");
@@ -140,34 +140,21 @@ public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
         return readBuffer.AsSpan(0, offset);
     }
 
-    private ReadOnlySpan<byte> ReadToTerminate()
+    private ReadOnlySpan<byte> ReadTo(byte terminator = 0x00)
     {
         var offset = 0;
         try
         {
             while (offset < readBuffer.Length)
             {
-                var remainingCapacity = readBuffer.Length - offset;
-                var bytesToRead = port.BytesToRead;
-                if (bytesToRead <= 0)
-                {
-                    bytesToRead = 1;
-                }
-
-                var read = port.Read(readBuffer, offset, Math.Min(bytesToRead, remainingCapacity));
-                if (read <= 0)
+                var value = port.ReadByte();
+                if (value == terminator)
                 {
                     break;
                 }
 
-                var terminateIndex = readBuffer.AsSpan(offset, read).IndexOf((byte)0x00);
-                if (terminateIndex >= 0)
-                {
-                    offset += terminateIndex;
-                    break;
-                }
-
-                offset += read;
+                readBuffer[offset] = (byte)value;
+                offset++;
             }
         }
         catch (TimeoutException)
