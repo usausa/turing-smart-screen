@@ -24,7 +24,6 @@ public sealed class ScreenDevice : IDisposable
     // Protocol command/compression type
     private const byte CommandImage = 0x02;
     private const byte CompressionJpeg = 0x02;
-    private const byte CompressionRgb565 = 0x01;
 
     private readonly HidStream stream;
 
@@ -50,9 +49,6 @@ public sealed class ScreenDevice : IDisposable
 
     public void DrawJpeg(ReadOnlySpan<byte> jpegData) =>
         SendImageData(CompressionJpeg, jpegData);
-
-    public void DrawRgb565(ReadOnlySpan<byte> rgb565Data) =>
-        SendImageData(CompressionRgb565, rgb565Data);
 
     // --------------------------------------------------------------------------------
     // Helper
