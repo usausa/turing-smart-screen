@@ -186,4 +186,10 @@ public sealed class ScreenDevice : IDisposable
         BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(8, 4), imageBytes.Length);
         return RequestResponse(imageBytes);
     }
+
+    public bool StopMedia()
+    {
+        PrepareCommandHeader(111);
+        return RequestResponse();
+    }
 }
