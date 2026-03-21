@@ -9,31 +9,28 @@
 
 ## 👉What is this?
 
-* Turing Smart Screen controller library.
+LCD controller libraries for the following devices:
+
+* [Turing Smart Screen](https://www.turzx.com/) 3.5 inch / 5 inch / 8 inch (Serial)
+* [Turing Smart Screen](https://www.turzx.com/) 8 inch USB Revision 1.1 (USB)
+* [Thermalright Trofeo Vision](https://www.thermalright.com/product/trofeo-vision-lcd-white/) (USB HID)
 
 ## 🔲TuringSmartScreenLib
 
-### 📘Usage
+Turing Smart Screen 3.5 inch, 5 inch, 8 inch serial connection models.
 
-```csharp
-using SkiaSharp;
-
-using TuringSmartScreenLib;
-using TuringSmartScreenLib.Helpers.SkiaSharp;
-
-using var screen = ScreenFactory.Create(ScreenType.RevisionB, "COM10");
-screen.SetBrightness(100);
-screen.Orientation = ScreenOrientation.Landscape;
-
-using var bitmap = SKBitmap.Decode(File.OpenRead("genbaneko.png"));
-var buffer = screen.CreateBufferFrom(bitmap);
-
-screen.DisplayBuffer(0, 0, buffer);
-```
+| Revision | Screen Size | Resolution |
+|-|-|-|
+| RevisionA | 3.5 inch | 320x480 |
+| RevisionB | 3.5 inch | 320x480 |
+| RevisionC | 5 inch | 800x480 |
+| RevisionE | 8 inch | 480x1920 |
 
 <img src="Images/tss.jpg" width="50%" title="image">
 
 ## 🔲LcdDriver.TrofeoVision
+
+[Thermalright Trofeo Vision](https://www.thermalright.com/product/trofeo-vision-lcd-white/) USB HID LCD controller (1280x480).
 
 <img src="Images/trofeo.jpg" width="50%" title="image">
 
@@ -42,6 +39,8 @@ screen.DisplayBuffer(0, 0, buffer);
 - [MacStatDisplay](https://github.com/usausa/mac-stat-display) : macOS system monitor
 
 ## 🔲LcdDriver.TuringSmartScreen
+
+[Turing Smart Screen](https://www.turzx.com/) 8 inch USB Revision 1.1 LCD controller.
 
 <img src="Images/tss8usb.jpg" width="50%" title="image">
 
