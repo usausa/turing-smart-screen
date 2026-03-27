@@ -53,7 +53,7 @@ public sealed class OnCommand : CommandBase, ICommandHandler
 }
 
 // Off
-[Command("off",  "Screen OFF")]
+[Command("off", "Screen OFF")]
 public sealed class OffCommand : CommandBase, ICommandHandler
 {
     private readonly IScreenResolver screenResolver;

@@ -1,7 +1,7 @@
 namespace TuringSmartScreenLib;
 
-using System.Buffers.Binary;
 using System.Buffers;
+using System.Buffers.Binary;
 
 internal sealed class ScreenWrapperRevisionA : ScreenBase
 {

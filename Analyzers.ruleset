@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <RuleSet Name="Analyzers Rules" Description="Analyzers Rules" ToolsVersion="17.0">
   <IncludeAll Action="Warning" />
   <Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">
@@ -9,7 +9,6 @@
     <Rule Id="SA1202" Action="Hidden" />
     <Rule Id="SA1203" Action="Hidden" />
     <Rule Id="SA1204" Action="Hidden" />
-    <Rule Id="SA1210" Action="Hidden" />
     <Rule Id="SA1214" Action="Hidden" />
     <Rule Id="SA1402" Action="Hidden" />
     <Rule Id="SA1413" Action="Hidden" />
