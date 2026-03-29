@@ -360,7 +360,7 @@ dotnet_diagnostic.IDE0030.severity = warning
 dotnet_diagnostic.IDE0270.severity = none
 
 # dotnet_style_null_propagation
-dotnet_diagnostic.IDE0031.severity = warning
+dotnet_diagnostic.IDE0031.severity = none
 
 # dotnet_style_prefer_auto_properties
 dotnet_diagnostic.IDE0032.severity = warning
@@ -427,7 +427,7 @@ dotnet_diagnostic.IDE0054.severity = warning
 dotnet_diagnostic.IDE0074.severity = warning
 
 # Formatting rule
-dotnet_diagnostic.IDE0055.severity = warning
+dotnet_diagnostic.IDE0055.severity = none
 
 # csharp_style_prefer_index_operator
 dotnet_diagnostic.IDE0056.severity = warning
