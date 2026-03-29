@@ -406,7 +406,7 @@ dotnet_diagnostic.IDE0046.severity = none
 # dotnet_style_parentheses_in_relational_binary_operators
 # dotnet_style_parentheses_in_other_binary_operators
 # dotnet_style_parentheses_in_other_operators
-dotnet_diagnostic.IDE0047.severity = warning
+dotnet_diagnostic.IDE0047.severity = none
 dotnet_diagnostic.IDE0048.severity = warning
 
 # dotnet_style_predefined_type_for_locals_parameters_members
