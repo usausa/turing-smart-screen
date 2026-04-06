@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet:*)",
+      "Bash(findstr:*)",
+      "Bash(powershell:*)",
+      "Bash(taskkill /F /IM dotnet.exe)"
+    ]
+  }
+}
