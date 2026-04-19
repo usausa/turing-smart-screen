@@ -1,6 +1,8 @@
 #pragma warning disable CA1303
 namespace Example;
 
+using System.Threading;
+
 using HidSharp;
 
 using LibUsbDotNet;
@@ -22,7 +24,11 @@ public static class CommandBuilderExtensions
         commands.AddCommand<Tss8UsbCommand>(sub =>
         {
             sub.AddSubCommand<Tss8UsbCapacityCommand>();
+            sub.AddSubCommand<Tss8UsbUploadCommand>();
+            sub.AddSubCommand<Tss8UsbDeleteCommand>();
+            sub.AddSubCommand<Tss8UsbPlayCommand>();
             sub.AddSubCommand<Tss8UsbStreamCommand>();
+            sub.AddSubCommand<Tss8UsbProbeCommand>();
         });
         commands.AddCommand<TrofeoCommand>();
     }
@@ -116,8 +122,6 @@ public sealed class Tss8UsbCommand : ICommandHandler
             }
             await Task.Delay(1);
         }
-
-        UsbDevice.Exit();
     }
 }
 
@@ -141,36 +145,90 @@ public sealed class Tss8UsbCapacityCommand : ICommandHandler
             Console.WriteLine("Sync failed.");
         }
 
-        var capacity = screen.QueryCapacity();
+        var capacity = screen.RefreshStorage();
         if (capacity is null)
         {
             Console.WriteLine("Failed to read storage info.");
         }
         else
         {
-            Console.WriteLine($"Total : {FormatBytes(capacity.Value.Total)}");
-            Console.WriteLine($"Used  : {FormatBytes(capacity.Value.Used)}");
-            Console.WriteLine($"Valid : {FormatBytes(capacity.Value.Valid)}");
-        }
+                Console.WriteLine($"Total : {FormatKilobytes(capacity.Value.Total)}");
+                    Console.WriteLine($"Used  : {FormatKilobytes(capacity.Value.Used)}");
+                    Console.WriteLine($"Valid : {FormatKilobytes(capacity.Value.Valid)}");
+                }
+                return ValueTask.CompletedTask;
+            }
 
-        UsbDevice.Exit();
-        return ValueTask.CompletedTask;
-    }
-
-    private static string FormatBytes(uint bytes) =>
-        bytes >= 1_073_741_824u ? $"{bytes / 1_073_741_824.0:F2} GB" :
-        bytes >= 1_048_576u ? $"{bytes / 1_048_576.0:F2} MB" :
-        bytes >= 1_024u ? $"{bytes / 1_024.0:F2} KB" :
-        $"{bytes} B";
+            // Device capacity values are in KB
+            private static string FormatKilobytes(uint kb) =>
+                kb >= 1_048_576u ? $"{kb / 1_048_576.0:F2} GB" :
+                kb >= 1_024u ? $"{kb / 1_024.0:F2} MB" :
+                $"{kb} KB";
 }
 
-// TODO file upload & delete
-
-// TODO play
-
-[Command("stream", "Stream H264")]
-public sealed class Tss8UsbStreamCommand : ICommandHandler
+[Command("upload", "Upload a PNG or H264 file to device storage (.png / .h264)")]
+public sealed class Tss8UsbUploadCommand : ICommandHandler
 {
+    [Option<string>("--file", "-f", Description = "Local file path (.png or .h264)", Required = true)]
+    public string FilePath { get; set; } = default!;
+
+    [Option<string>("--device-path", "-d", Description = "Remote path on device (auto-detected from extension if omitted)", Required = false)]
+    public string? DevicePath { get; set; }
+
+    public ValueTask ExecuteAsync(CommandContext context)
+    {
+        if (!File.Exists(FilePath))
+        {
+            Console.WriteLine($"File not found: {FilePath}");
+            return ValueTask.CompletedTask;
+        }
+
+        var ext = Path.GetExtension(FilePath).ToUpperInvariant();
+        var devicePath = DevicePath ?? ext switch
+        {
+            ".PNG" => $"/tmp/sdcard/mmcblk0p1/img/{Path.GetFileName(FilePath)}",
+            ".H264" => $"/tmp/sdcard/mmcblk0p1/video/{Path.GetFileName(FilePath)}",
+            _ => null
+        };
+
+        if (devicePath is null)
+        {
+            Console.WriteLine("Unsupported file type. Use .png or .h264.");
+            return ValueTask.CompletedTask;
+        }
+
+        var finder = new UsbDeviceFinder(0x1CBE, 0x0088);
+        using var device = UsbDevice.OpenUsbDevice(finder);
+        if (device is null)
+        {
+            Console.WriteLine("Device not found.");
+            return ValueTask.CompletedTask;
+        }
+
+        using var screen = new LcdDriver.TuringSmartScreen.ScreenDevice(device);
+        screen.Sync();
+
+        var fileSize = new FileInfo(FilePath).Length;
+        Console.WriteLine($"Uploading {fileSize} bytes to: {devicePath}");
+
+        using var fileStream = File.OpenRead(FilePath);
+        var success = screen.WriteFile(fileStream, devicePath, (sent, total) =>
+        {
+            var pct = total > 0 ? $" ({100.0 * sent / total:F1}%)" : "";
+            Console.WriteLine($"  {sent}/{total} bytes{pct}");
+        });
+
+        Console.WriteLine(success ? "Upload complete." : "Upload failed.");
+        return ValueTask.CompletedTask;
+    }
+}
+
+[Command("delete", "Delete a file from device storage")]
+public sealed class Tss8UsbDeleteCommand : ICommandHandler
+{
+    [Option<string>("--file", "-f", Description = "File name on device (e.g. test.png or 8.8.h264)", Required = true)]
+    public string FileName { get; set; } = default!;
+
     public ValueTask ExecuteAsync(CommandContext context)
     {
         var finder = new UsbDeviceFinder(0x1CBE, 0x0088);
@@ -184,17 +242,224 @@ public sealed class Tss8UsbStreamCommand : ICommandHandler
         using var screen = new LcdDriver.TuringSmartScreen.ScreenDevice(device);
         screen.Sync();
 
-        var chunkSize = screen.GetH264ChunkSize();
-        Console.WriteLine($"H264 chunk size: {chunkSize} bytes");
+        var ext = Path.GetExtension(FileName).ToUpperInvariant();
+        var devicePath = ext switch
+        {
+            ".PNG" => $"/tmp/sdcard/mmcblk0p1/img/{FileName}",
+            ".H264" => $"/tmp/sdcard/mmcblk0p1/video/{FileName}",
+            _ => $"/tmp/sdcard/mmcblk0p1/{FileName}"
+        };
 
-        // TODO
-
-        screen.StopStream();
-
-        UsbDevice.Exit();
+        if (!screen.DeleteFile(devicePath))
+        {
+            Console.WriteLine($"DeleteFile failed: {devicePath}");
+        }
+        else
+        {
+            Console.WriteLine($"Deleted: {devicePath}");
+        }
         return ValueTask.CompletedTask;
     }
 }
+
+[Command("play", "Play a file stored on the device")]
+public sealed class Tss8UsbPlayCommand : ICommandHandler
+{
+    [Option<string>("--file", "-f", Description = "Local file name (e.g. test.png or 8.8.h264)", Required = true)]
+    public string FileName { get; set; } = default!;
+
+    [Option<int>("--mode", "-m", Description = "Playback mode: 1=video(cmd98) 2=alternate(cmd110) 3=image(cmd113), default 1", Required = false)]
+    public int Mode { get; set; } = 1;
+
+    public ValueTask ExecuteAsync(CommandContext context)
+    {
+        var finder = new UsbDeviceFinder(0x1CBE, 0x0088);
+        using var device = UsbDevice.OpenUsbDevice(finder);
+        if (device is null)
+        {
+            Console.WriteLine("Device not found.");
+            return ValueTask.CompletedTask;
+        }
+
+        using var screen = new LcdDriver.TuringSmartScreen.ScreenDevice(device);
+        screen.Sync();
+
+        // Stop any running playback and reset display state before issuing a play command.
+        // Mirrors Python send_video init: cmd 111, 112, SetOrientation, SetBrightness, cmd 41.
+        screen.StopPlayback();
+        screen.ResetPlayback();
+        screen.SetOrientation(LcdDriver.TuringSmartScreen.ScreenOrientation.Portrait);
+        screen.SetBrightness(32);
+        screen.PrepareStreamBuffer();
+
+        var ext = Path.GetExtension(FileName).ToUpperInvariant();
+        var devicePath = ext switch
+        {
+            ".PNG" => $"/tmp/sdcard/mmcblk0p1/img/{FileName}",
+            ".H264" => $"/tmp/sdcard/mmcblk0p1/video/{FileName}",
+            _ => $"/tmp/sdcard/mmcblk0p1/{FileName}"
+        };
+        var result = Mode switch
+        {
+            2 => screen.PlayFile2(devicePath),
+            3 => screen.PlayFile3(devicePath),
+            _ => screen.PlayFile(devicePath)
+        };
+
+        if (!result)
+        {
+            Console.WriteLine($"PlayFile mode={Mode} failed.");
+        }
+        else
+        {
+            Console.WriteLine($"Playback started: {devicePath} (mode={Mode})");
+        }
+        return ValueTask.CompletedTask;
+    }
+}
+
+[Command("stream", "Stream H264 bitstream to device (.h264)")]
+public sealed class Tss8UsbStreamCommand : ICommandHandler
+{
+    // Pre-built 480×1920 all-black RGBA PNG for clearing the screen before H264 streaming.
+    // Matches the hardcoded image used by the Python clear_image() function.
+    private static readonly byte[] ClearScreenPng = BuildClearScreenPng();
+
+    private static byte[] BuildClearScreenPng()
+    {
+        ReadOnlySpan<byte> header =
+        [
+            0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+            0x00, 0x00, 0x01, 0xE0, 0x00, 0x00, 0x07, 0x80, 0x08, 0x06, 0x00, 0x00, 0x00, 0x16, 0xF0, 0x84,
+            0xF5, 0x00, 0x00, 0x00, 0x01, 0x73, 0x52, 0x47, 0x42, 0x00, 0xAE, 0xCE, 0x1C, 0xE9, 0x00, 0x00,
+            0x00, 0x04, 0x67, 0x41, 0x4D, 0x41, 0x00, 0x00, 0xB1, 0x8F, 0x0B, 0xFC, 0x61, 0x05, 0x00, 0x00,
+            0x00, 0x09, 0x70, 0x48, 0x59, 0x73, 0x00, 0x00, 0x0E, 0xC3, 0x00, 0x00, 0x0E, 0xC3, 0x01, 0xC7,
+            0x6F, 0xA8, 0x64, 0x00, 0x00, 0x0E, 0x0C, 0x49, 0x44, 0x41, 0x54, 0x78, 0x5E, 0xED, 0xC1, 0x01,
+            0x0D, 0x00, 0x00, 0x00, 0xC2, 0xA0, 0xF7, 0x4F, 0x6D, 0x0F, 0x07, 0x14, 0x00, 0x00, 0x00, 0x00
+        ];
+        ReadOnlySpan<byte> footer =
+        [
+            0x00, 0xF0, 0x66, 0x4A, 0xC8, 0x00, 0x01, 0x11, 0x9D, 0x82, 0x0A,
+            0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82
+        ];
+        const int ZeroMiddle = 3568;
+        var data = new byte[header.Length + ZeroMiddle + footer.Length];
+        header.CopyTo(data);
+        footer.CopyTo(data.AsSpan(header.Length + ZeroMiddle));
+        return data;
+    }
+    [Option<string>("--file", "-f", Description = "Local H264 bitstream file (.h264)", Required = true)]
+    public string FilePath { get; set; } = default!;
+
+    [Option<int>("--loop", "-l", Description = "Loop: 0=once 1=loop until Ctrl+C (default 0)", Required = false)]
+    public int Loop { get; set; }
+
+    public async ValueTask ExecuteAsync(CommandContext context)
+    {
+        if (!File.Exists(FilePath))
+        {
+            Console.WriteLine($"File not found: {FilePath}");
+            return;
+        }
+
+        var finder = new UsbDeviceFinder(0x1CBE, 0x0088);
+        using var device = UsbDevice.OpenUsbDevice(finder);
+        if (device is null)
+        {
+            Console.WriteLine("Device not found.");
+            return;
+        }
+
+        using var screen = new LcdDriver.TuringSmartScreen.ScreenDevice(device);
+        screen.Sync();
+
+        using var cts = new CancellationTokenSource();
+        Console.CancelKeyPress += (_, e) =>
+        {
+            e.Cancel = true;
+            // ReSharper disable once AccessToDisposedClosure
+            cts.Cancel();
+        };
+
+        try
+        {
+            do
+            {
+                // Full init sequence before each streaming pass (mirrors Python send_video).
+                // StopPlayback/ResetPlayback: stop any running playback,
+                // SetOrientation, SetBrightness, PrepareStreamBuffer,
+                // DrawPng (clear screen, cmd 102), SetFrameRate (cmd 15).
+                screen.StopPlayback();
+                screen.ResetPlayback();
+                screen.SetOrientation(LcdDriver.TuringSmartScreen.ScreenOrientation.Portrait);
+                screen.SetBrightness(32);
+                screen.PrepareStreamBuffer();
+                screen.DrawPng(ClearScreenPng);
+                screen.SetFrameRate(25);
+
+                var chunkSize = screen.GetH264ChunkSize();
+                Console.WriteLine($"H264 chunk size: {chunkSize} bytes");
+
+                var buffer = new byte[chunkSize];
+                await StreamFromFileAsync(screen, chunkSize, buffer, cts.Token);
+                Console.WriteLine("Stream completed.");
+            }
+            while (Loop != 0 && !cts.Token.IsCancellationRequested);
+        }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine("Stream interrupted.");
+        }
+        finally
+        {
+            screen.StopStream();
+        }
+    }
+
+    private async Task StreamFromFileAsync(
+        LcdDriver.TuringSmartScreen.ScreenDevice screen,
+        int chunkSize,
+        byte[] buffer,
+        CancellationToken ct)
+    {
+        using var fileStream = File.OpenRead(FilePath);
+        while (!ct.IsCancellationRequested)
+        {
+            var bytesRead = await fileStream.ReadAsync(buffer, ct);
+            if (bytesRead == 0)
+            {
+                break;
+            }
+
+            var isLast = bytesRead < chunkSize;
+            var chunk = bytesRead == chunkSize ? buffer : buffer[..bytesRead].ToArray();
+
+            if (!screen.PlayH264Chunk(chunk, isLast))
+            {
+                Console.WriteLine("PlayH264Chunk failed.");
+                break;
+            }
+
+            if (!screen.ReceiveResponse())
+            {
+                Console.WriteLine("PlayH264Chunk response failed.");
+                break;
+            }
+
+            // Flow control: mirrors Python delay(dev, 2) — sleep 50ms then poll until queue <= 2
+            var queueDepth = screen.GetStreamStatus();
+            if (queueDepth > 2)
+            {
+                Thread.Sleep(50);
+                while (screen.GetStreamStatus() > 2)
+                {
+                    Thread.Sleep(50);
+                }
+            }
+        }
+    }
+}
+
 
 //--------------------------------------------------------------------------------
 // Turing Smart Screen 8.8
@@ -387,5 +652,65 @@ public sealed class Tss35Command : ICommandHandler
             await Task.Delay(50);
         }
         // ReSharper disable once FunctionNeverReturns
+    }
+}
+
+//--------------------------------------------------------------------------------
+// Tss8 USB probe (response presence measurement)
+//--------------------------------------------------------------------------------
+[Command("probe", "Probe command response presence for each command ID")]
+public sealed class Tss8UsbProbeCommand : ICommandHandler
+{
+    private static readonly (byte Id, string Name, bool HasPayload)[] Commands =
+    [
+        (10,  "Sync",              false),
+        (13,  "SetOrientation",    false),
+        (14,  "SetBrightness",     false),
+        (15,  "SetFrameRate",      false),
+        (17,  "GetH264ChunkSize",  false),
+        (41,  "Cmd41(QueuePrep)",  false),
+        (111, "Cmd111(StopPlay1)", false),
+        (112, "Cmd112(StopPlay2)", false),
+        (122, "GetStreamStatus",   false),
+        (123, "StopStream",        false),
+        (98,  "PlayFile(cmd98)",   false),
+        (110, "PlayFile2(cmd110)", false),
+        (113, "PlayFile3(cmd113)", false),
+        (40,  "DeleteFile(cmd40)", false),
+    ];
+
+    public ValueTask ExecuteAsync(CommandContext context)
+    {
+        var finder = new UsbDeviceFinder(0x1CBE, 0x0088);
+        using var device = UsbDevice.OpenUsbDevice(finder);
+        if (device is null)
+        {
+            Console.WriteLine("Device not found.");
+            return ValueTask.CompletedTask;
+        }
+
+        using var screen = new LcdDriver.TuringSmartScreen.ScreenDevice(device);
+        // Sync first to establish known state
+        screen.Sync();
+
+        Console.WriteLine($"{"ID",-5} {"Name",-20} {"SendOK",-8} {"RespOK",-8} {"Elapsed(ms)",-14} {"resp[0..19]"}");
+        Console.WriteLine(new string('-', 100));
+
+        foreach (var (id, name, _) in Commands)
+        {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var sendOk = screen.ProbeCommand(id, out var respBytes, out var recvOk, timeoutMs: 2500);
+            sw.Stop();
+
+            var hex = respBytes is not null
+                ? string.Join(" ", respBytes.Take(20).Select(b => b.ToString("X2")))
+                : "(no response)";
+            Console.WriteLine($"{id,-5} {name,-20} {sendOk,-8} {recvOk,-8} {sw.ElapsedMilliseconds,-14} {hex}");
+
+            // Small gap between commands so device doesn't get confused
+            Thread.Sleep(100);
+        }
+
+        return ValueTask.CompletedTask;
     }
 }
