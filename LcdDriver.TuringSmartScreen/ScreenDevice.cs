@@ -116,6 +116,19 @@ public sealed class ScreenDevice : IDisposable
     }
 
     /// <summary>
+    /// Encodes an ASCII path into <c>commandBuffer[16..]</c> and writes the byte length
+    /// big-endian into <c>commandBuffer[8..11]</c>.
+    /// Uses <see cref="Encoding.ASCII"/> <c>GetBytes(ReadOnlySpan&lt;char&gt;, Span&lt;byte&gt;)</c>
+    /// to avoid a heap allocation for the intermediate byte array.
+    /// </summary>
+    private void WritePathToCommand(string path)
+    {
+        var len = Encoding.ASCII.GetBytes(path.AsSpan(), commandBuffer.AsSpan(16));
+        BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(8, 4), len);
+        commandBuffer.AsSpan(12, 4).Clear();
+    }
+
+    /// <summary>
     /// Encrypts <c>commandBuffer</c>, appends the end marker, flushes the IN endpoint,
     /// and writes the 512-byte encrypted packet to the device.
     /// </summary>
@@ -192,11 +205,12 @@ public sealed class ScreenDevice : IDisposable
     }
 
     /// <summary>Sends a raw command and probes for a response. Used only for diagnostics.</summary>
-    public bool ProbeCommand(byte commandId, out byte[]? responseBytes, out bool received, int timeoutMs = 2000)
+    public bool ProbeCommand(byte commandId, out byte[]? responseBytes, out bool received, int timeoutMs = 2000, Action<byte[]>? configureBuffer = null)
     {
         responseBytes = null;
         received = false;
         PrepareCommandHeader(commandId);
+        configureBuffer?.Invoke(commandBuffer);
         if (!SendCommand())
         {
             return false;
@@ -239,6 +253,13 @@ public sealed class ScreenDevice : IDisposable
     public bool SetBrightness(byte value)
     {
         PrepareCommandHeader(14);
+        commandBuffer[8] = value;
+        return SendCommand() && ReceiveResponse();
+    }
+
+    public bool SetFrameRate(byte value)
+    {
+        PrepareCommandHeader(15);
         commandBuffer[8] = value;
         return SendCommand() && ReceiveResponse();
     }
@@ -299,10 +320,7 @@ public sealed class ScreenDevice : IDisposable
     private bool OpenFile(string devicePath)
     {
         PrepareCommandHeader(38);
-        var pathBytes = Encoding.ASCII.GetBytes(devicePath);
-        BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(8, 4), pathBytes.Length);
-        commandBuffer.AsSpan(12, 4).Clear();
-        pathBytes.CopyTo(commandBuffer, 16);
+        WritePathToCommand(devicePath);
         return SendCommand() && ReceiveResponse();
     }
 
@@ -322,6 +340,7 @@ public sealed class ScreenDevice : IDisposable
         // Legacy fallback: [8..11]=chunk_len only (older firmware)
         PrepareCommandHeader(39);
         BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(8, 4), data.Length);
+        commandBuffer[16] = isLast ? (byte)1 : (byte)0;
         return SendCommandWithPayload(data) && ReceiveResponse(FileWriteReadTimeout);
     }
 
@@ -375,16 +394,20 @@ public sealed class ScreenDevice : IDisposable
     public bool DeleteFile(string devicePath)
     {
         PrepareCommandHeader(40);
-        var pathBytes = Encoding.ASCII.GetBytes(devicePath);
-        BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(8, 4), pathBytes.Length);
-        commandBuffer.AsSpan(12, 4).Clear();
-        pathBytes.CopyTo(commandBuffer, 16);
+        WritePathToCommand(devicePath);
         return SendCommand();
     }
 
     // --------------------------------------------------------------------------------
     // Play command
     // --------------------------------------------------------------------------------
+
+    /// <summary>Prepares the device stream buffer queue before H264 streaming (cmd 41).</summary>
+    public bool PrepareStreamBuffer()
+    {
+        PrepareCommandHeader(41);
+        return SendCommand() && ReceiveResponse();
+    }
 
     /// <summary>Stops any running playback, pass 1 of 2 (cmd 111).</summary>
     public bool StopPlayback()
@@ -400,21 +423,11 @@ public sealed class ScreenDevice : IDisposable
         return SendCommand() && ReceiveResponse();
     }
 
-    /// <summary>Prepares the device stream buffer queue before H264 streaming (cmd 41).</summary>
-    public bool PrepareStreamBuffer()
-    {
-        PrepareCommandHeader(41);
-        return SendCommand() && ReceiveResponse();
-    }
-
     /// <summary>Requests video playback of a file stored on the device (cmd 98).</summary>
     public bool PlayFile(string devicePath)
     {
         PrepareCommandHeader(98);
-        var pathBytes = Encoding.ASCII.GetBytes(devicePath);
-        BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(8, 4), pathBytes.Length);
-        commandBuffer.AsSpan(12, 4).Clear();
-        pathBytes.CopyTo(commandBuffer, 16);
+        WritePathToCommand(devicePath);
         return SendCommand() && ReceiveResponse();
     }
 
@@ -422,10 +435,7 @@ public sealed class ScreenDevice : IDisposable
     public bool PlayFile2(string devicePath)
     {
         PrepareCommandHeader(110);
-        var pathBytes = Encoding.ASCII.GetBytes(devicePath);
-        BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(8, 4), pathBytes.Length);
-        commandBuffer.AsSpan(12, 4).Clear();
-        pathBytes.CopyTo(commandBuffer, 16);
+        WritePathToCommand(devicePath);
         return SendCommand() && ReceiveResponse();
     }
 
@@ -433,10 +443,7 @@ public sealed class ScreenDevice : IDisposable
     public bool PlayFile3(string devicePath)
     {
         PrepareCommandHeader(113);
-        var pathBytes = Encoding.ASCII.GetBytes(devicePath);
-        BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(8, 4), pathBytes.Length);
-        commandBuffer.AsSpan(12, 4).Clear();
-        pathBytes.CopyTo(commandBuffer, 16);
+        WritePathToCommand(devicePath);
         return SendCommand() && ReceiveResponse();
     }
 
@@ -446,7 +453,7 @@ public sealed class ScreenDevice : IDisposable
 
     /// <summary>
     /// Sends a chunk of H264 bitstream data for live streaming (cmd 121).
-    /// The caller must call <see cref="ReceiveResponse"/> after this method.
+    /// The caller must call <see cref="ReceiveResponse"/> afterwards.
     /// </summary>
     public bool PlayH264Chunk(byte[] data, bool isLast)
     {
@@ -460,17 +467,9 @@ public sealed class ScreenDevice : IDisposable
         return SendCommandWithPayload(data);
     }
 
-    public bool SetFrameRate(byte value)
-    {
-        PrepareCommandHeader(15);
-        commandBuffer[8] = value;
-        return SendCommand() && ReceiveResponse();
-    }
-
     /// <summary>
     /// Queries the preferred H264 chunk size from the device (cmd 17).
-    /// Device probing shows resp[8..11] is all-zero on this model;
-    /// falls back to 202752 bytes.
+    /// Device probing shows resp[8..11] is all-zero on this model; falls back to 202752 bytes.
     /// </summary>
     public int GetH264ChunkSize()
     {

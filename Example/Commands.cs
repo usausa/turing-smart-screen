@@ -27,8 +27,11 @@ public static class CommandBuilderExtensions
             sub.AddSubCommand<Tss8UsbUploadCommand>();
             sub.AddSubCommand<Tss8UsbDeleteCommand>();
             sub.AddSubCommand<Tss8UsbPlayCommand>();
+            sub.AddSubCommand<Tss8UsbStopCommand>();
             sub.AddSubCommand<Tss8UsbStreamCommand>();
             sub.AddSubCommand<Tss8UsbProbeCommand>();
+            sub.AddSubCommand<Tss8UsbPlayRawCommand>();
+            sub.AddSubCommand<Tss8UsbScanCommand>();
         });
         commands.AddCommand<TrofeoCommand>();
     }
@@ -166,14 +169,33 @@ public sealed class Tss8UsbCapacityCommand : ICommandHandler
                 $"{kb} KB";
 }
 
-[Command("upload", "Upload a PNG or H264 file to device storage (.png / .h264)")]
+/// <summary>
+/// Resolves the device-side storage path for a given local filename.
+/// Rules confirmed by probing against a live device with files uploaded by the official tool:
+///   .png / .jpg / .jpeg  →  /tmp/sdcard/mmcblk0p1/img/&lt;filename&gt;
+///   .h264                →  /tmp/sdcard/mmcblk0p1/video/&lt;filename&gt;
+/// </summary>
+internal static class DevicePath
+{
+    private const string Root = "/tmp/sdcard/mmcblk0p1";
+
+    public static string? Resolve(string fileName)
+    {
+        var ext = Path.GetExtension(fileName).ToUpperInvariant();
+        return ext switch
+        {
+            ".PNG" or ".JPG" or ".JPEG" => $"{Root}/img/{fileName}",
+            ".H264" => $"{Root}/video/{fileName}",
+            _ => null
+        };
+    }
+}
+
+[Command("upload", "Upload an image or H264 file to device storage")]
 public sealed class Tss8UsbUploadCommand : ICommandHandler
 {
-    [Option<string>("--file", "-f", Description = "Local file path (.png or .h264)", Required = true)]
+    [Option<string>("--file", "-f", Description = "Local file path (.png / .jpg / .h264)", Required = true)]
     public string FilePath { get; set; } = default!;
-
-    [Option<string>("--device-path", "-d", Description = "Remote path on device (auto-detected from extension if omitted)", Required = false)]
-    public string? DevicePath { get; set; }
 
     public ValueTask ExecuteAsync(CommandContext context)
     {
@@ -183,17 +205,10 @@ public sealed class Tss8UsbUploadCommand : ICommandHandler
             return ValueTask.CompletedTask;
         }
 
-        var ext = Path.GetExtension(FilePath).ToUpperInvariant();
-        var devicePath = DevicePath ?? ext switch
-        {
-            ".PNG" => $"/tmp/sdcard/mmcblk0p1/img/{Path.GetFileName(FilePath)}",
-            ".H264" => $"/tmp/sdcard/mmcblk0p1/video/{Path.GetFileName(FilePath)}",
-            _ => null
-        };
-
+        var devicePath = Example.DevicePath.Resolve(Path.GetFileName(FilePath));
         if (devicePath is null)
         {
-            Console.WriteLine("Unsupported file type. Use .png or .h264.");
+            Console.WriteLine("Unsupported file type. Use .png, .jpg, or .h264.");
             return ValueTask.CompletedTask;
         }
 
@@ -242,13 +257,7 @@ public sealed class Tss8UsbDeleteCommand : ICommandHandler
         using var screen = new LcdDriver.TuringSmartScreen.ScreenDevice(device);
         screen.Sync();
 
-        var ext = Path.GetExtension(FileName).ToUpperInvariant();
-        var devicePath = ext switch
-        {
-            ".PNG" => $"/tmp/sdcard/mmcblk0p1/img/{FileName}",
-            ".H264" => $"/tmp/sdcard/mmcblk0p1/video/{FileName}",
-            _ => $"/tmp/sdcard/mmcblk0p1/{FileName}"
-        };
+        var devicePath = Example.DevicePath.Resolve(FileName) ?? $"/tmp/sdcard/mmcblk0p1/{FileName}";
 
         if (!screen.DeleteFile(devicePath))
         {
@@ -262,15 +271,54 @@ public sealed class Tss8UsbDeleteCommand : ICommandHandler
     }
 }
 
-[Command("play", "Play a file stored on the device")]
+[Command("play", "Play a file stored on the device (.jpg / .h264)")]
 public sealed class Tss8UsbPlayCommand : ICommandHandler
 {
-    [Option<string>("--file", "-f", Description = "Local file name (e.g. test.png or 8.8.h264)", Required = true)]
+    [Option<string>("--file", "-f", Description = "File name on device (.jpg or .h264)", Required = true)]
     public string FileName { get; set; } = default!;
 
-    [Option<int>("--mode", "-m", Description = "Playback mode: 1=video(cmd98) 2=alternate(cmd110) 3=image(cmd113), default 1", Required = false)]
-    public int Mode { get; set; } = 1;
+    public ValueTask ExecuteAsync(CommandContext context)
+    {
+        var finder = new UsbDeviceFinder(0x1CBE, 0x0088);
+        using var device = UsbDevice.OpenUsbDevice(finder);
+        if (device is null)
+        {
+            Console.WriteLine("Device not found.");
+            return ValueTask.CompletedTask;
+        }
 
+        var ext = Path.GetExtension(FileName).ToUpperInvariant();
+        if (ext is not (".JPG" or ".JPEG" or ".H264"))
+        {
+            Console.WriteLine($"Unsupported file type '{ext}'. Use .jpg or .h264.");
+            return ValueTask.CompletedTask;
+        }
+
+        using var screen = new LcdDriver.TuringSmartScreen.ScreenDevice(device);
+        screen.Sync();
+
+        screen.StopPlayback();
+        screen.ResetPlayback();
+        screen.SetOrientation(LcdDriver.TuringSmartScreen.ScreenOrientation.Portrait);
+        screen.SetBrightness(255);
+        screen.PrepareStreamBuffer();
+
+        var devicePath = Example.DevicePath.Resolve(FileName) ?? $"/tmp/sdcard/mmcblk0p1/{FileName}";
+
+        // jpg  → cmd 113 (PlayFile3)
+        // h264 → cmd 110 (PlayFile2)
+        var result = ext is ".JPG" or ".JPEG"
+            ? screen.PlayFile3(devicePath)
+            : screen.PlayFile2(devicePath);
+
+        Console.WriteLine(result ? $"Playback started: {devicePath}" : "PlayFile failed.");
+        return ValueTask.CompletedTask;
+    }
+}
+
+[Command("stop", "Stop running playback")]
+public sealed class Tss8UsbStopCommand : ICommandHandler
+{
     public ValueTask ExecuteAsync(CommandContext context)
     {
         var finder = new UsbDeviceFinder(0x1CBE, 0x0088);
@@ -283,37 +331,9 @@ public sealed class Tss8UsbPlayCommand : ICommandHandler
 
         using var screen = new LcdDriver.TuringSmartScreen.ScreenDevice(device);
         screen.Sync();
-
-        // Stop any running playback and reset display state before issuing a play command.
-        // Mirrors Python send_video init: cmd 111, 112, SetOrientation, SetBrightness, cmd 41.
         screen.StopPlayback();
         screen.ResetPlayback();
-        screen.SetOrientation(LcdDriver.TuringSmartScreen.ScreenOrientation.Portrait);
-        screen.SetBrightness(32);
-        screen.PrepareStreamBuffer();
-
-        var ext = Path.GetExtension(FileName).ToUpperInvariant();
-        var devicePath = ext switch
-        {
-            ".PNG" => $"/tmp/sdcard/mmcblk0p1/img/{FileName}",
-            ".H264" => $"/tmp/sdcard/mmcblk0p1/video/{FileName}",
-            _ => $"/tmp/sdcard/mmcblk0p1/{FileName}"
-        };
-        var result = Mode switch
-        {
-            2 => screen.PlayFile2(devicePath),
-            3 => screen.PlayFile3(devicePath),
-            _ => screen.PlayFile(devicePath)
-        };
-
-        if (!result)
-        {
-            Console.WriteLine($"PlayFile mode={Mode} failed.");
-        }
-        else
-        {
-            Console.WriteLine($"Playback started: {devicePath} (mode={Mode})");
-        }
+        Console.WriteLine("Playback stopped.");
         return ValueTask.CompletedTask;
     }
 }
@@ -348,6 +368,7 @@ public sealed class Tss8UsbStreamCommand : ICommandHandler
         footer.CopyTo(data.AsSpan(header.Length + ZeroMiddle));
         return data;
     }
+
     [Option<string>("--file", "-f", Description = "Local H264 bitstream file (.h264)", Required = true)]
     public string FilePath { get; set; } = default!;
 
@@ -392,7 +413,7 @@ public sealed class Tss8UsbStreamCommand : ICommandHandler
                 screen.StopPlayback();
                 screen.ResetPlayback();
                 screen.SetOrientation(LcdDriver.TuringSmartScreen.ScreenOrientation.Portrait);
-                screen.SetBrightness(32);
+                screen.SetBrightness(255);
                 screen.PrepareStreamBuffer();
                 screen.DrawPng(ClearScreenPng);
                 screen.SetFrameRate(25);
@@ -656,6 +677,107 @@ public sealed class Tss35Command : ICommandHandler
 }
 
 //--------------------------------------------------------------------------------
+// Tss8 USB playraw (play without init sequence, for diagnosis)
+//--------------------------------------------------------------------------------
+[Command("playraw", "Play or delete file by full device path (diagnosis)")]
+public sealed class Tss8UsbPlayRawCommand : ICommandHandler
+{
+    [Option<string>("--device-path", "-d", Description = "Full device path", Required = true)]
+    public string DevicePath { get; set; } = default!;
+
+    [Option<int>("--mode", "-m", Description = "1=cmd98 2=cmd110 3=cmd113 0=delete", Required = false)]
+    public int Mode { get; set; } = 3;
+
+    public ValueTask ExecuteAsync(CommandContext context)
+    {
+        var finder = new UsbDeviceFinder(0x1CBE, 0x0088);
+        using var device = UsbDevice.OpenUsbDevice(finder);
+        if (device is null) { Console.WriteLine("Device not found."); return ValueTask.CompletedTask; }
+
+        using var screen = new LcdDriver.TuringSmartScreen.ScreenDevice(device);
+        screen.Sync();
+
+        if (Mode == 0)
+        {
+            var ok = screen.DeleteFile(DevicePath);
+            Console.WriteLine(ok ? $"Deleted: {DevicePath}" : $"Delete failed: {DevicePath}");
+            return ValueTask.CompletedTask;
+        }
+
+        var sendOk = screen.ProbeCommand(Mode switch { 2 => 110, 3 => 113, _ => 98 },
+            out var respBytes, out var recvOk, timeoutMs: 2500,
+            configureBuffer: buf =>
+            {
+                var len = System.Text.Encoding.ASCII.GetBytes(DevicePath.AsSpan(), buf.AsSpan(16));
+                System.Buffers.Binary.BinaryPrimitives.WriteInt32BigEndian(buf.AsSpan(8, 4), len);
+                buf.AsSpan(12, 4).Clear();
+            });
+        var hex = respBytes is not null ? string.Join(" ", respBytes.Take(16).Select(b => b.ToString("X2"))) : "(no response)";
+        Console.WriteLine(sendOk
+            ? $"{(recvOk ? "OK" : "FAILED")} (resp: {hex}): {DevicePath}"
+            : $"Send failed: {DevicePath}");
+        return ValueTask.CompletedTask;
+    }
+}
+
+//--------------------------------------------------------------------------------
+// Tss8 USB scan (full command ID sweep 1-255)
+//--------------------------------------------------------------------------------
+[Command("scan", "Sweep all command IDs 1-255 and report responders")]
+public sealed class Tss8UsbScanCommand : ICommandHandler
+{
+    [Option<int>("--from", Description = "First command ID to scan (default 1)", Required = false)]
+    public int From { get; set; } = 1;
+
+    [Option<int>("--to", Description = "Last command ID to scan (default 255)", Required = false)]
+    public int To { get; set; } = 255;
+
+    [Option<int>("--timeout", Description = "Per-command timeout ms (default 500)", Required = false)]
+    public int Timeout { get; set; } = 500;
+
+    public ValueTask ExecuteAsync(CommandContext context)
+    {
+        var finder = new UsbDeviceFinder(0x1CBE, 0x0088);
+        using var device = UsbDevice.OpenUsbDevice(finder);
+        if (device is null) { Console.WriteLine("Device not found."); return ValueTask.CompletedTask; }
+
+        Console.WriteLine($"Scanning commands {From}-{To}, timeout={Timeout}ms per command");
+        Console.WriteLine($"{"ID",-5} {"resp[0..15]"}");
+        Console.WriteLine(new string('-', 65));
+
+        using var screen = new LcdDriver.TuringSmartScreen.ScreenDevice(device);
+
+        for (var id = From; id <= To; id++)
+        {
+            // Re-sync before each command so that a previous timeout leaves the device in a known state
+            if (!screen.Sync())
+            {
+                // Device may have rebooted; wait and retry once
+                Console.WriteLine($"  [id={id}] Sync failed, waiting 5s...");
+                Thread.Sleep(5000);
+                if (!screen.Sync())
+                {
+                    Console.WriteLine($"  [id={id}] Sync failed again, aborting.");
+                    break;
+                }
+            }
+
+            var sendOk = screen.ProbeCommand((byte)id, out var resp, out var recvOk, Timeout);
+            if (!sendOk) { Console.WriteLine($"{id,-5} Send failed"); continue; }
+            if (!recvOk) continue; // No response — skip silently
+
+            var hex = string.Join(" ", resp!.Take(16).Select(b => b.ToString("X2")));
+            // If the response contains printable ASCII, also show it
+            var ascii = new string(resp!.Take(64).Select(b => b >= 0x20 && b < 0x7F ? (char)b : '.').ToArray());
+            Console.WriteLine($"{id,-5} {hex}  |{ascii}|");
+        }
+
+        Console.WriteLine("Scan complete.");
+        return ValueTask.CompletedTask;
+    }
+}
+
+//--------------------------------------------------------------------------------
 // Tss8 USB probe (response presence measurement)
 //--------------------------------------------------------------------------------
 [Command("probe", "Probe command response presence for each command ID")]
@@ -663,20 +785,21 @@ public sealed class Tss8UsbProbeCommand : ICommandHandler
 {
     private static readonly (byte Id, string Name, bool HasPayload)[] Commands =
     [
-        (10,  "Sync",              false),
-        (13,  "SetOrientation",    false),
-        (14,  "SetBrightness",     false),
-        (15,  "SetFrameRate",      false),
-        (17,  "GetH264ChunkSize",  false),
-        (41,  "Cmd41(QueuePrep)",  false),
-        (111, "Cmd111(StopPlay1)", false),
-        (112, "Cmd112(StopPlay2)", false),
-        (122, "GetStreamStatus",   false),
-        (123, "StopStream",        false),
-        (98,  "PlayFile(cmd98)",   false),
-        (110, "PlayFile2(cmd110)", false),
-        (113, "PlayFile3(cmd113)", false),
-        (40,  "DeleteFile(cmd40)", false),
+        (10,  "Sync",            false),
+        (13,  "SetOrientation",  false),
+        (14,  "SetBrightness",   false),
+        (15,  "SetFrameRate",    false),
+        (17,  "GetH264ChunkSize",false),
+        (38,  "OpenFile(cmd38)", false),
+        (41,  "PrepareStream",   false),
+        (111, "StopPlayback",    false),
+        (112, "ResetPlayback",   false),
+        (122, "GetStreamStatus", false),
+        (123, "StopStream",      false),
+        (98,  "PlayFile(cmd98)", false),
+        (110, "PlayFile2",       false),
+        (113, "PlayFile3",       false),
+        (40,  "DeleteFile",      false),
     ];
 
     public ValueTask ExecuteAsync(CommandContext context)
@@ -693,8 +816,8 @@ public sealed class Tss8UsbProbeCommand : ICommandHandler
         // Sync first to establish known state
         screen.Sync();
 
-        Console.WriteLine($"{"ID",-5} {"Name",-20} {"SendOK",-8} {"RespOK",-8} {"Elapsed(ms)",-14} {"resp[0..19]"}");
-        Console.WriteLine(new string('-', 100));
+        Console.WriteLine($"{"ID",-5} {"resp[0..19]"}");
+        Console.WriteLine(new string('-', 70));
 
         foreach (var (id, name, _) in Commands)
         {
@@ -705,7 +828,7 @@ public sealed class Tss8UsbProbeCommand : ICommandHandler
             var hex = respBytes is not null
                 ? string.Join(" ", respBytes.Take(20).Select(b => b.ToString("X2")))
                 : "(no response)";
-            Console.WriteLine($"{id,-5} {name,-20} {sendOk,-8} {recvOk,-8} {sw.ElapsedMilliseconds,-14} {hex}");
+            Console.WriteLine($"{id,-5} {name,-20} {sw.ElapsedMilliseconds,-8} {hex}");
 
             // Small gap between commands so device doesn't get confused
             Thread.Sleep(100);
