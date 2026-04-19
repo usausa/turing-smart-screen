@@ -92,10 +92,43 @@ internal static class Tss8UsbCommandHelper
         var ext = Path.GetExtension(fileName).ToUpperInvariant();
         return ext switch
         {
-            ".PNG" or ".JPG" or ".JPEG" => $"{RootPath}/img/{fileName}",
+            ".JPG" => $"{RootPath}/img/{fileName}",
             ".H264" => $"{RootPath}/video/{fileName}",
             _ => null
         };
+    }
+
+    public static string FormatKilobytes(uint kb) =>
+        kb >= 1_048_576u ? $"{kb / 1_048_576.0:F2} GB" :
+        kb >= 1_024u ? $"{kb / 1_024.0:F2} MB" :
+        $"{kb} KB";
+
+    public static readonly byte[] ClearScreenPng = BuildClearScreenPng();
+
+    private static byte[] BuildClearScreenPng()
+    {
+        ReadOnlySpan<byte> header =
+        [
+            0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+            0x00, 0x00, 0x01, 0xE0, 0x00, 0x00, 0x07, 0x80, 0x08, 0x06, 0x00, 0x00, 0x00, 0x16, 0xF0, 0x84,
+            0xF5, 0x00, 0x00, 0x00, 0x01, 0x73, 0x52, 0x47, 0x42, 0x00, 0xAE, 0xCE, 0x1C, 0xE9, 0x00, 0x00,
+            0x00, 0x04, 0x67, 0x41, 0x4D, 0x41, 0x00, 0x00, 0xB1, 0x8F, 0x0B, 0xFC, 0x61, 0x05, 0x00, 0x00,
+            0x00, 0x09, 0x70, 0x48, 0x59, 0x73, 0x00, 0x00, 0x0E, 0xC3, 0x00, 0x00, 0x0E, 0xC3, 0x01, 0xC7,
+            0x6F, 0xA8, 0x64, 0x00, 0x00, 0x0E, 0x0C, 0x49, 0x44, 0x41, 0x54, 0x78, 0x5E, 0xED, 0xC1, 0x01,
+            0x0D, 0x00, 0x00, 0x00, 0xC2, 0xA0, 0xF7, 0x4F, 0x6D, 0x0F, 0x07, 0x14, 0x00, 0x00, 0x00, 0x00
+        ];
+        ReadOnlySpan<byte> footer =
+        [
+            0x00, 0xF0, 0x66, 0x4A, 0xC8, 0x00, 0x01, 0x11, 0x9D, 0x82, 0x0A,
+            0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82
+        ];
+
+        const int zeroMiddle = 3568;
+        var data = new byte[header.Length + zeroMiddle + footer.Length];
+        header.CopyTo(data);
+        footer.CopyTo(data.AsSpan(header.Length + zeroMiddle));
+
+        return data;
     }
 }
 
@@ -168,23 +201,18 @@ public sealed class Tss8UsbCapacityCommand : ICommandHandler
         }
         else
         {
-                Console.WriteLine($"Total : {FormatKilobytes(capacity.Value.Total)}");
-                Console.WriteLine($"Used  : {FormatKilobytes(capacity.Value.Used)}");
-                Console.WriteLine($"Valid : {FormatKilobytes(capacity.Value.Valid)}");
+            Console.WriteLine($"Total : {Tss8UsbCommandHelper.FormatKilobytes(capacity.Value.Total)}");
+            Console.WriteLine($"Used  : {Tss8UsbCommandHelper.FormatKilobytes(capacity.Value.Used)}");
+            Console.WriteLine($"Valid : {Tss8UsbCommandHelper.FormatKilobytes(capacity.Value.Valid)}");
         }
         return ValueTask.CompletedTask;
     }
-
-    private static string FormatKilobytes(uint kb) =>
-        kb >= 1_048_576u ? $"{kb / 1_048_576.0:F2} GB" :
-        kb >= 1_024u ? $"{kb / 1_024.0:F2} MB" :
-        $"{kb} KB";
 }
 
-[Command("upload", "Upload an image or H264 file to device storage")]
+[Command("upload", "Upload to device storage")]
 public sealed class Tss8UsbUploadCommand : ICommandHandler
 {
-    [Option<string>("--file", "-f", Description = "Local file path (.png / .jpg / .h264)", Required = true)]
+    [Option<string>("--file", "-f", Description = "Local file path", Required = true)]
     public string FilePath { get; set; } = default!;
 
     public async ValueTask ExecuteAsync(CommandContext context)
@@ -198,7 +226,7 @@ public sealed class Tss8UsbUploadCommand : ICommandHandler
         var devicePath = Tss8UsbCommandHelper.ResolvePath(Path.GetFileName(FilePath));
         if (devicePath is null)
         {
-            Console.WriteLine("Unsupported file type. Use .png, .jpg, or .h264.");
+            Console.WriteLine("Unsupported file type. Use .jpg, or .h264.");
             return;
         }
 
@@ -227,10 +255,10 @@ public sealed class Tss8UsbUploadCommand : ICommandHandler
     }
 }
 
-[Command("delete", "Delete a file from device storage")]
+[Command("delete", "Delete file from storage")]
 public sealed class Tss8UsbDeleteCommand : ICommandHandler
 {
-    [Option<string>("--file", "-f", Description = "File name on device (e.g. test.png or 8.8.h264)", Required = true)]
+    [Option<string>("--file", "-f", Description = "File name on device", Required = true)]
     public string FileName { get; set; } = default!;
 
     public ValueTask ExecuteAsync(CommandContext context)
@@ -246,19 +274,24 @@ public sealed class Tss8UsbDeleteCommand : ICommandHandler
         using var screen = new LcdDriver.TuringSmartScreen.ScreenDevice(device);
         screen.Sync();
 
-        var devicePath = Tss8UsbCommandHelper.ResolvePath(FileName) ?? $"/tmp/sdcard/mmcblk0p1/{FileName}";
-        var success = !screen.DeleteFile(devicePath);
+        var devicePath = Tss8UsbCommandHelper.ResolvePath(FileName);
+        if (devicePath is null)
+        {
+            Console.WriteLine("Unsupported file type. Use .jpg or .h264.");
+            return ValueTask.CompletedTask;
+        }
 
+        var success = screen.DeleteFile(devicePath);
         Console.WriteLine(success ? $"Deleted: {devicePath}" : $"DeleteFile failed: {devicePath}");
 
         return ValueTask.CompletedTask;
     }
 }
 
-[Command("play", "Play a file stored on the device (.jpg / .h264)")]
+[Command("play", "Play file on device")]
 public sealed class Tss8UsbPlayCommand : ICommandHandler
 {
-    [Option<string>("--file", "-f", Description = "File name on device (.jpg or .h264)", Required = true)]
+    [Option<string>("--file", "-f", Description = "File name on device", Required = true)]
     public string FileName { get; set; } = default!;
 
     public ValueTask ExecuteAsync(CommandContext context)
@@ -272,7 +305,7 @@ public sealed class Tss8UsbPlayCommand : ICommandHandler
         }
 
         var ext = Path.GetExtension(FileName).ToUpperInvariant();
-        if (ext is not (".JPG" or ".JPEG" or ".H264"))
+        if (ext is not (".JPG" or ".H264"))
         {
             Console.WriteLine($"Unsupported file type '{ext}'. Use .jpg or .h264.");
             return ValueTask.CompletedTask;
@@ -287,18 +320,18 @@ public sealed class Tss8UsbPlayCommand : ICommandHandler
         screen.SetBrightness(255);
         screen.PrepareStreamBuffer();
 
-        var devicePath = Tss8UsbCommandHelper.ResolvePath(FileName) ?? $"/tmp/sdcard/mmcblk0p1/{FileName}";
+        var devicePath = Tss8UsbCommandHelper.ResolvePath(FileName)!;
 
-        var result = ext is ".JPG" or ".JPEG"
+        var result = ext is ".JPG"
             ? screen.PlayFile3(devicePath)
             : screen.PlayFile2(devicePath);
-
         Console.WriteLine(result ? $"Playback started: {devicePath}" : "PlayFile failed.");
+
         return ValueTask.CompletedTask;
     }
 }
 
-[Command("stop", "Stop running playback")]
+[Command("stop", "Stop playback")]
 public sealed class Tss8UsbStopCommand : ICommandHandler
 {
     public ValueTask ExecuteAsync(CommandContext context)
@@ -315,6 +348,7 @@ public sealed class Tss8UsbStopCommand : ICommandHandler
         screen.Sync();
         screen.StopPlayback();
         screen.ResetPlayback();
+
         Console.WriteLine("Playback stopped.");
         return ValueTask.CompletedTask;
     }
@@ -323,39 +357,8 @@ public sealed class Tss8UsbStopCommand : ICommandHandler
 [Command("stream", "Stream H264 bitstream to device (.h264)")]
 public sealed class Tss8UsbStreamCommand : ICommandHandler
 {
-    // Pre-built 480×1920 all-black RGBA PNG for clearing the screen before H264 streaming.
-    // Matches the hardcoded image used by the Python clear_image() function.
-    private static readonly byte[] ClearScreenPng = BuildClearScreenPng();
-
-    private static byte[] BuildClearScreenPng()
-    {
-        ReadOnlySpan<byte> header =
-        [
-            0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
-            0x00, 0x00, 0x01, 0xE0, 0x00, 0x00, 0x07, 0x80, 0x08, 0x06, 0x00, 0x00, 0x00, 0x16, 0xF0, 0x84,
-            0xF5, 0x00, 0x00, 0x00, 0x01, 0x73, 0x52, 0x47, 0x42, 0x00, 0xAE, 0xCE, 0x1C, 0xE9, 0x00, 0x00,
-            0x00, 0x04, 0x67, 0x41, 0x4D, 0x41, 0x00, 0x00, 0xB1, 0x8F, 0x0B, 0xFC, 0x61, 0x05, 0x00, 0x00,
-            0x00, 0x09, 0x70, 0x48, 0x59, 0x73, 0x00, 0x00, 0x0E, 0xC3, 0x00, 0x00, 0x0E, 0xC3, 0x01, 0xC7,
-            0x6F, 0xA8, 0x64, 0x00, 0x00, 0x0E, 0x0C, 0x49, 0x44, 0x41, 0x54, 0x78, 0x5E, 0xED, 0xC1, 0x01,
-            0x0D, 0x00, 0x00, 0x00, 0xC2, 0xA0, 0xF7, 0x4F, 0x6D, 0x0F, 0x07, 0x14, 0x00, 0x00, 0x00, 0x00
-        ];
-        ReadOnlySpan<byte> footer =
-        [
-            0x00, 0xF0, 0x66, 0x4A, 0xC8, 0x00, 0x01, 0x11, 0x9D, 0x82, 0x0A,
-            0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82
-        ];
-        const int ZeroMiddle = 3568;
-        var data = new byte[header.Length + ZeroMiddle + footer.Length];
-        header.CopyTo(data);
-        footer.CopyTo(data.AsSpan(header.Length + ZeroMiddle));
-        return data;
-    }
-
     [Option<string>("--file", "-f", Description = "Local H264 bitstream file (.h264)", Required = true)]
     public string FilePath { get; set; } = default!;
-
-    [Option<int>("--loop", "-l", Description = "Loop: 0=once 1=loop until Ctrl+C (default 0)", Required = false)]
-    public int Loop { get; set; }
 
     public async ValueTask ExecuteAsync(CommandContext context)
     {
@@ -386,21 +389,18 @@ public sealed class Tss8UsbStreamCommand : ICommandHandler
 
         try
         {
-            do
-            {
-                screen.StopPlayback();
-                screen.ResetPlayback();
-                screen.SetOrientation(LcdDriver.TuringSmartScreen.ScreenOrientation.Portrait);
-                screen.SetBrightness(255);
-                screen.PrepareStreamBuffer();
-                screen.DrawPng(ClearScreenPng);
-                screen.SetFrameRate(25);
+            screen.StopPlayback();
+            screen.ResetPlayback();
+            screen.SetOrientation(LcdDriver.TuringSmartScreen.ScreenOrientation.Portrait);
+            screen.SetBrightness(255);
+            screen.PrepareStreamBuffer();
+            screen.DrawPng(Tss8UsbCommandHelper.ClearScreenPng);
+            screen.SetFrameRate(25);
 
-                await using var fileStream = File.OpenRead(FilePath);
-                await screen.PlayStreamAsync(fileStream, cts.Token);
-                Console.WriteLine("Stream completed.");
-            }
-            while ((Loop != 0) && !cts.Token.IsCancellationRequested);
+            await using var fileStream = File.OpenRead(FilePath);
+            await screen.PlayStreamAsync(fileStream, cts.Token);
+
+            Console.WriteLine("Stream completed.");
         }
         catch (OperationCanceledException)
         {

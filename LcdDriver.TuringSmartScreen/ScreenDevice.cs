@@ -19,7 +19,7 @@ public sealed class ScreenDevice : IDisposable
     // Device may take several seconds to write data to storage
     private const int FileWriteReadTimeout = 10000;
 
-    private const int MaxFileChunkSize = 1024 * 1024;
+    private const int MaxFileChunkSize = 65536;
 
     private static readonly byte[] KeyIv = "slv3tuzx"u8.ToArray();
 
