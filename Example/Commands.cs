@@ -29,9 +29,6 @@ public static class CommandBuilderExtensions
             sub.AddSubCommand<Tss8UsbPlayCommand>();
             sub.AddSubCommand<Tss8UsbStopCommand>();
             sub.AddSubCommand<Tss8UsbStreamCommand>();
-            sub.AddSubCommand<Tss8UsbProbeCommand>();
-            sub.AddSubCommand<Tss8UsbPlayRawCommand>();
-            sub.AddSubCommand<Tss8UsbScanCommand>();
         });
         commands.AddCommand<TrofeoCommand>();
     }
@@ -424,10 +421,6 @@ public sealed class Tss8UsbStreamCommand : ICommandHandler
         {
             Console.WriteLine("Stream interrupted.");
         }
-        finally
-        {
-            screen.StopStream();
-        }
     }
 }
 
@@ -623,167 +616,5 @@ public sealed class Tss35Command : ICommandHandler
             await Task.Delay(50);
         }
         // ReSharper disable once FunctionNeverReturns
-    }
-}
-
-//--------------------------------------------------------------------------------
-// Tss8 USB playraw (play without init sequence, for diagnosis)
-//--------------------------------------------------------------------------------
-[Command("playraw", "Play or delete file by full device path (diagnosis)")]
-public sealed class Tss8UsbPlayRawCommand : ICommandHandler
-{
-    [Option<string>("--device-path", "-d", Description = "Full device path", Required = true)]
-    public string DevicePath { get; set; } = default!;
-
-    [Option<int>("--mode", "-m", Description = "1=cmd98 2=cmd110 3=cmd113 0=delete", Required = false)]
-    public int Mode { get; set; } = 3;
-
-    public ValueTask ExecuteAsync(CommandContext context)
-    {
-        var finder = new UsbDeviceFinder(0x1CBE, 0x0088);
-        using var device = UsbDevice.OpenUsbDevice(finder);
-        if (device is null) { Console.WriteLine("Device not found."); return ValueTask.CompletedTask; }
-
-        using var screen = new LcdDriver.TuringSmartScreen.ScreenDevice(device);
-        screen.Sync();
-
-        if (Mode == 0)
-        {
-            var ok = screen.DeleteFile(DevicePath);
-            Console.WriteLine(ok ? $"Deleted: {DevicePath}" : $"Delete failed: {DevicePath}");
-            return ValueTask.CompletedTask;
-        }
-
-        var sendOk = screen.ProbeCommand(Mode switch { 2 => 110, 3 => 113, _ => 98 },
-            out var respBytes, out var recvOk, timeoutMs: 2500,
-            configureBuffer: buf =>
-            {
-                var len = System.Text.Encoding.ASCII.GetBytes(DevicePath.AsSpan(), buf.AsSpan(16));
-                System.Buffers.Binary.BinaryPrimitives.WriteInt32BigEndian(buf.AsSpan(8, 4), len);
-                buf.AsSpan(12, 4).Clear();
-            });
-        var hex = respBytes is not null ? string.Join(" ", respBytes.Take(16).Select(b => b.ToString("X2"))) : "(no response)";
-        Console.WriteLine(sendOk
-            ? $"{(recvOk ? "OK" : "FAILED")} (resp: {hex}): {DevicePath}"
-            : $"Send failed: {DevicePath}");
-        return ValueTask.CompletedTask;
-    }
-}
-
-//--------------------------------------------------------------------------------
-// Tss8 USB scan (full command ID sweep 1-255)
-//--------------------------------------------------------------------------------
-[Command("scan", "Sweep all command IDs 1-255 and report responders")]
-public sealed class Tss8UsbScanCommand : ICommandHandler
-{
-    [Option<int>("--from", Description = "First command ID to scan (default 1)", Required = false)]
-    public int From { get; set; } = 1;
-
-    [Option<int>("--to", Description = "Last command ID to scan (default 255)", Required = false)]
-    public int To { get; set; } = 255;
-
-    [Option<int>("--timeout", Description = "Per-command timeout ms (default 500)", Required = false)]
-    public int Timeout { get; set; } = 500;
-
-    public ValueTask ExecuteAsync(CommandContext context)
-    {
-        var finder = new UsbDeviceFinder(0x1CBE, 0x0088);
-        using var device = UsbDevice.OpenUsbDevice(finder);
-        if (device is null) { Console.WriteLine("Device not found."); return ValueTask.CompletedTask; }
-
-        Console.WriteLine($"Scanning commands {From}-{To}, timeout={Timeout}ms per command");
-        Console.WriteLine($"{"ID",-5} {"resp[0..15]"}");
-        Console.WriteLine(new string('-', 65));
-
-        using var screen = new LcdDriver.TuringSmartScreen.ScreenDevice(device);
-
-        for (var id = From; id <= To; id++)
-        {
-            // Re-sync before each command so that a previous timeout leaves the device in a known state
-            if (!screen.Sync())
-            {
-                // Device may have rebooted; wait and retry once
-                Console.WriteLine($"  [id={id}] Sync failed, waiting 5s...");
-                Thread.Sleep(5000);
-                if (!screen.Sync())
-                {
-                    Console.WriteLine($"  [id={id}] Sync failed again, aborting.");
-                    break;
-                }
-            }
-
-            var sendOk = screen.ProbeCommand((byte)id, out var resp, out var recvOk, Timeout);
-            if (!sendOk) { Console.WriteLine($"{id,-5} Send failed"); continue; }
-            if (!recvOk) continue; // No response — skip silently
-
-            var hex = string.Join(" ", resp!.Take(16).Select(b => b.ToString("X2")));
-            // If the response contains printable ASCII, also show it
-            var ascii = new string(resp!.Take(64).Select(b => b >= 0x20 && b < 0x7F ? (char)b : '.').ToArray());
-            Console.WriteLine($"{id,-5} {hex}  |{ascii}|");
-        }
-
-        Console.WriteLine("Scan complete.");
-        return ValueTask.CompletedTask;
-    }
-}
-
-//--------------------------------------------------------------------------------
-// Tss8 USB probe (response presence measurement)
-//--------------------------------------------------------------------------------
-[Command("probe", "Probe command response presence for each command ID")]
-public sealed class Tss8UsbProbeCommand : ICommandHandler
-{
-    private static readonly (byte Id, string Name, bool HasPayload)[] Commands =
-    [
-        (10,  "Sync",            false),
-        (13,  "SetOrientation",  false),
-        (14,  "SetBrightness",   false),
-        (15,  "SetFrameRate",    false),
-        (17,  "GetH264ChunkSize",false),
-        (38,  "OpenFile(cmd38)", false),
-        (41,  "PrepareStream",   false),
-        (111, "StopPlayback",    false),
-        (112, "ResetPlayback",   false),
-        (122, "GetStreamStatus", false),
-        (123, "StopStream",      false),
-        (98,  "PlayFile(cmd98)", false),
-        (110, "PlayFile2",       false),
-        (113, "PlayFile3",       false),
-        (40,  "DeleteFile",      false),
-    ];
-
-    public ValueTask ExecuteAsync(CommandContext context)
-    {
-        var finder = new UsbDeviceFinder(0x1CBE, 0x0088);
-        using var device = UsbDevice.OpenUsbDevice(finder);
-        if (device is null)
-        {
-            Console.WriteLine("Device not found.");
-            return ValueTask.CompletedTask;
-        }
-
-        using var screen = new LcdDriver.TuringSmartScreen.ScreenDevice(device);
-        // Sync first to establish known state
-        screen.Sync();
-
-        Console.WriteLine($"{"ID",-5} {"resp[0..19]"}");
-        Console.WriteLine(new string('-', 70));
-
-        foreach (var (id, name, _) in Commands)
-        {
-            var sw = System.Diagnostics.Stopwatch.StartNew();
-            var sendOk = screen.ProbeCommand(id, out var respBytes, out var recvOk, timeoutMs: 2500);
-            sw.Stop();
-
-            var hex = respBytes is not null
-                ? string.Join(" ", respBytes.Take(20).Select(b => b.ToString("X2")))
-                : "(no response)";
-            Console.WriteLine($"{id,-5} {name,-20} {sw.ElapsedMilliseconds,-8} {hex}");
-
-            // Small gap between commands so device doesn't get confused
-            Thread.Sleep(100);
-        }
-
-        return ValueTask.CompletedTask;
     }
 }

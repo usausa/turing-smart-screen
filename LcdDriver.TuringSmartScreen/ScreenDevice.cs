@@ -115,23 +115,6 @@ public sealed class ScreenDevice : IDisposable
         BinaryPrimitives.WriteInt32LittleEndian(commandBuffer.AsSpan(4, 4), timestamp);
     }
 
-    /// <summary>
-    /// Encodes an ASCII path into <c>commandBuffer[16..]</c> and writes the byte length
-    /// big-endian into <c>commandBuffer[8..11]</c>.
-    /// Uses <see cref="Encoding.ASCII"/> <c>GetBytes(ReadOnlySpan&lt;char&gt;, Span&lt;byte&gt;)</c>
-    /// to avoid a heap allocation for the intermediate byte array.
-    /// </summary>
-    private void WritePathToCommand(string path)
-    {
-        var len = Encoding.ASCII.GetBytes(path.AsSpan(), commandBuffer.AsSpan(16));
-        BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(8, 4), len);
-        commandBuffer.AsSpan(12, 4).Clear();
-    }
-
-    /// <summary>
-    /// Encrypts <c>commandBuffer</c>, appends the end marker, flushes the IN endpoint,
-    /// and writes the 512-byte encrypted packet to the device.
-    /// </summary>
     private bool SendCommand()
     {
         encryptedBuffer.AsSpan().Clear();
@@ -147,11 +130,7 @@ public sealed class ScreenDevice : IDisposable
         return (errorCode == ErrorCode.None) && (transferLength == PacketSize);
     }
 
-    /// <summary>
-    /// Encrypts the command header and concatenates the payload into a single USB bulk write.
-    /// Mirrors Python's <c>write_to_device(encrypt_command_packet(pkt) + payload)</c>.
-    /// </summary>
-    private bool SendCommandWithPayload(byte[] data)
+    private bool SendCommandWithData(byte[] data)
     {
         encryptedBuffer.AsSpan().Clear();
         des.EncryptCbc(commandBuffer.AsSpan(0, PaddingCommandSize), KeyIv, encryptedBuffer, PaddingMode.None);
@@ -177,20 +156,12 @@ public sealed class ScreenDevice : IDisposable
         }
     }
 
-    /// <summary>
-    /// Writes a raw data payload to the device. Used after <see cref="SendCommand"/> when
-    /// the command is followed by a separate data transfer.
-    /// </summary>
-    public bool SendData(byte[] data)
+    private bool SendData(byte[] data)
     {
         var errorCode = writer.Write(data, 0, data.Length, WriteTimeout, out var transferLength);
         return (errorCode == ErrorCode.None) && (transferLength == data.Length);
     }
 
-    /// <summary>
-    /// Reads one 512-byte response packet and verifies the success byte (<c>resp[1] == 0xC8</c>).
-    /// All commands except cmd 40 (DeleteFile) return a response — confirmed by device probing.
-    /// </summary>
     private bool ReceiveResponse(int readTimeout = ReadTimeout)
     {
         var errorCode = reader.Read(readBuffer, 0, PacketSize, readTimeout, out var transferLength);
@@ -199,31 +170,15 @@ public sealed class ScreenDevice : IDisposable
             return false;
         }
 
-        // resp[1] == 0xC8 indicates success on all responding commands
+        // resp[1] == 0xC8 is success
         return readBuffer[1] == 0xC8;
     }
 
-    /// <summary>Sends a raw command and probes for a response. Used only for diagnostics.</summary>
-    public bool ProbeCommand(byte commandId, out byte[]? responseBytes, out bool received, int timeoutMs = 2000, Action<byte[]>? configureBuffer = null)
+    private void WritePathToCommand(string path)
     {
-        responseBytes = null;
-        received = false;
-        PrepareCommandHeader(commandId);
-        configureBuffer?.Invoke(commandBuffer);
-        if (!SendCommand())
-        {
-            return false;
-        }
-
-        var buf = new byte[PacketSize];
-        var errorCode = reader.Read(buf, 0, PacketSize, timeoutMs, out var transferLength);
-        received = errorCode == ErrorCode.None && transferLength == PacketSize;
-        if (received)
-        {
-            responseBytes = buf;
-        }
-
-        return true;
+        var length = Encoding.ASCII.GetBytes(path.AsSpan(), commandBuffer.AsSpan(16));
+        BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(8, 4), length);
+        commandBuffer.AsSpan(12, 4).Clear();
     }
 
     // --------------------------------------------------------------------------------
@@ -281,10 +236,6 @@ public sealed class ScreenDevice : IDisposable
     // Extended command
     // --------------------------------------------------------------------------------
 
-    /// <summary>
-    /// Refreshes storage capacity information from the device (cmd 100).
-    /// Mirrors Python's <c>send_refresh_storage_command</c>.
-    /// </summary>
     public CapacityInfo? RefreshStorage()
     {
         PrepareCommandHeader(100);
@@ -315,7 +266,6 @@ public sealed class ScreenDevice : IDisposable
     // File command
     // --------------------------------------------------------------------------------
 
-    /// <summary>Opens a remote file on the device storage for writing (cmd 38).</summary>
     private bool OpenFile(string devicePath)
     {
         PrepareCommandHeader(38);
@@ -323,32 +273,31 @@ public sealed class ScreenDevice : IDisposable
         return SendCommand() && ReceiveResponse();
     }
 
-    /// <summary>Writes a chunk of data to the previously opened remote file.</summary>
+    public bool DeleteFile(string devicePath)
+    {
+        PrepareCommandHeader(40);
+        WritePathToCommand(devicePath);
+        return SendCommand();
+    }
+
     private bool WriteFileChunk(byte[] data, bool isLast)
     {
-        // Primary layout: [8..11]=capacity, [12..15]=chunk_len, [16]=last_flag
         PrepareCommandHeader(39);
         BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(8, 4), MaxFileChunkSize);
         BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(12, 4), data.Length);
         commandBuffer[16] = isLast ? (byte)1 : (byte)0;
-        if (SendCommandWithPayload(data) && ReceiveResponse(FileWriteReadTimeout))
+        if (SendCommandWithData(data) && ReceiveResponse(FileWriteReadTimeout))
         {
             return true;
         }
 
-        // Legacy fallback: [8..11]=chunk_len only (older firmware)
+        // Older firmware fallback
         PrepareCommandHeader(39);
         BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(8, 4), data.Length);
         commandBuffer[16] = isLast ? (byte)1 : (byte)0;
-        return SendCommandWithPayload(data) && ReceiveResponse(FileWriteReadTimeout);
+        return SendCommandWithData(data) && ReceiveResponse(FileWriteReadTimeout);
     }
 
-    /// <summary>
-    /// Uploads a stream to the device storage.
-    /// </summary>
-    /// <param name="stream">Source data stream.</param>
-    /// <param name="devicePath">Target path on device storage.</param>
-    /// <param name="progress">Optional progress callback (bytesSent, totalBytes); totalBytes is -1 when unknown.</param>
     public bool WriteFile(Stream stream, string devicePath, Action<long, long>? progress = null)
     {
         if (!OpenFile(devicePath))
@@ -369,12 +318,8 @@ public sealed class ScreenDevice : IDisposable
             }
 
             sent += bytesRead;
-            var isLast = stream.CanSeek
-                ? stream.Position >= stream.Length
-                : bytesRead < buffer.Length;
-
+            var isLast = stream.CanSeek ? stream.Position >= stream.Length : bytesRead < buffer.Length;
             var chunk = bytesRead == buffer.Length ? buffer : buffer[..bytesRead].ToArray();
-
             if (!WriteFileChunk(chunk, isLast))
             {
                 return false;
@@ -386,43 +331,63 @@ public sealed class ScreenDevice : IDisposable
         return true;
     }
 
-    /// <summary>
-    /// Deletes a file from the device storage (cmd 40).
-    /// Device probing confirmed cmd 40 does NOT return a response; only SendCommand is called.
-    /// </summary>
-    public bool DeleteFile(string devicePath)
+    public async ValueTask<bool> WriteFileAsync(Stream stream, string devicePath, Action<long, long>? progress = null, CancellationToken cancel = default)
     {
-        PrepareCommandHeader(40);
-        WritePathToCommand(devicePath);
-        return SendCommand();
+        if (!OpenFile(devicePath))
+        {
+            return false;
+        }
+
+        var fileSize = stream.CanSeek ? stream.Length : -1L;
+        var sent = 0L;
+        var buffer = new byte[MaxFileChunkSize];
+
+        while (true)
+        {
+            cancel.ThrowIfCancellationRequested();
+
+            var bytesRead = await stream.ReadAsync(buffer, cancel).ConfigureAwait(false);
+            if (bytesRead == 0)
+            {
+                break;
+            }
+
+            sent += bytesRead;
+            var isLast = stream.CanSeek ? stream.Position >= stream.Length : bytesRead < buffer.Length;
+            var chunk = bytesRead == buffer.Length ? buffer : buffer[..bytesRead].ToArray();
+            if (!WriteFileChunk(chunk, isLast))
+            {
+                return false;
+            }
+
+            progress?.Invoke(sent, fileSize);
+        }
+
+        return true;
     }
 
     // --------------------------------------------------------------------------------
     // Play command
     // --------------------------------------------------------------------------------
 
-    /// <summary>Prepares the device stream buffer queue before H264 streaming (cmd 41).</summary>
     public bool PrepareStreamBuffer()
     {
         PrepareCommandHeader(41);
         return SendCommand() && ReceiveResponse();
     }
 
-    /// <summary>Stops any running playback, pass 1 of 2 (cmd 111).</summary>
     public bool StopPlayback()
     {
         PrepareCommandHeader(111);
         return SendCommand() && ReceiveResponse();
     }
 
-    /// <summary>Stops any running playback, pass 2 of 2 (cmd 112).</summary>
     public bool ResetPlayback()
     {
         PrepareCommandHeader(112);
         return SendCommand() && ReceiveResponse();
     }
 
-    /// <summary>Requests video playback of a file stored on the device (cmd 98).</summary>
     public bool PlayFile(string devicePath)
     {
         PrepareCommandHeader(98);
@@ -430,7 +395,6 @@ public sealed class ScreenDevice : IDisposable
         return SendCommand() && ReceiveResponse();
     }
 
-    /// <summary>Requests alternate video playback of a file stored on the device (cmd 110).</summary>
     public bool PlayFile2(string devicePath)
     {
         PrepareCommandHeader(110);
@@ -438,7 +402,6 @@ public sealed class ScreenDevice : IDisposable
         return SendCommand() && ReceiveResponse();
     }
 
-    /// <summary>Requests image display of a file stored on the device (cmd 113).</summary>
     public bool PlayFile3(string devicePath)
     {
         PrepareCommandHeader(113);
@@ -450,11 +413,18 @@ public sealed class ScreenDevice : IDisposable
     // Stream command
     // --------------------------------------------------------------------------------
 
-    /// <summary>
-    /// Sends a chunk of H264 bitstream data for live streaming (cmd 121) and reads the response.
-    /// <c>resp[8]</c> carries the queue depth used for flow control.
-    /// Returns <c>false</c> only when the USB write itself fails.
-    /// </summary>
+    private int GetH264ChunkSize()
+    {
+        PrepareCommandHeader(17);
+        if (!(SendCommand() && ReceiveResponse()))
+        {
+            return 202752;
+        }
+
+        var negotiated = BinaryPrimitives.ReadInt32BigEndian(readBuffer.AsSpan(8, 4));
+        return (negotiated > 0 && negotiated <= MaxFileChunkSize) ? negotiated : 202752;
+    }
+
     private bool PlayH264Chunk(byte[] data, bool isLast, out byte queueDepth)
     {
         queueDepth = 0;
@@ -465,7 +435,7 @@ public sealed class ScreenDevice : IDisposable
             commandBuffer[12] = 1;
         }
 
-        if (!SendCommandWithPayload(data))
+        if (!SendCommandWithData(data))
         {
             return false;
         }
@@ -478,12 +448,18 @@ public sealed class ScreenDevice : IDisposable
         return true;
     }
 
-    /// <summary>
-    /// Streams H264 bitstream from <paramref name="stream"/> to the device synchronously
-    /// and blocks until playback is complete.
-    /// </summary>
-    /// <param name="stream">H264 bitstream. Must be seekable (length is used to detect the last chunk).</param>
-    /// <returns><c>false</c> if a USB write error occurred during streaming.</returns>
+    private byte GetStreamStatus()
+    {
+        PrepareCommandHeader(122);
+        return (SendCommand() && ReceiveResponse()) ? readBuffer[8] : (byte)0;
+    }
+
+    private bool StopStream()
+    {
+        PrepareCommandHeader(123);
+        return SendCommand() && ReceiveResponse();
+    }
+
     public bool StreamH264(Stream stream)
     {
         var chunkSize = GetH264ChunkSize();
@@ -517,23 +493,15 @@ public sealed class ScreenDevice : IDisposable
             }
         }
 
-        // Block until the device drains its playback queue.
         var sw = System.Diagnostics.Stopwatch.StartNew();
         while (GetStreamStatus() > 0 && sw.ElapsedMilliseconds < 10_000)
         {
             Thread.Sleep(10);
         }
 
-        return true;
+        return StopStream();
     }
 
-    /// <summary>
-    /// Streams H264 bitstream from <paramref name="stream"/> to the device asynchronously.
-    /// Waits for playback to complete before the returned task finishes.
-    /// Cancellation stops feeding new chunks and calls <see cref="StopStream"/>.
-    /// </summary>
-    /// <param name="stream">H264 bitstream. Must be seekable (length is used to detect the last chunk).</param>
-    /// <param name="ct">Cancellation token.</param>
     public async ValueTask StreamH264Async(Stream stream, CancellationToken ct = default)
     {
         var chunkSize = GetH264ChunkSize();
@@ -564,18 +532,17 @@ public sealed class ScreenDevice : IDisposable
                 {
                     while (!ct.IsCancellationRequested && GetStreamStatus() > 2)
                     {
-                        Thread.Sleep(10);
+                        await Task.Delay(10, ct).ConfigureAwait(false);
                     }
                 }
             }
 
             ct.ThrowIfCancellationRequested();
 
-            // Wait until the device drains its playback queue.
             var sw = System.Diagnostics.Stopwatch.StartNew();
             while (GetStreamStatus() > 0 && sw.ElapsedMilliseconds < 10_000)
             {
-                Thread.Sleep(10);
+                await Task.Delay(10, ct).ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException)
@@ -583,37 +550,5 @@ public sealed class ScreenDevice : IDisposable
             StopStream();
             throw;
         }
-    }
-
-    /// <summary>
-    /// Queries the preferred H264 chunk size from the device (cmd 17).
-    /// Device probing shows resp[8..11] is all-zero on this model; falls back to 202752 bytes.
-    /// </summary>
-    public int GetH264ChunkSize()
-    {
-        PrepareCommandHeader(17);
-        if (!(SendCommand() && ReceiveResponse()))
-        {
-            return 202752;
-        }
-
-        var negotiated = BinaryPrimitives.ReadInt32BigEndian(readBuffer.AsSpan(8, 4));
-        return (negotiated > 0 && negotiated <= MaxFileChunkSize) ? negotiated : 202752;
-    }
-
-    /// <summary>
-    /// Returns the stream queue depth from the device (cmd 122).
-    /// resp[8] holds the queue depth; 0 means ready.
-    /// </summary>
-    public byte GetStreamStatus()
-    {
-        PrepareCommandHeader(122);
-        return (SendCommand() && ReceiveResponse()) ? readBuffer[8] : (byte)0;
-    }
-
-    public bool StopStream()
-    {
-        PrepareCommandHeader(123);
-        return SendCommand() && ReceiveResponse();
     }
 }
