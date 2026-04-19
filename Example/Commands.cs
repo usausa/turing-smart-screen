@@ -20,6 +20,7 @@ public static class CommandBuilderExtensions
         commands.AddCommand<Tss35Command>();
         commands.AddCommand<Tss5Command>();
         commands.AddCommand<Tss8UsbCommand>();
+        commands.AddCommand<Tss8UsbExCommand>();
         commands.AddCommand<TrofeoCommand>();
     }
 }
@@ -115,6 +116,48 @@ public sealed class Tss8UsbCommand : ICommandHandler
 
         UsbDevice.Exit();
     }
+}
+
+[Command("tss8usb-ex", "Turing Smart Screen 8.8inch USB")]
+public sealed class Tss8UsbExCommand : ICommandHandler
+{
+    public async ValueTask ExecuteAsync(CommandContext context)
+    {
+        var finder = new UsbDeviceFinder(0x1CBE, 0x0088);
+        using var device = UsbDevice.OpenUsbDevice(finder);
+        if (device is null)
+        {
+            Console.WriteLine("Device not found.");
+            return;
+        }
+
+        using var screen = new LcdDriver.TuringSmartScreen.ScreenDevice(device);
+
+        if (!screen.Sync())
+        {
+            Console.WriteLine("Sync failed.");
+        }
+
+        var capacity = screen.QueryCapacity();
+        if (capacity is null)
+        {
+            Console.WriteLine("Failed to read storage info.");
+        }
+        else
+        {
+            Console.WriteLine($"Total : {FormatBytes(capacity.Value.Total)}");
+            Console.WriteLine($"Used  : {FormatBytes(capacity.Value.Used)}");
+            Console.WriteLine($"Valid : {FormatBytes(capacity.Value.Valid)}");
+        }
+
+        UsbDevice.Exit();
+    }
+
+    private static string FormatBytes(uint bytes) =>
+        bytes >= 1_073_741_824u ? $"{bytes / 1_073_741_824.0:F2} GB" :
+        bytes >= 1_048_576u ? $"{bytes / 1_048_576.0:F2} MB" :
+        bytes >= 1_024u ? $"{bytes / 1_024.0:F2} KB" :
+        $"{bytes} B";
 }
 
 //--------------------------------------------------------------------------------

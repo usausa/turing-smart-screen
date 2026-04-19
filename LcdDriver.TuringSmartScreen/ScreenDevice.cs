@@ -3,6 +3,7 @@ namespace LcdDriver.TuringSmartScreen;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Security.Cryptography;
+using System.Text;
 
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
@@ -15,6 +16,8 @@ public sealed class ScreenDevice : IDisposable
 
     private const int WriteTimeout = 1500;
     private const int ReadTimeout = 1500;
+
+    private const int MaxFileChunkSize = 1024 * 1024;
 
     private static readonly byte[] KeyIv = "slv3tuzx"u8.ToArray();
 
@@ -143,6 +146,15 @@ public sealed class ScreenDevice : IDisposable
         return result;
     }
 
+    private bool SendPathCommand(byte commandId, string path)
+    {
+        var pathBytes = Encoding.ASCII.GetBytes(path);
+        PrepareCommandHeader(commandId);
+        BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(8, 4), pathBytes.Length);
+        pathBytes.CopyTo(commandBuffer, 16);
+        return RequestResponse();
+    }
+
     // --------------------------------------------------------------------------------
     // Command
     // --------------------------------------------------------------------------------
@@ -185,5 +197,23 @@ public sealed class ScreenDevice : IDisposable
         PrepareCommandHeader(101);
         BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(8, 4), imageBytes.Length);
         return RequestResponse(imageBytes);
+    }
+
+    // --------------------------------------------------------------------------------
+    // Extended command
+    // --------------------------------------------------------------------------------
+
+    public CapacityInfo? QueryCapacity()
+    {
+        PrepareCommandHeader(100);
+        if (!RequestResponse())
+        {
+            return null;
+        }
+
+        var total = BinaryPrimitives.ReadUInt32LittleEndian(readBuffer.AsSpan(8, 4));
+        var used = BinaryPrimitives.ReadUInt32LittleEndian(readBuffer.AsSpan(12, 4));
+        var valid = BinaryPrimitives.ReadUInt32LittleEndian(readBuffer.AsSpan(16, 4));
+        return new CapacityInfo(total, used, valid);
     }
 }
