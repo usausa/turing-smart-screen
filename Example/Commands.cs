@@ -194,19 +194,19 @@ public sealed class Tss8UsbUploadCommand : ICommandHandler
     [Option<string>("--file", "-f", Description = "Local file path (.png / .jpg / .h264)", Required = true)]
     public string FilePath { get; set; } = default!;
 
-    public ValueTask ExecuteAsync(CommandContext context)
+    public async ValueTask ExecuteAsync(CommandContext context)
     {
         if (!File.Exists(FilePath))
         {
             Console.WriteLine($"File not found: {FilePath}");
-            return ValueTask.CompletedTask;
+            return;
         }
 
         var devicePath = Example.DevicePath.Resolve(Path.GetFileName(FilePath));
         if (devicePath is null)
         {
             Console.WriteLine("Unsupported file type. Use .png, .jpg, or .h264.");
-            return ValueTask.CompletedTask;
+            return;
         }
 
         var finder = new UsbDeviceFinder(0x1CBE, 0x0088);
@@ -214,7 +214,7 @@ public sealed class Tss8UsbUploadCommand : ICommandHandler
         if (device is null)
         {
             Console.WriteLine("Device not found.");
-            return ValueTask.CompletedTask;
+            return;
         }
 
         using var screen = new LcdDriver.TuringSmartScreen.ScreenDevice(device);
@@ -224,14 +224,13 @@ public sealed class Tss8UsbUploadCommand : ICommandHandler
         Console.WriteLine($"Uploading {fileSize} bytes to: {devicePath}");
 
         using var fileStream = File.OpenRead(FilePath);
-        var success = screen.WriteFile(fileStream, devicePath, (sent, total) =>
+        var success = await screen.WriteFileAsync(fileStream, devicePath, (sent, total) =>
         {
             var pct = total > 0 ? $" ({100.0 * sent / total:F1}%)" : "";
             Console.WriteLine($"  {sent}/{total} bytes{pct}");
         });
 
         Console.WriteLine(success ? "Upload complete." : "Upload failed.");
-        return ValueTask.CompletedTask;
     }
 }
 
@@ -412,7 +411,7 @@ public sealed class Tss8UsbStreamCommand : ICommandHandler
                 screen.SetFrameRate(25);
 
                 using var fileStream = File.OpenRead(FilePath);
-                await screen.StreamH264Async(fileStream, cts.Token);
+                await screen.PlayStreamAsync(fileStream, cts.Token);
                 Console.WriteLine("Stream completed.");
             }
             while (Loop != 0 && !cts.Token.IsCancellationRequested);

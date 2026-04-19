@@ -130,7 +130,7 @@ public sealed class ScreenDevice : IDisposable
         return (errorCode == ErrorCode.None) && (transferLength == PacketSize);
     }
 
-    private bool SendCommandWithData(byte[] data)
+    private bool SendCommandWithData(byte[] data, int length)
     {
         encryptedBuffer.AsSpan().Clear();
         des.EncryptCbc(commandBuffer.AsSpan(0, PaddingCommandSize), KeyIv, encryptedBuffer, PaddingMode.None);
@@ -138,13 +138,14 @@ public sealed class ScreenDevice : IDisposable
         encryptedBuffer[PacketSize - 2] = 0xA1;
         encryptedBuffer[PacketSize - 1] = 0x1A;
 
-        var combinedLength = PacketSize + data.Length;
+        var combinedLength = PacketSize + length;
         var combined = ArrayPool<byte>.Shared.Rent(combinedLength);
         try
         {
             encryptedBuffer.AsSpan(0, PacketSize).CopyTo(combined);
-            data.CopyTo(combined, PacketSize);
+            data.AsSpan(0, length).CopyTo(combined.AsSpan(PacketSize));
 
+            // Flush pending data caused by ZLP handling
             reader.ReadFlush();
 
             var errorCode = writer.Write(combined, 0, combinedLength, WriteTimeout, out var transferLength);
@@ -273,29 +274,22 @@ public sealed class ScreenDevice : IDisposable
         return SendCommand() && ReceiveResponse();
     }
 
-    public bool DeleteFile(string devicePath)
-    {
-        PrepareCommandHeader(40);
-        WritePathToCommand(devicePath);
-        return SendCommand();
-    }
-
-    private bool WriteFileChunk(byte[] data, bool isLast)
+    private bool WriteFileChunk(byte[] buffer, int length, bool isLast)
     {
         PrepareCommandHeader(39);
         BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(8, 4), MaxFileChunkSize);
-        BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(12, 4), data.Length);
+        BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(12, 4), length);
         commandBuffer[16] = isLast ? (byte)1 : (byte)0;
-        if (SendCommandWithData(data) && ReceiveResponse(FileWriteReadTimeout))
+        if (SendCommandWithData(buffer, length) && ReceiveResponse(FileWriteReadTimeout))
         {
             return true;
         }
 
         // Older firmware fallback
         PrepareCommandHeader(39);
-        BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(8, 4), data.Length);
+        BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(8, 4), length);
         commandBuffer[16] = isLast ? (byte)1 : (byte)0;
-        return SendCommandWithData(data) && ReceiveResponse(FileWriteReadTimeout);
+        return SendCommandWithData(buffer, length) && ReceiveResponse(FileWriteReadTimeout);
     }
 
     public bool WriteFile(Stream stream, string devicePath, Action<long, long>? progress = null)
@@ -305,27 +299,32 @@ public sealed class ScreenDevice : IDisposable
             return false;
         }
 
-        var fileSize = stream.CanSeek ? stream.Length : -1L;
+        var size = stream.CanSeek ? stream.Length : -1L;
         var sent = 0L;
-        var buffer = new byte[MaxFileChunkSize];
-
-        while (true)
+        var buffer = ArrayPool<byte>.Shared.Rent(MaxFileChunkSize);
+        try
         {
-            var bytesRead = stream.Read(buffer, 0, buffer.Length);
-            if (bytesRead == 0)
+            while (true)
             {
-                break;
-            }
+                var bytesRead = stream.Read(buffer, 0, MaxFileChunkSize);
+                if (bytesRead == 0)
+                {
+                    break;
+                }
 
-            sent += bytesRead;
-            var isLast = stream.CanSeek ? stream.Position >= stream.Length : bytesRead < buffer.Length;
-            var chunk = bytesRead == buffer.Length ? buffer : buffer[..bytesRead].ToArray();
-            if (!WriteFileChunk(chunk, isLast))
-            {
-                return false;
-            }
+                var isLast = stream.CanSeek ? stream.Position >= stream.Length : bytesRead < MaxFileChunkSize;
+                if (!WriteFileChunk(buffer, bytesRead, isLast))
+                {
+                    return false;
+                }
 
-            progress?.Invoke(sent, fileSize);
+                sent += bytesRead;
+                progress?.Invoke(sent, size);
+            }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
         }
 
         return true;
@@ -338,32 +337,44 @@ public sealed class ScreenDevice : IDisposable
             return false;
         }
 
-        var fileSize = stream.CanSeek ? stream.Length : -1L;
+        var size = stream.CanSeek ? stream.Length : -1L;
         var sent = 0L;
-        var buffer = new byte[MaxFileChunkSize];
-
-        while (true)
+        var buffer = ArrayPool<byte>.Shared.Rent(MaxFileChunkSize);
+        try
         {
-            cancel.ThrowIfCancellationRequested();
-
-            var bytesRead = await stream.ReadAsync(buffer, cancel).ConfigureAwait(false);
-            if (bytesRead == 0)
+            while (true)
             {
-                break;
-            }
+                cancel.ThrowIfCancellationRequested();
 
-            sent += bytesRead;
-            var isLast = stream.CanSeek ? stream.Position >= stream.Length : bytesRead < buffer.Length;
-            var chunk = bytesRead == buffer.Length ? buffer : buffer[..bytesRead].ToArray();
-            if (!WriteFileChunk(chunk, isLast))
-            {
-                return false;
-            }
+                var bytesRead = await stream.ReadAsync(buffer.AsMemory(0, MaxFileChunkSize), cancel).ConfigureAwait(false);
+                if (bytesRead == 0)
+                {
+                    break;
+                }
 
-            progress?.Invoke(sent, fileSize);
+                var isLast = stream.CanSeek ? stream.Position >= stream.Length : bytesRead < MaxFileChunkSize;
+                if (!WriteFileChunk(buffer, bytesRead, isLast))
+                {
+                    return false;
+                }
+
+                sent += bytesRead;
+                progress?.Invoke(sent, size);
+            }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
         }
 
         return true;
+    }
+
+    public bool DeleteFile(string devicePath)
+    {
+        PrepareCommandHeader(40);
+        WritePathToCommand(devicePath);
+        return SendCommand();
     }
 
     // --------------------------------------------------------------------------------
@@ -425,33 +436,33 @@ public sealed class ScreenDevice : IDisposable
         return (negotiated > 0 && negotiated <= MaxFileChunkSize) ? negotiated : 202752;
     }
 
-    private bool PlayH264Chunk(byte[] data, bool isLast, out byte queueDepth)
+    private bool WriteH264Chunk(byte[] buffer, int length, bool isLast, out byte queueDepth)
     {
-        queueDepth = 0;
         PrepareCommandHeader(121);
-        BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(8, 4), data.Length);
-        if (isLast)
-        {
-            commandBuffer[12] = 1;
-        }
+        BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(8, 4), length);
+        commandBuffer[12] = (byte)(isLast ? 1 : 0);
 
-        if (!SendCommandWithData(data))
+        if (!SendCommandWithData(buffer, length) || !ReceiveResponse())
         {
+            queueDepth = 0;
             return false;
         }
 
-        // The device responds to every chunk; resp[8] is the queue depth (mirrors cmd 122).
-        if (ReceiveResponse())
-        {
-            queueDepth = readBuffer[8];
-        }
+        queueDepth = readBuffer[8];
         return true;
     }
 
-    private byte GetStreamStatus()
+    private bool GetStreamStatus(out byte queueDepth)
     {
         PrepareCommandHeader(122);
-        return (SendCommand() && ReceiveResponse()) ? readBuffer[8] : (byte)0;
+        if (!SendCommand() || !ReceiveResponse())
+        {
+            queueDepth = 0;
+            return false;
+        }
+
+        queueDepth = readBuffer[8];
+        return true;
     }
 
     private bool StopStream()
@@ -460,60 +471,17 @@ public sealed class ScreenDevice : IDisposable
         return SendCommand() && ReceiveResponse();
     }
 
-    public bool StreamH264(Stream stream)
+    public bool PlayStream(Stream stream)
     {
         var chunkSize = GetH264ChunkSize();
-        var buffer = new byte[chunkSize];
         var fileSize = stream.Length;
         var sent = 0L;
-
-        while (true)
-        {
-            var bytesRead = stream.Read(buffer, 0, chunkSize);
-            if (bytesRead == 0)
-            {
-                break;
-            }
-
-            sent += bytesRead;
-            var isLast = sent >= fileSize;
-            var chunk = bytesRead == chunkSize ? buffer : buffer[..bytesRead].ToArray();
-
-            if (!PlayH264Chunk(chunk, isLast, out var queueDepth))
-            {
-                return false;
-            }
-
-            if (queueDepth > 2)
-            {
-                while (GetStreamStatus() > 2)
-                {
-                    Thread.Sleep(10);
-                }
-            }
-        }
-
-        var sw = System.Diagnostics.Stopwatch.StartNew();
-        while (GetStreamStatus() > 0 && sw.ElapsedMilliseconds < 10_000)
-        {
-            Thread.Sleep(10);
-        }
-
-        return StopStream();
-    }
-
-    public async ValueTask StreamH264Async(Stream stream, CancellationToken ct = default)
-    {
-        var chunkSize = GetH264ChunkSize();
-        var buffer = new byte[chunkSize];
-        var fileSize = stream.Length;
-        var sent = 0L;
-
+        var buffer = ArrayPool<byte>.Shared.Rent(chunkSize);
         try
         {
-            while (!ct.IsCancellationRequested)
+            while (true)
             {
-                var bytesRead = await stream.ReadAsync(buffer, ct).ConfigureAwait(false);
+                var bytesRead = stream.Read(buffer, 0, chunkSize);
                 if (bytesRead == 0)
                 {
                     break;
@@ -521,34 +489,90 @@ public sealed class ScreenDevice : IDisposable
 
                 sent += bytesRead;
                 var isLast = sent >= fileSize;
-                var chunk = bytesRead == chunkSize ? buffer : buffer[..bytesRead].ToArray();
 
-                if (!PlayH264Chunk(chunk, isLast, out var queueDepth))
+                if (!WriteH264Chunk(buffer, bytesRead, isLast, out var queueDepth))
                 {
-                    throw new InvalidOperationException("PlayH264Chunk USB write failed.");
+                    return false;
                 }
 
-                if (queueDepth > 2)
-                {
-                    while (!ct.IsCancellationRequested && GetStreamStatus() > 2)
-                    {
-                        await Task.Delay(10, ct).ConfigureAwait(false);
-                    }
-                }
+                // TODO GetStreamStatusの変更に対応
+                //if (queueDepth > 2)
+                //{
+                //    while (GetStreamStatus() > 2)
+                //    {
+                //        Thread.Sleep(10);
+                //    }
+                //}
             }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
 
-            ct.ThrowIfCancellationRequested();
+        // TODO GetStreamStatusの変更に対応
+        //var sw = System.Diagnostics.Stopwatch.StartNew();
+        //while (GetStreamStatus() > 0 && sw.ElapsedMilliseconds < 10_000)
+        //{
+        //    Thread.Sleep(10);
+        //}
 
-            var sw = System.Diagnostics.Stopwatch.StartNew();
-            while (GetStreamStatus() > 0 && sw.ElapsedMilliseconds < 10_000)
+        return StopStream();
+    }
+
+    public async ValueTask<bool> PlayStreamAsync(Stream stream, CancellationToken cancel = default)
+    {
+        var chunkSize = GetH264ChunkSize();
+        var fileSize = stream.Length;
+        var sent = 0L;
+        var buffer = ArrayPool<byte>.Shared.Rent(chunkSize);
+        try
+        {
+            while (!cancel.IsCancellationRequested)
             {
-                await Task.Delay(10, ct).ConfigureAwait(false);
+                var bytesRead = await stream.ReadAsync(buffer.AsMemory(0, chunkSize), cancel).ConfigureAwait(false);
+                if (bytesRead == 0)
+                {
+                    break;
+                }
+
+                sent += bytesRead;
+                var isLast = sent >= fileSize;
+
+                if (!WriteH264Chunk(buffer, bytesRead, isLast, out var queueDepth))
+                {
+                    return false;
+                }
+
+                // TODO GetStreamStatusの変更に対応
+                //if (queueDepth > 2)
+                //{
+                //    while (!ct.IsCancellationRequested && GetStreamStatus() > 2)
+                //    {
+                //        await Task.Delay(10, ct).ConfigureAwait(false);
+                //    }
+                //}
             }
+
+            cancel.ThrowIfCancellationRequested();
+
+            // TODO GetStreamStatusの変更に対応
+            //var sw = System.Diagnostics.Stopwatch.StartNew();
+            //while (GetStreamStatus() > 0 && sw.ElapsedMilliseconds < 10_000)
+            //{
+            //    await Task.Delay(10, ct).ConfigureAwait(false);
+            //}
         }
         catch (OperationCanceledException)
         {
             StopStream();
             throw;
         }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+
+        return StopStream();
     }
 }
