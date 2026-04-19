@@ -9,9 +9,6 @@ public sealed class ScreenDevice : IDisposable
     public const ushort VendorId = 0x0416;
     public const ushort ProductId = 0x5302;
 
-    public const int Width = 1280;
-    public const int Height = 480;
-
     // HID report: Report ID (1 byte) + Data (512 bytes)
     private const int HidReportSize = 513;
     private const int DataPerPacket = 512;
@@ -27,14 +24,21 @@ public sealed class ScreenDevice : IDisposable
 
     private readonly HidStream stream;
 
+    public int Width { get; }
+
+    public int Height { get; }
+
     // --------------------------------------------------------------------------------
     // Constructor
     // --------------------------------------------------------------------------------
 
-    public ScreenDevice(HidDevice hidDevice)
+    public ScreenDevice(HidDevice hidDevice, int width = 1280, int height = 480)
     {
         stream = hidDevice.Open();
         stream.WriteTimeout = 5000;
+
+        Width = width;
+        Height = height;
     }
 
     /// <inheritdoc />
@@ -65,8 +69,8 @@ public sealed class ScreenDevice : IDisposable
         var header = packet.Slice(1, HeaderSize);
         HeaderMagic.CopyTo(header);
         header[4] = CommandImage;
-        BinaryPrimitives.WriteUInt16LittleEndian(header[8..], Width);
-        BinaryPrimitives.WriteUInt16LittleEndian(header[10..], Height);
+        BinaryPrimitives.WriteUInt16LittleEndian(header[8..], (ushort)Width);
+        BinaryPrimitives.WriteUInt16LittleEndian(header[10..], (ushort)Height);
         header[12] = compressionType;
         BinaryPrimitives.WriteInt32LittleEndian(header[16..], imageBytes.Length);
 
