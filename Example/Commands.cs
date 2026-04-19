@@ -83,6 +83,22 @@ public sealed class TrofeoCommand : ICommandHandler
 //--------------------------------------------------------------------------------
 // Turing Smart Screen 8.8 USB revision
 //--------------------------------------------------------------------------------
+internal static class Tss8UsbCommandHelper
+{
+    private const string RootPath = "/tmp/sdcard/mmcblk0p1";
+
+    public static string? ResolvePath(string fileName)
+    {
+        var ext = Path.GetExtension(fileName).ToUpperInvariant();
+        return ext switch
+        {
+            ".PNG" or ".JPG" or ".JPEG" => $"{RootPath}/img/{fileName}",
+            ".H264" => $"{RootPath}/video/{fileName}",
+            _ => null
+        };
+    }
+}
+
 [Command("tss8usb", "Turing Smart Screen 8.8inch USB")]
 public sealed class Tss8UsbCommand : ICommandHandler
 {
@@ -153,39 +169,16 @@ public sealed class Tss8UsbCapacityCommand : ICommandHandler
         else
         {
                 Console.WriteLine($"Total : {FormatKilobytes(capacity.Value.Total)}");
-                    Console.WriteLine($"Used  : {FormatKilobytes(capacity.Value.Used)}");
-                    Console.WriteLine($"Valid : {FormatKilobytes(capacity.Value.Valid)}");
-                }
-                return ValueTask.CompletedTask;
-            }
-
-            // Device capacity values are in KB
-            private static string FormatKilobytes(uint kb) =>
-                kb >= 1_048_576u ? $"{kb / 1_048_576.0:F2} GB" :
-                kb >= 1_024u ? $"{kb / 1_024.0:F2} MB" :
-                $"{kb} KB";
-}
-
-/// <summary>
-/// Resolves the device-side storage path for a given local filename.
-/// Rules confirmed by probing against a live device with files uploaded by the official tool:
-///   .png / .jpg / .jpeg  →  /tmp/sdcard/mmcblk0p1/img/&lt;filename&gt;
-///   .h264                →  /tmp/sdcard/mmcblk0p1/video/&lt;filename&gt;
-/// </summary>
-internal static class DevicePath
-{
-    private const string Root = "/tmp/sdcard/mmcblk0p1";
-
-    public static string? Resolve(string fileName)
-    {
-        var ext = Path.GetExtension(fileName).ToUpperInvariant();
-        return ext switch
-        {
-            ".PNG" or ".JPG" or ".JPEG" => $"{Root}/img/{fileName}",
-            ".H264" => $"{Root}/video/{fileName}",
-            _ => null
-        };
+                Console.WriteLine($"Used  : {FormatKilobytes(capacity.Value.Used)}");
+                Console.WriteLine($"Valid : {FormatKilobytes(capacity.Value.Valid)}");
+        }
+        return ValueTask.CompletedTask;
     }
+
+    private static string FormatKilobytes(uint kb) =>
+        kb >= 1_048_576u ? $"{kb / 1_048_576.0:F2} GB" :
+        kb >= 1_024u ? $"{kb / 1_024.0:F2} MB" :
+        $"{kb} KB";
 }
 
 [Command("upload", "Upload an image or H264 file to device storage")]
@@ -202,7 +195,7 @@ public sealed class Tss8UsbUploadCommand : ICommandHandler
             return;
         }
 
-        var devicePath = Example.DevicePath.Resolve(Path.GetFileName(FilePath));
+        var devicePath = Tss8UsbCommandHelper.ResolvePath(Path.GetFileName(FilePath));
         if (devicePath is null)
         {
             Console.WriteLine("Unsupported file type. Use .png, .jpg, or .h264.");
@@ -223,10 +216,10 @@ public sealed class Tss8UsbUploadCommand : ICommandHandler
         var fileSize = new FileInfo(FilePath).Length;
         Console.WriteLine($"Uploading {fileSize} bytes to: {devicePath}");
 
-        using var fileStream = File.OpenRead(FilePath);
+        await using var fileStream = File.OpenRead(FilePath);
         var success = await screen.WriteFileAsync(fileStream, devicePath, (sent, total) =>
         {
-            var pct = total > 0 ? $" ({100.0 * sent / total:F1}%)" : "";
+            var pct = total > 0 ? $" ({100.0 * sent / total:F1}%)" : string.Empty;
             Console.WriteLine($"  {sent}/{total} bytes{pct}");
         });
 
@@ -253,16 +246,11 @@ public sealed class Tss8UsbDeleteCommand : ICommandHandler
         using var screen = new LcdDriver.TuringSmartScreen.ScreenDevice(device);
         screen.Sync();
 
-        var devicePath = Example.DevicePath.Resolve(FileName) ?? $"/tmp/sdcard/mmcblk0p1/{FileName}";
+        var devicePath = Tss8UsbCommandHelper.ResolvePath(FileName) ?? $"/tmp/sdcard/mmcblk0p1/{FileName}";
+        var success = !screen.DeleteFile(devicePath);
 
-        if (!screen.DeleteFile(devicePath))
-        {
-            Console.WriteLine($"DeleteFile failed: {devicePath}");
-        }
-        else
-        {
-            Console.WriteLine($"Deleted: {devicePath}");
-        }
+        Console.WriteLine(success ? $"Deleted: {devicePath}" : $"DeleteFile failed: {devicePath}");
+
         return ValueTask.CompletedTask;
     }
 }
@@ -299,10 +287,8 @@ public sealed class Tss8UsbPlayCommand : ICommandHandler
         screen.SetBrightness(255);
         screen.PrepareStreamBuffer();
 
-        var devicePath = Example.DevicePath.Resolve(FileName) ?? $"/tmp/sdcard/mmcblk0p1/{FileName}";
+        var devicePath = Tss8UsbCommandHelper.ResolvePath(FileName) ?? $"/tmp/sdcard/mmcblk0p1/{FileName}";
 
-        // jpg  → cmd 113 (PlayFile3)
-        // h264 → cmd 110 (PlayFile2)
         var result = ext is ".JPG" or ".JPEG"
             ? screen.PlayFile3(devicePath)
             : screen.PlayFile2(devicePath);
@@ -410,11 +396,11 @@ public sealed class Tss8UsbStreamCommand : ICommandHandler
                 screen.DrawPng(ClearScreenPng);
                 screen.SetFrameRate(25);
 
-                using var fileStream = File.OpenRead(FilePath);
+                await using var fileStream = File.OpenRead(FilePath);
                 await screen.PlayStreamAsync(fileStream, cts.Token);
                 Console.WriteLine("Stream completed.");
             }
-            while (Loop != 0 && !cts.Token.IsCancellationRequested);
+            while ((Loop != 0) && !cts.Token.IsCancellationRequested);
         }
         catch (OperationCanceledException)
         {
@@ -422,7 +408,6 @@ public sealed class Tss8UsbStreamCommand : ICommandHandler
         }
     }
 }
-
 
 //--------------------------------------------------------------------------------
 // Turing Smart Screen 8.8

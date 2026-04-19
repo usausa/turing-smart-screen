@@ -312,13 +312,13 @@ public sealed class ScreenDevice : IDisposable
                     break;
                 }
 
+                sent += bytesRead;
                 var isLast = stream.CanSeek ? stream.Position >= stream.Length : bytesRead < MaxFileChunkSize;
                 if (!WriteFileChunk(buffer, bytesRead, isLast))
                 {
                     return false;
                 }
 
-                sent += bytesRead;
                 progress?.Invoke(sent, size);
             }
         }
@@ -352,13 +352,13 @@ public sealed class ScreenDevice : IDisposable
                     break;
                 }
 
+                sent += bytesRead;
                 var isLast = stream.CanSeek ? stream.Position >= stream.Length : bytesRead < MaxFileChunkSize;
                 if (!WriteFileChunk(buffer, bytesRead, isLast))
                 {
                     return false;
                 }
 
-                sent += bytesRead;
                 progress?.Invoke(sent, size);
             }
         }
@@ -433,7 +433,7 @@ public sealed class ScreenDevice : IDisposable
         }
 
         var negotiated = BinaryPrimitives.ReadInt32BigEndian(readBuffer.AsSpan(8, 4));
-        return (negotiated > 0 && negotiated <= MaxFileChunkSize) ? negotiated : 202752;
+        return ((negotiated > 0) && (negotiated <= MaxFileChunkSize)) ? negotiated : 202752;
     }
 
     private bool WriteH264Chunk(byte[] buffer, int length, bool isLast, out byte queueDepth)
@@ -495,14 +495,13 @@ public sealed class ScreenDevice : IDisposable
                     return false;
                 }
 
-                // TODO GetStreamStatusの変更に対応
-                //if (queueDepth > 2)
-                //{
-                //    while (GetStreamStatus() > 2)
-                //    {
-                //        Thread.Sleep(10);
-                //    }
-                //}
+                if (queueDepth > 2)
+                {
+                    while (GetStreamStatus(out var depth) && (depth > 2))
+                    {
+                        Thread.Sleep(10);
+                    }
+                }
             }
         }
         finally
@@ -510,12 +509,11 @@ public sealed class ScreenDevice : IDisposable
             ArrayPool<byte>.Shared.Return(buffer);
         }
 
-        // TODO GetStreamStatusの変更に対応
-        //var sw = System.Diagnostics.Stopwatch.StartNew();
-        //while (GetStreamStatus() > 0 && sw.ElapsedMilliseconds < 10_000)
-        //{
-        //    Thread.Sleep(10);
-        //}
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        while (GetStreamStatus(out var remaining) && (remaining > 0) && (watch.ElapsedMilliseconds < 10_000))
+        {
+            Thread.Sleep(10);
+        }
 
         return StopStream();
     }
@@ -538,30 +536,27 @@ public sealed class ScreenDevice : IDisposable
 
                 sent += bytesRead;
                 var isLast = sent >= fileSize;
-
                 if (!WriteH264Chunk(buffer, bytesRead, isLast, out var queueDepth))
                 {
                     return false;
                 }
 
-                // TODO GetStreamStatusの変更に対応
-                //if (queueDepth > 2)
-                //{
-                //    while (!ct.IsCancellationRequested && GetStreamStatus() > 2)
-                //    {
-                //        await Task.Delay(10, ct).ConfigureAwait(false);
-                //    }
-                //}
+                if (queueDepth > 2)
+                {
+                    while (!cancel.IsCancellationRequested && GetStreamStatus(out var depth) && depth > 2)
+                    {
+                        await Task.Delay(10, cancel).ConfigureAwait(false);
+                    }
+                }
             }
 
             cancel.ThrowIfCancellationRequested();
 
-            // TODO GetStreamStatusの変更に対応
-            //var sw = System.Diagnostics.Stopwatch.StartNew();
-            //while (GetStreamStatus() > 0 && sw.ElapsedMilliseconds < 10_000)
-            //{
-            //    await Task.Delay(10, ct).ConfigureAwait(false);
-            //}
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            while (GetStreamStatus(out var remaining) && (remaining > 0) && (watch.ElapsedMilliseconds < 10_000))
+            {
+                await Task.Delay(10, cancel).ConfigureAwait(false);
+            }
         }
         catch (OperationCanceledException)
         {
