@@ -132,7 +132,7 @@ public sealed class ScreenDevice : IDisposable
     /// Encrypts <c>commandBuffer</c>, appends the end marker, flushes the IN endpoint,
     /// and writes the 512-byte encrypted packet to the device.
     /// </summary>
-    public bool SendCommand()
+    private bool SendCommand()
     {
         encryptedBuffer.AsSpan().Clear();
         des.EncryptCbc(commandBuffer.AsSpan(0, PaddingCommandSize), KeyIv, encryptedBuffer, PaddingMode.None);
@@ -150,9 +150,8 @@ public sealed class ScreenDevice : IDisposable
     /// <summary>
     /// Encrypts the command header and concatenates the payload into a single USB bulk write.
     /// Mirrors Python's <c>write_to_device(encrypt_command_packet(pkt) + payload)</c>.
-    /// The caller is responsible for calling <see cref="ReceiveResponse"/> afterwards.
     /// </summary>
-    public bool SendCommandWithPayload(byte[] data)
+    private bool SendCommandWithPayload(byte[] data)
     {
         encryptedBuffer.AsSpan().Clear();
         des.EncryptCbc(commandBuffer.AsSpan(0, PaddingCommandSize), KeyIv, encryptedBuffer, PaddingMode.None);
@@ -192,7 +191,7 @@ public sealed class ScreenDevice : IDisposable
     /// Reads one 512-byte response packet and verifies the success byte (<c>resp[1] == 0xC8</c>).
     /// All commands except cmd 40 (DeleteFile) return a response — confirmed by device probing.
     /// </summary>
-    public bool ReceiveResponse(int readTimeout = ReadTimeout)
+    private bool ReceiveResponse(int readTimeout = ReadTimeout)
     {
         var errorCode = reader.Read(readBuffer, 0, PacketSize, readTimeout, out var transferLength);
         if ((errorCode != ErrorCode.None) || (transferLength != PacketSize))
@@ -452,11 +451,13 @@ public sealed class ScreenDevice : IDisposable
     // --------------------------------------------------------------------------------
 
     /// <summary>
-    /// Sends a chunk of H264 bitstream data for live streaming (cmd 121).
-    /// The caller must call <see cref="ReceiveResponse"/> afterwards.
+    /// Sends a chunk of H264 bitstream data for live streaming (cmd 121) and reads the response.
+    /// <c>resp[8]</c> carries the queue depth used for flow control.
+    /// Returns <c>false</c> only when the USB write itself fails.
     /// </summary>
-    public bool PlayH264Chunk(byte[] data, bool isLast)
+    private bool PlayH264Chunk(byte[] data, bool isLast, out byte queueDepth)
     {
+        queueDepth = 0;
         PrepareCommandHeader(121);
         BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(8, 4), data.Length);
         if (isLast)
@@ -464,7 +465,124 @@ public sealed class ScreenDevice : IDisposable
             commandBuffer[12] = 1;
         }
 
-        return SendCommandWithPayload(data);
+        if (!SendCommandWithPayload(data))
+        {
+            return false;
+        }
+
+        // The device responds to every chunk; resp[8] is the queue depth (mirrors cmd 122).
+        if (ReceiveResponse())
+        {
+            queueDepth = readBuffer[8];
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// Streams H264 bitstream from <paramref name="stream"/> to the device synchronously
+    /// and blocks until playback is complete.
+    /// </summary>
+    /// <param name="stream">H264 bitstream. Must be seekable (length is used to detect the last chunk).</param>
+    /// <returns><c>false</c> if a USB write error occurred during streaming.</returns>
+    public bool StreamH264(Stream stream)
+    {
+        var chunkSize = GetH264ChunkSize();
+        var buffer = new byte[chunkSize];
+        var fileSize = stream.Length;
+        var sent = 0L;
+
+        while (true)
+        {
+            var bytesRead = stream.Read(buffer, 0, chunkSize);
+            if (bytesRead == 0)
+            {
+                break;
+            }
+
+            sent += bytesRead;
+            var isLast = sent >= fileSize;
+            var chunk = bytesRead == chunkSize ? buffer : buffer[..bytesRead].ToArray();
+
+            if (!PlayH264Chunk(chunk, isLast, out var queueDepth))
+            {
+                return false;
+            }
+
+            if (queueDepth > 2)
+            {
+                while (GetStreamStatus() > 2)
+                {
+                    Thread.Sleep(10);
+                }
+            }
+        }
+
+        // Block until the device drains its playback queue.
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        while (GetStreamStatus() > 0 && sw.ElapsedMilliseconds < 10_000)
+        {
+            Thread.Sleep(10);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Streams H264 bitstream from <paramref name="stream"/> to the device asynchronously.
+    /// Waits for playback to complete before the returned task finishes.
+    /// Cancellation stops feeding new chunks and calls <see cref="StopStream"/>.
+    /// </summary>
+    /// <param name="stream">H264 bitstream. Must be seekable (length is used to detect the last chunk).</param>
+    /// <param name="ct">Cancellation token.</param>
+    public async ValueTask StreamH264Async(Stream stream, CancellationToken ct = default)
+    {
+        var chunkSize = GetH264ChunkSize();
+        var buffer = new byte[chunkSize];
+        var fileSize = stream.Length;
+        var sent = 0L;
+
+        try
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                var bytesRead = await stream.ReadAsync(buffer, ct).ConfigureAwait(false);
+                if (bytesRead == 0)
+                {
+                    break;
+                }
+
+                sent += bytesRead;
+                var isLast = sent >= fileSize;
+                var chunk = bytesRead == chunkSize ? buffer : buffer[..bytesRead].ToArray();
+
+                if (!PlayH264Chunk(chunk, isLast, out var queueDepth))
+                {
+                    throw new InvalidOperationException("PlayH264Chunk USB write failed.");
+                }
+
+                if (queueDepth > 2)
+                {
+                    while (!ct.IsCancellationRequested && GetStreamStatus() > 2)
+                    {
+                        Thread.Sleep(10);
+                    }
+                }
+            }
+
+            ct.ThrowIfCancellationRequested();
+
+            // Wait until the device drains its playback queue.
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            while (GetStreamStatus() > 0 && sw.ElapsedMilliseconds < 10_000)
+            {
+                Thread.Sleep(10);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            StopStream();
+            throw;
+        }
     }
 
     /// <summary>

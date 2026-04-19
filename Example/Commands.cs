@@ -406,10 +406,6 @@ public sealed class Tss8UsbStreamCommand : ICommandHandler
         {
             do
             {
-                // Full init sequence before each streaming pass (mirrors Python send_video).
-                // StopPlayback/ResetPlayback: stop any running playback,
-                // SetOrientation, SetBrightness, PrepareStreamBuffer,
-                // DrawPng (clear screen, cmd 102), SetFrameRate (cmd 15).
                 screen.StopPlayback();
                 screen.ResetPlayback();
                 screen.SetOrientation(LcdDriver.TuringSmartScreen.ScreenOrientation.Portrait);
@@ -418,11 +414,8 @@ public sealed class Tss8UsbStreamCommand : ICommandHandler
                 screen.DrawPng(ClearScreenPng);
                 screen.SetFrameRate(25);
 
-                var chunkSize = screen.GetH264ChunkSize();
-                Console.WriteLine($"H264 chunk size: {chunkSize} bytes");
-
-                var buffer = new byte[chunkSize];
-                await StreamFromFileAsync(screen, chunkSize, buffer, cts.Token);
+                using var fileStream = File.OpenRead(FilePath);
+                await screen.StreamH264Async(fileStream, cts.Token);
                 Console.WriteLine("Stream completed.");
             }
             while (Loop != 0 && !cts.Token.IsCancellationRequested);
@@ -434,49 +427,6 @@ public sealed class Tss8UsbStreamCommand : ICommandHandler
         finally
         {
             screen.StopStream();
-        }
-    }
-
-    private async Task StreamFromFileAsync(
-        LcdDriver.TuringSmartScreen.ScreenDevice screen,
-        int chunkSize,
-        byte[] buffer,
-        CancellationToken ct)
-    {
-        using var fileStream = File.OpenRead(FilePath);
-        while (!ct.IsCancellationRequested)
-        {
-            var bytesRead = await fileStream.ReadAsync(buffer, ct);
-            if (bytesRead == 0)
-            {
-                break;
-            }
-
-            var isLast = bytesRead < chunkSize;
-            var chunk = bytesRead == chunkSize ? buffer : buffer[..bytesRead].ToArray();
-
-            if (!screen.PlayH264Chunk(chunk, isLast))
-            {
-                Console.WriteLine("PlayH264Chunk failed.");
-                break;
-            }
-
-            if (!screen.ReceiveResponse())
-            {
-                Console.WriteLine("PlayH264Chunk response failed.");
-                break;
-            }
-
-            // Flow control: mirrors Python delay(dev, 2) — sleep 50ms then poll until queue <= 2
-            var queueDepth = screen.GetStreamStatus();
-            if (queueDepth > 2)
-            {
-                Thread.Sleep(50);
-                while (screen.GetStreamStatus() > 2)
-                {
-                    Thread.Sleep(50);
-                }
-            }
         }
     }
 }
