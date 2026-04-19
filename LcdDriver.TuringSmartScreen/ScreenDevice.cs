@@ -3,7 +3,6 @@ namespace LcdDriver.TuringSmartScreen;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Security.Cryptography;
-using System.Text;
 
 using LibUsbDotNet;
 using LibUsbDotNet.Main;
@@ -146,14 +145,15 @@ public sealed class ScreenDevice : IDisposable
         return result;
     }
 
-    private bool SendPathCommand(byte commandId, string path)
-    {
-        var pathBytes = Encoding.ASCII.GetBytes(path);
-        PrepareCommandHeader(commandId);
-        BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(8, 4), pathBytes.Length);
-        pathBytes.CopyTo(commandBuffer, 16);
-        return RequestResponse();
-    }
+    // TODO
+    //private bool SendPathCommand(byte commandId, string path)
+    //{
+    //    var pathBytes = Encoding.ASCII.GetBytes(path);
+    //    PrepareCommandHeader(commandId);
+    //    BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(8, 4), pathBytes.Length);
+    //    pathBytes.CopyTo(commandBuffer, 16);
+    //    return RequestResponse();
+    //}
 
     // --------------------------------------------------------------------------------
     // Command
@@ -215,5 +215,66 @@ public sealed class ScreenDevice : IDisposable
         var used = BinaryPrimitives.ReadUInt32LittleEndian(readBuffer.AsSpan(12, 4));
         var valid = BinaryPrimitives.ReadUInt32LittleEndian(readBuffer.AsSpan(16, 4));
         return new CapacityInfo(total, used, valid);
+    }
+
+    public bool SaveSettings(byte brightness = 0, byte startup = 0, byte reserved = 0, byte rotation = 0, byte sleep = 0, byte offline = 0)
+    {
+        PrepareCommandHeader(125);
+        commandBuffer[8] = brightness;
+        commandBuffer[9] = startup;
+        commandBuffer[10] = reserved;
+        commandBuffer[11] = rotation;
+        commandBuffer[12] = sleep;
+        commandBuffer[13] = offline;
+        return RequestResponse();
+    }
+
+    // --------------------------------------------------------------------------------
+    // File command
+    // --------------------------------------------------------------------------------
+
+    // TODO 38:OpenFile,39;WriteFile,40:DeleteFile
+
+    // --------------------------------------------------------------------------------
+    // Play command
+    // --------------------------------------------------------------------------------
+
+    // TODO 98:Play,110:Play2,113:Play3
+
+    // --------------------------------------------------------------------------------
+    // Stream command
+    // --------------------------------------------------------------------------------
+
+    // TODO 121:PlayH264
+
+    public bool SetFrameRate(byte value)
+    {
+        PrepareCommandHeader(15);
+        commandBuffer[8] = value;
+        return RequestResponse();
+    }
+
+    public int GetH264ChunkSize()
+    {
+        PrepareCommandHeader(17);
+        if (!RequestResponse())
+        {
+            return 202752;
+        }
+
+        var negotiated = BinaryPrimitives.ReadInt32BigEndian(readBuffer.AsSpan(8, 4));
+        return (negotiated > 0 && negotiated <= MaxFileChunkSize) ? negotiated : 202752;
+    }
+
+    public byte GetStreamStatus()
+    {
+        PrepareCommandHeader(122);
+        return RequestResponse() ? readBuffer[8] : (byte)0;
+    }
+
+    public bool StopStream()
+    {
+        PrepareCommandHeader(123);
+        return RequestResponse();
     }
 }

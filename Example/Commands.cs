@@ -19,8 +19,11 @@ public static class CommandBuilderExtensions
     {
         commands.AddCommand<Tss35Command>();
         commands.AddCommand<Tss5Command>();
-        commands.AddCommand<Tss8UsbCommand>();
-        commands.AddCommand<Tss8UsbExCommand>();
+        commands.AddCommand<Tss8UsbCommand>(sub =>
+        {
+            sub.AddSubCommand<Tss8UsbCapacityCommand>();
+            sub.AddSubCommand<Tss8UsbStreamCommand>();
+        });
         commands.AddCommand<TrofeoCommand>();
     }
 }
@@ -118,17 +121,17 @@ public sealed class Tss8UsbCommand : ICommandHandler
     }
 }
 
-[Command("tss8usb-ex", "Turing Smart Screen 8.8inch USB")]
-public sealed class Tss8UsbExCommand : ICommandHandler
+[Command("capacity", "Query capacity")]
+public sealed class Tss8UsbCapacityCommand : ICommandHandler
 {
-    public async ValueTask ExecuteAsync(CommandContext context)
+    public ValueTask ExecuteAsync(CommandContext context)
     {
         var finder = new UsbDeviceFinder(0x1CBE, 0x0088);
         using var device = UsbDevice.OpenUsbDevice(finder);
         if (device is null)
         {
             Console.WriteLine("Device not found.");
-            return;
+            return ValueTask.CompletedTask;
         }
 
         using var screen = new LcdDriver.TuringSmartScreen.ScreenDevice(device);
@@ -151,6 +154,7 @@ public sealed class Tss8UsbExCommand : ICommandHandler
         }
 
         UsbDevice.Exit();
+        return ValueTask.CompletedTask;
     }
 
     private static string FormatBytes(uint bytes) =>
@@ -158,6 +162,38 @@ public sealed class Tss8UsbExCommand : ICommandHandler
         bytes >= 1_048_576u ? $"{bytes / 1_048_576.0:F2} MB" :
         bytes >= 1_024u ? $"{bytes / 1_024.0:F2} KB" :
         $"{bytes} B";
+}
+
+// TODO file upload & delete
+
+// TODO play
+
+[Command("stream", "Stream H264")]
+public sealed class Tss8UsbStreamCommand : ICommandHandler
+{
+    public ValueTask ExecuteAsync(CommandContext context)
+    {
+        var finder = new UsbDeviceFinder(0x1CBE, 0x0088);
+        using var device = UsbDevice.OpenUsbDevice(finder);
+        if (device is null)
+        {
+            Console.WriteLine("Device not found.");
+            return ValueTask.CompletedTask;
+        }
+
+        using var screen = new LcdDriver.TuringSmartScreen.ScreenDevice(device);
+        screen.Sync();
+
+        var chunkSize = screen.GetH264ChunkSize();
+        Console.WriteLine($"H264 chunk size: {chunkSize} bytes");
+
+        // TODO
+
+        screen.StopStream();
+
+        UsbDevice.Exit();
+        return ValueTask.CompletedTask;
+    }
 }
 
 //--------------------------------------------------------------------------------
