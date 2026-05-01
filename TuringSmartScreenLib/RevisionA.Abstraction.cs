@@ -27,7 +27,7 @@ internal sealed class ScreenWrapperRevisionA : ScreenBase
         var pattern = (Span<byte>)stackalloc byte[2];
         var rgb = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
         BinaryPrimitives.WriteInt16LittleEndian(pattern, (short)rgb);
-        Helper.Fill(buffer, pattern);
+        Helper.Fill(buffer.AsSpan(0, Width * Height * 2), pattern);
 
         screen.DisplayBitmap(0, 0, buffer, Width, Height);
 

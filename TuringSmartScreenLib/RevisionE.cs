@@ -319,19 +319,44 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
         Flush();
 
         // Payload
-        for (var y = 0; y < Height; y++)
+        switch (option)
         {
-            for (var x = 0; x < Width; x++)
-            {
-                var offset = option switch
+            case RotateOption.Rotate90:
+                for (var y = 0; y < Height; y++)
                 {
-                    RotateOption.Rotate90 => ((Width - 1 - x) * Height) + y,
-                    RotateOption.Rotate270 => (x * Height) + (Height - 1 - y),
-                    RotateOption.Rotate180 => ((Height - 1 - y) * Width) + (Width - 1 - x),
-                    _ => (y * Width) + x
-                };
-                Write(bitmap.AsSpan(offset * 4, 4));
-            }
+                    for (var x = 0; x < Width; x++)
+                    {
+                        Write(bitmap.AsSpan((((Width - 1 - x) * Height) + y) * 4, 4));
+                    }
+                }
+                break;
+            case RotateOption.Rotate270:
+                for (var y = 0; y < Height; y++)
+                {
+                    for (var x = 0; x < Width; x++)
+                    {
+                        Write(bitmap.AsSpan(((x * Height) + (Height - 1 - y)) * 4, 4));
+                    }
+                }
+                break;
+            case RotateOption.Rotate180:
+                for (var y = 0; y < Height; y++)
+                {
+                    for (var x = 0; x < Width; x++)
+                    {
+                        Write(bitmap.AsSpan((((Height - 1 - y) * Width) + (Width - 1 - x)) * 4, 4));
+                    }
+                }
+                break;
+            default:
+                for (var y = 0; y < Height; y++)
+                {
+                    for (var x = 0; x < Width; x++)
+                    {
+                        Write(bitmap.AsSpan(((y * Width) + x) * 4, 4));
+                    }
+                }
+                break;
         }
         Flush();
 
@@ -386,13 +411,27 @@ public sealed unsafe class TuringSmartScreenRevisionE : IDisposable
 
             for (var ox = 0; ox < width; ox++)
             {
-                var (px, py) = option switch
+                int px;
+                int py;
+                switch (option)
                 {
-                    RotateOption.Rotate90 => (bitmapX + oy, bitmapY + h - 1 - ox),
-                    RotateOption.Rotate270 => (bitmapX + w - 1 - oy, bitmapY + ox),
-                    RotateOption.Rotate180 => (bitmapX + w - 1 - ox, bitmapY + h - 1 - oy),
-                    _ => (bitmapX + ox, bitmapY + oy)
-                };
+                    case RotateOption.Rotate90:
+                        px = bitmapX + oy;
+                        py = bitmapY + h - 1 - ox;
+                        break;
+                    case RotateOption.Rotate270:
+                        px = bitmapX + w - 1 - oy;
+                        py = bitmapY + ox;
+                        break;
+                    case RotateOption.Rotate180:
+                        px = bitmapX + w - 1 - ox;
+                        py = bitmapY + h - 1 - oy;
+                        break;
+                    default:
+                        px = bitmapX + ox;
+                        py = bitmapY + oy;
+                        break;
+                }
                 Write(bitmap.AsSpan(((py * bitmapWidth) + px) * 4, 4));
             }
         }

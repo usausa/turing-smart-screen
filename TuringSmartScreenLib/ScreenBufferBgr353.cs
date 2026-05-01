@@ -3,6 +3,7 @@ namespace TuringSmartScreenLib;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 #pragma warning disable IDE0032
 // ReSharper disable ConvertToAutoProperty
@@ -40,9 +41,9 @@ public sealed class ScreenBufferBgr353 : IScreenBuffer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetPixel(int x, int y, byte r, byte g, byte b)
     {
-        var rgb = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
-        var offset = ((y * width) + x) * 2;
-        BinaryPrimitives.WriteInt16BigEndian(buffer.AsSpan(offset), (short)rgb);
+        var rgb = (ushort)(((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3));
+        ref var p = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buffer), ((y * width) + x) * 2);
+        Unsafe.WriteUnaligned(ref p, BitConverter.IsLittleEndian ? (ushort)((rgb << 8) | (rgb >> 8)) : rgb);
     }
 
     public void Clear() => Clear(0, 0, 0);
@@ -52,7 +53,7 @@ public sealed class ScreenBufferBgr353 : IScreenBuffer
         var pattern = (Span<byte>)stackalloc byte[2];
         var rgb = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
         BinaryPrimitives.WriteInt16BigEndian(pattern, (short)rgb);
-        Helper.Fill(buffer, pattern);
+        Helper.Fill(buffer.AsSpan(0, width * height * 2), pattern);
     }
 }
 // ReSharper restore ConvertToAutoProperty

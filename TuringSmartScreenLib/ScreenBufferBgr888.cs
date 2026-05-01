@@ -2,6 +2,7 @@ namespace TuringSmartScreenLib;
 
 using System.Buffers;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 #pragma warning disable IDE0032
 // ReSharper disable ConvertToAutoProperty
@@ -39,10 +40,10 @@ public sealed class ScreenBufferBgr888 : IScreenBuffer
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void SetPixel(int x, int y, byte r, byte g, byte b)
     {
-        var offset = ((y * width) + x) * 3;
-        buffer[offset] = b;
-        buffer[offset + 1] = g;
-        buffer[offset + 2] = r;
+        ref var p = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buffer), ((y * width) + x) * 3);
+        p = b;
+        Unsafe.Add(ref p, 1) = g;
+        Unsafe.Add(ref p, 2) = r;
     }
 
     public void Clear() => Clear(0, 0, 0);
