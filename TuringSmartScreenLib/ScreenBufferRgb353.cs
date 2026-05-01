@@ -42,7 +42,7 @@ public sealed class ScreenBufferRgb353 : IScreenBuffer
     public void SetPixel(int x, int y, byte r, byte g, byte b)
     {
         var rgb = (ushort)(((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3));
-        ref var p = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buffer), (y * width + x) * 2);
+        ref var p = ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buffer), ((y * width) + x) * 2);
         Unsafe.WriteUnaligned(ref p, BitConverter.IsLittleEndian ? rgb : (ushort)((rgb << 8) | (rgb >> 8)));
     }
 
