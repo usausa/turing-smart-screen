@@ -6,7 +6,7 @@ using System.Buffers.Binary;
 using System.IO.Ports;
 using System.Reflection;
 
-public sealed unsafe class TuringSmartScreenRevisionC : IDisposable
+public sealed class TuringSmartScreenRevisionC : IDisposable
 {
     private const int WriteSize = 250;
     private const int ReadSize = 1024;
