@@ -5,7 +5,7 @@ using System.Threading;
 
 using HidSharp;
 
-using LibUsbDotNet;
+using LibUsbDotNet.LibUsb;
 using LibUsbDotNet.Main;
 
 using SkiaSharp;
@@ -85,7 +85,28 @@ public sealed class TrofeoCommand : ICommandHandler
 //--------------------------------------------------------------------------------
 internal static class Tss8UsbCommandHelper
 {
+    private const int VendorId = 0x1CBE;
+    private const int ProductId = 0x0088;
     private const string RootPath = "/tmp/sdcard/mmcblk0p1";
+
+    public static UsbDevice? OpenDevice(UsbContext usbContext)
+    {
+        ArgumentNullException.ThrowIfNull(usbContext);
+
+        var finder = new UsbDeviceFinder
+        {
+            Vid = VendorId,
+            Pid = ProductId
+        };
+
+        if (usbContext.Find(finder) is not UsbDevice device)
+        {
+            return null;
+        }
+
+        device.Open();
+        return device;
+    }
 
     public static string? ResolvePath(string fileName)
     {
@@ -137,8 +158,8 @@ public sealed class Tss8UsbCommand : ICommandHandler
 {
     public async ValueTask ExecuteAsync(CommandContext context)
     {
-        var finder = new UsbDeviceFinder(0x1CBE, 0x0088);
-        using var device = UsbDevice.OpenUsbDevice(finder);
+        using var usbContext = new UsbContext();
+        using var device = Tss8UsbCommandHelper.OpenDevice(usbContext);
         if (device is null)
         {
             Console.WriteLine("Device not found.");
@@ -179,8 +200,8 @@ public sealed class Tss8UsbCapacityCommand : ICommandHandler
 {
     public ValueTask ExecuteAsync(CommandContext context)
     {
-        var finder = new UsbDeviceFinder(0x1CBE, 0x0088);
-        using var device = UsbDevice.OpenUsbDevice(finder);
+        using var usbContext = new UsbContext();
+        using var device = Tss8UsbCommandHelper.OpenDevice(usbContext);
         if (device is null)
         {
             Console.WriteLine("Device not found.");
@@ -230,8 +251,8 @@ public sealed class Tss8UsbUploadCommand : ICommandHandler
             return;
         }
 
-        var finder = new UsbDeviceFinder(0x1CBE, 0x0088);
-        using var device = UsbDevice.OpenUsbDevice(finder);
+        using var usbContext = new UsbContext();
+        using var device = Tss8UsbCommandHelper.OpenDevice(usbContext);
         if (device is null)
         {
             Console.WriteLine("Device not found.");
@@ -263,8 +284,8 @@ public sealed class Tss8UsbDeleteCommand : ICommandHandler
 
     public ValueTask ExecuteAsync(CommandContext context)
     {
-        var finder = new UsbDeviceFinder(0x1CBE, 0x0088);
-        using var device = UsbDevice.OpenUsbDevice(finder);
+        using var usbContext = new UsbContext();
+        using var device = Tss8UsbCommandHelper.OpenDevice(usbContext);
         if (device is null)
         {
             Console.WriteLine("Device not found.");
@@ -296,8 +317,8 @@ public sealed class Tss8UsbPlayCommand : ICommandHandler
 
     public ValueTask ExecuteAsync(CommandContext context)
     {
-        var finder = new UsbDeviceFinder(0x1CBE, 0x0088);
-        using var device = UsbDevice.OpenUsbDevice(finder);
+        using var usbContext = new UsbContext();
+        using var device = Tss8UsbCommandHelper.OpenDevice(usbContext);
         if (device is null)
         {
             Console.WriteLine("Device not found.");
@@ -336,8 +357,8 @@ public sealed class Tss8UsbStopCommand : ICommandHandler
 {
     public ValueTask ExecuteAsync(CommandContext context)
     {
-        var finder = new UsbDeviceFinder(0x1CBE, 0x0088);
-        using var device = UsbDevice.OpenUsbDevice(finder);
+        using var usbContext = new UsbContext();
+        using var device = Tss8UsbCommandHelper.OpenDevice(usbContext);
         if (device is null)
         {
             Console.WriteLine("Device not found.");
@@ -368,8 +389,8 @@ public sealed class Tss8UsbStreamCommand : ICommandHandler
             return;
         }
 
-        var finder = new UsbDeviceFinder(0x1CBE, 0x0088);
-        using var device = UsbDevice.OpenUsbDevice(finder);
+        using var usbContext = new UsbContext();
+        using var device = Tss8UsbCommandHelper.OpenDevice(usbContext);
         if (device is null)
         {
             Console.WriteLine("Device not found.");

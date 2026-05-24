@@ -5,7 +5,7 @@ using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Text;
 
-using LibUsbDotNet;
+using LibUsbDotNet.LibUsb;
 using LibUsbDotNet.Main;
 
 public sealed class ScreenDevice : IDisposable
@@ -47,11 +47,8 @@ public sealed class ScreenDevice : IDisposable
     {
         this.usbDevice = usbDevice;
 
-        if (usbDevice is IUsbDevice wholeUsbDevice)
-        {
-            wholeUsbDevice.SetConfiguration(1);
-            wholeUsbDevice.ClaimInterface(0);
-        }
+        usbDevice.SetConfiguration(1);
+        usbDevice.ClaimInterface(0);
 
         reader = usbDevice.OpenEndpointReader(ReadEndpointID.Ep01);
         writer = usbDevice.OpenEndpointWriter(WriteEndpointID.Ep01);
@@ -68,14 +65,7 @@ public sealed class ScreenDevice : IDisposable
     {
         if (usbDevice.IsOpen)
         {
-            reader.Dispose();
-            writer.Dispose();
-
-            if (usbDevice is IUsbDevice wholeUsbDevice)
-            {
-                wholeUsbDevice.ReleaseInterface(0);
-            }
-
+            usbDevice.ReleaseInterface(0);
             usbDevice.Close();
         }
 
@@ -126,8 +116,8 @@ public sealed class ScreenDevice : IDisposable
         // Flush pending data caused by ZLP handling
         reader.ReadFlush();
 
-        var errorCode = writer.Write(encryptedBuffer, 0, PacketSize, WriteTimeout, out var transferLength);
-        return (errorCode == ErrorCode.None) && (transferLength == PacketSize);
+        writer.Write(encryptedBuffer.AsSpan(0, PacketSize), WriteTimeout, out var transferLength);
+        return transferLength == PacketSize;
     }
 
     private bool SendCommandWithData(byte[] data, int length)
@@ -148,8 +138,8 @@ public sealed class ScreenDevice : IDisposable
             // Flush pending data caused by ZLP handling
             reader.ReadFlush();
 
-            var errorCode = writer.Write(combined, 0, combinedLength, WriteTimeout, out var transferLength);
-            return (errorCode == ErrorCode.None) && (transferLength == combinedLength);
+            writer.Write(combined.AsSpan(0, combinedLength), WriteTimeout, out var transferLength);
+            return transferLength == combinedLength;
         }
         finally
         {
@@ -159,14 +149,14 @@ public sealed class ScreenDevice : IDisposable
 
     private bool SendData(byte[] data)
     {
-        var errorCode = writer.Write(data, 0, data.Length, WriteTimeout, out var transferLength);
-        return (errorCode == ErrorCode.None) && (transferLength == data.Length);
+        writer.Write(data.AsSpan(), WriteTimeout, out var transferLength);
+        return transferLength == data.Length;
     }
 
     private bool ReceiveResponse(int readTimeout = ReadTimeout)
     {
-        var errorCode = reader.Read(readBuffer, 0, PacketSize, readTimeout, out var transferLength);
-        if ((errorCode != ErrorCode.None) || (transferLength != PacketSize))
+        reader.Read(readBuffer.AsSpan(0, PacketSize), readTimeout, out var transferLength);
+        if (transferLength != PacketSize)
         {
             return false;
         }
