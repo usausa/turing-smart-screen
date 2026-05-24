@@ -93,12 +93,14 @@ Turing Smart Screen 8 inch USB Revision 1.1 LCD controller.
 ### 🧩Usage
 
 ```csharp
-using LibUsbDotNet;
+using LibUsbDotNet.LibUsb;
 using LibUsbDotNet.Main;
 using LcdDriver.TuringSmartScreen;
 
-var finder = new UsbDeviceFinder(0x1CBE, 0x0088);
-using var device = UsbDevice.OpenUsbDevice(finder);
+using var usbContext = new UsbContext();
+var finder = new UsbDeviceFinder { Vid = 0x1CBE, Pid = 0x0088 };
+using var device = usbContext.Find(finder) as UsbDevice;
+device?.Open();
 
 using var screen = new ScreenDevice(device);
 screen.Sync();
@@ -107,9 +109,19 @@ screen.SetBrightness(100);
 
 var jpegBytes = await File.ReadAllBytesAsync("image-480x1920.jpg");
 screen.DrawJpeg(jpegBytes);
-
-UsbDevice.Exit();
 ```
+
+### ⚙️Prerequisites
+
+`LcdDriver.TuringSmartScreen` requires the [libusb-1.0](https://libusb.info/) native library at runtime.  
+It must be installed separately for each platform.
+
+| OS | How to install |
+|-|-|
+| Windows | Download `libusb-1.0.xx.7z` from [libusb releases](https://github.com/libusb/libusb/releases), then place `VS2022\MS64\dll\libusb-1.0.dll` in the same directory as the executable. |
+| Ubuntu / Debian | `sudo apt install libusb-1.0-0` |
+| Fedora / RHEL | `sudo dnf install libusb1` |
+| macOS | `brew install libusb` |
 
 ## 🛠️TuringSmartScreenTool
 
