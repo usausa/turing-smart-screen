@@ -560,4 +560,10 @@ public sealed class ScreenDevice : IDisposable
 
         return StopStream();
     }
+
+    public bool StopMedia()
+    {
+        PrepareCommandHeader(111);
+        return RequestResponse();
+    }
 }
