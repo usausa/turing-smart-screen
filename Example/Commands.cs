@@ -597,7 +597,7 @@ public sealed class Tss35Command : ICommandHandler
                 using var bitmap = new SKBitmap(imageWidth, imageHeight);
                 using var canvas = new SKCanvas(bitmap);
                 canvas.Clear(SKColors.White);
-                canvas.DrawText($"{i}", Margin, imageHeight - Margin, font, paint);
+                canvas.DrawText($"{i}", Margin, imageHeight - Margin, SKTextAlign.Left, font, paint);
                 canvas.Flush();
 
                 var buffer = screen.CreateBuffer(imageWidth, imageHeight);

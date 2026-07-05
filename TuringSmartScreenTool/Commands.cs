@@ -288,7 +288,7 @@ public sealed class TextCommand : CommandBase, ICommandHandler
         using var bitmap = new SKBitmap((int)Math.Floor(rect.Width), (int)Math.Floor(rect.Height));
         using var canvas = new SKCanvas(bitmap);
         canvas.Clear(SKColor.Parse(Background));
-        canvas.DrawText(Text, 0, rect.Height, font, paint);
+        canvas.DrawText(Text, 0, rect.Height, SKTextAlign.Left, font, paint);
         canvas.Flush();
 
         using var buffer = screen.CreateBufferFrom(bitmap);
