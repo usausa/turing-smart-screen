@@ -9,12 +9,12 @@ public sealed class ScreenResolver : IScreenResolver
 {
     public IScreen Resolve(string revision, string port)
     {
-        var screenType = Enum.TryParse<ScreenType>(revision, true, out var type)
-            ? type
-            : Enum.TryParse("Revision" + revision, true, out type)
-                ? type
-                : ScreenType.RevisionC;
+        if ((!Enum.TryParse<ScreenType>(revision, true, out var type) && !Enum.TryParse("Revision" + revision, true, out type)) ||
+            !Enum.IsDefined(type))
+        {
+            throw new ArgumentException($"Unknown revision. revision=[{revision}], available=[{String.Join(", ", Enum.GetNames<ScreenType>())}]", nameof(revision));
+        }
 
-        return ScreenFactory.Create(screenType, port);
+        return ScreenFactory.Create(type, port);
     }
 }

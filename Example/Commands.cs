@@ -110,6 +110,15 @@ internal static class Tss8UsbCommandHelper
 
     public static string? ResolvePath(string fileName)
     {
+        // Only a bare file name is allowed. Reject directory components and traversal.
+        if (string.IsNullOrEmpty(fileName) ||
+            fileName.Contains('/', StringComparison.Ordinal) ||
+            fileName.Contains('\\', StringComparison.Ordinal) ||
+            fileName is "." or "..")
+        {
+            return null;
+        }
+
         var ext = Path.GetExtension(fileName).ToUpperInvariant();
         return ext switch
         {
@@ -447,9 +456,14 @@ public sealed class Tss8Command : ICommandHandler
         screen.SetBrightness(100);
 
         using var bitmap = SKBitmap.Decode("image-1280x480.jpg");
-        using var buffer = screen.CreateBufferFrom(bitmap);
-
         using var bitmap2 = SKBitmap.Decode("image-logo.png");
+        if (bitmap is null || bitmap2 is null)
+        {
+            Console.WriteLine("Cannot load image.");
+            return;
+        }
+
+        using var buffer = screen.CreateBufferFrom(bitmap);
         using var buffer2 = screen.CreateBufferFrom(bitmap2);
 
         screen.DisplayBuffer(0, 0, buffer);
@@ -486,9 +500,14 @@ public sealed class Tss5Command : ICommandHandler
         screen.Clear();
 
         using var bitmap1 = SKBitmap.Decode("image-800x480.png");
-        using var buffer1 = screen.CreateBufferFrom(bitmap1);
-
         using var bitmap2 = SKBitmap.Decode("image-logo.png");
+        if (bitmap1 is null || bitmap2 is null)
+        {
+            Console.WriteLine("Cannot load image.");
+            return;
+        }
+
+        using var buffer1 = screen.CreateBufferFrom(bitmap1);
         using var buffer2 = screen.CreateBufferFrom(bitmap2);
 
         screen.DisplayBuffer(0, 0, buffer1);
@@ -571,55 +590,79 @@ public sealed class Tss35Command : ICommandHandler
 
         // Create digit image
         var digitImages = new IScreenBuffer[10];
-        for (var i = 0; i < 10; i++)
+        try
         {
-            using var bitmap = new SKBitmap(imageWidth, imageHeight);
-            using var canvas = new SKCanvas(bitmap);
-            canvas.Clear(SKColors.White);
-            canvas.DrawText($"{i}", Margin, imageHeight - Margin, font, paint);
-            canvas.Flush();
-
-            var buffer = screen.CreateBuffer(imageWidth, imageHeight);
-            buffer.ReadFrom(bitmap, 0, 0, imageWidth, imageHeight);
-            digitImages[i] = buffer;
-        }
-
-        // Prepare display setting
-        var baseX = (screen.Width - (imageWidth * Digits)) / 2;
-        var baseY = (screen.Height / 2) - (imageHeight / 2);
-
-        var previousValues = new int[Digits];
-        for (var i = 0; i < previousValues.Length; i++)
-        {
-            previousValues[i] = Int32.MinValue;
-        }
-
-        // Display loop
-        var max = Math.Pow(10, Digits);
-        var counter = 0;
-        while (true)
-        {
-            var value = counter;
-            for (var i = Digits - 1; i >= 0; i--)
+            for (var i = 0; i < 10; i++)
             {
-                var number = value % 10;
-                if (previousValues[i] != number)
+                using var bitmap = new SKBitmap(imageWidth, imageHeight);
+                using var canvas = new SKCanvas(bitmap);
+                canvas.Clear(SKColors.White);
+                canvas.DrawText($"{i}", Margin, imageHeight - Margin, font, paint);
+                canvas.Flush();
+
+                var buffer = screen.CreateBuffer(imageWidth, imageHeight);
+                buffer.ReadFrom(bitmap, 0, 0, imageWidth, imageHeight);
+                digitImages[i] = buffer;
+            }
+
+            // Prepare display setting
+            var baseX = (screen.Width - (imageWidth * Digits)) / 2;
+            var baseY = (screen.Height / 2) - (imageHeight / 2);
+
+            var previousValues = new int[Digits];
+            for (var i = 0; i < previousValues.Length; i++)
+            {
+                previousValues[i] = Int32.MinValue;
+            }
+
+            using var cts = new CancellationTokenSource();
+            Console.CancelKeyPress += (_, e) =>
+            {
+                e.Cancel = true;
+                // ReSharper disable once AccessToDisposedClosure
+                cts.Cancel();
+            };
+
+            // Display loop
+            var max = Math.Pow(10, Digits);
+            var counter = 0;
+            while (!cts.Token.IsCancellationRequested)
+            {
+                var value = counter;
+                for (var i = Digits - 1; i >= 0; i--)
                 {
-                    screen.DisplayBuffer(baseX + (imageWidth * i), baseY, digitImages[number]);
-                    previousValues[i] = number;
+                    var number = value % 10;
+                    if (previousValues[i] != number)
+                    {
+                        screen.DisplayBuffer(baseX + (imageWidth * i), baseY, digitImages[number]);
+                        previousValues[i] = number;
+                    }
+
+                    value /= 10;
                 }
 
-                value /= 10;
-            }
+                counter++;
+                if (counter >= max)
+                {
+                    counter = 0;
+                }
 
-            counter++;
-            if (counter >= max)
-            {
-                counter = 0;
+                try
+                {
+                    await Task.Delay(50, cts.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
             }
-
-            await Task.Delay(50);
         }
-        // ReSharper disable once FunctionNeverReturns
+        finally
+        {
+            foreach (var digitImage in digitImages)
+            {
+                digitImage.Dispose();
+            }
+        }
     }
 }

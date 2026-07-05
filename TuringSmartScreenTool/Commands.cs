@@ -86,12 +86,17 @@ public sealed class BrightCommand : CommandBase, ICommandHandler
         this.screenResolver = screenResolver;
     }
 
-    public ValueTask ExecuteAsync(CommandContext context)
+    public async ValueTask ExecuteAsync(CommandContext context)
     {
+        if (Level > 100)
+        {
+            await Console.Error.WriteLineAsync($"Level must be between 0 and 100. level=[{Level}]");
+            context.ExitCode = 1;
+            return;
+        }
+
         using var screen = screenResolver.Resolve(Revision, Port);
         screen.SetBrightness(Level);
-
-        return ValueTask.CompletedTask;
     }
 }
 
@@ -185,17 +190,20 @@ public sealed class ImageCommand : CommandBase, ICommandHandler
         this.screenResolver = screenResolver;
     }
 
-    public ValueTask ExecuteAsync(CommandContext context)
+    public async ValueTask ExecuteAsync(CommandContext context)
     {
-        using var screen = screenResolver.Resolve(Revision, Port);
-
-        using var stream = System.IO.File.OpenRead(File);
+        await using var stream = System.IO.File.OpenRead(File);
         using var bitmap = SKBitmap.Decode(stream);
+        if (bitmap is null)
+        {
+            await Console.Error.WriteLineAsync($"Cannot load image. file=[{File}]");
+            context.ExitCode = 1;
+            return;
+        }
+
+        using var screen = screenResolver.Resolve(Revision, Port);
         using var buffer = screen.CreateBufferFrom(bitmap);
-
         screen.DisplayBuffer(X, Y, buffer);
-
-        return ValueTask.CompletedTask;
     }
 }
 

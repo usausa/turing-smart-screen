@@ -1,6 +1,8 @@
 namespace TuringSmartScreenLib.Helpers.GdiPlus;
 
 using System.Drawing;
+using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 [SupportedOSPlatform("windows")]
@@ -25,14 +27,26 @@ public static class Extensions
 
     public static void ReadFrom(this IScreenBuffer buffer, Bitmap bitmap, int sx, int sy, int sw, int sh)
     {
-        for (var y = 0; y < sh; y++)
+        var data = bitmap.LockBits(new Rectangle(sx, sy, sw, sh), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+        try
         {
-            for (var x = 0; x < sw; x++)
+            var stride = data.Stride;
+            var scan0 = data.Scan0;
+            var row = new byte[sw * 4];
+            for (var y = 0; y < sh; y++)
             {
-                var color = bitmap.GetPixel(x + sx, y + sy);
-
-                buffer.SetPixel(x, y, color.R, color.G, color.B);
+                Marshal.Copy(scan0 + (y * stride), row, 0, row.Length);
+                for (var x = 0; x < sw; x++)
+                {
+                    var p = x * 4;
+                    // Format32bppArgb is laid out as B, G, R, A in memory (little-endian).
+                    buffer.SetPixel(x, y, row[p + 2], row[p + 1], row[p]);
+                }
             }
+        }
+        finally
+        {
+            bitmap.UnlockBits(data);
         }
     }
 }

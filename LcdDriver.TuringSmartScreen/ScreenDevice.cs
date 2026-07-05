@@ -284,26 +284,31 @@ public sealed class ScreenDevice : IDisposable
 
     public bool WriteFile(Stream stream, string devicePath, Action<long, long>? progress = null)
     {
+        if (!stream.CanSeek)
+        {
+            throw new ArgumentException("Stream must be seekable.", nameof(stream));
+        }
+
         if (!OpenFile(devicePath))
         {
             return false;
         }
 
-        var size = stream.CanSeek ? stream.Length : -1L;
+        var size = stream.Length;
         var sent = 0L;
         var buffer = ArrayPool<byte>.Shared.Rent(MaxFileChunkSize);
         try
         {
             while (true)
             {
-                var bytesRead = stream.Read(buffer, 0, MaxFileChunkSize);
+                var bytesRead = stream.ReadAtLeast(buffer.AsSpan(0, MaxFileChunkSize), MaxFileChunkSize, throwOnEndOfStream: false);
                 if (bytesRead == 0)
                 {
                     break;
                 }
 
                 sent += bytesRead;
-                var isLast = stream.CanSeek ? stream.Position >= stream.Length : bytesRead < MaxFileChunkSize;
+                var isLast = stream.Position >= stream.Length;
                 if (!WriteFileChunk(buffer, bytesRead, isLast))
                 {
                     return false;
@@ -322,12 +327,17 @@ public sealed class ScreenDevice : IDisposable
 
     public async ValueTask<bool> WriteFileAsync(Stream stream, string devicePath, Action<long, long>? progress = null, CancellationToken cancel = default)
     {
+        if (!stream.CanSeek)
+        {
+            throw new ArgumentException("Stream must be seekable.", nameof(stream));
+        }
+
         if (!OpenFile(devicePath))
         {
             return false;
         }
 
-        var size = stream.CanSeek ? stream.Length : -1L;
+        var size = stream.Length;
         var sent = 0L;
         var buffer = ArrayPool<byte>.Shared.Rent(MaxFileChunkSize);
         try
@@ -336,14 +346,14 @@ public sealed class ScreenDevice : IDisposable
             {
                 cancel.ThrowIfCancellationRequested();
 
-                var bytesRead = await stream.ReadAsync(buffer.AsMemory(0, MaxFileChunkSize), cancel).ConfigureAwait(false);
+                var bytesRead = await stream.ReadAtLeastAsync(buffer.AsMemory(0, MaxFileChunkSize), MaxFileChunkSize, throwOnEndOfStream: false, cancel).ConfigureAwait(false);
                 if (bytesRead == 0)
                 {
                     break;
                 }
 
                 sent += bytesRead;
-                var isLast = stream.CanSeek ? stream.Position >= stream.Length : bytesRead < MaxFileChunkSize;
+                var isLast = stream.Position >= stream.Length;
                 if (!WriteFileChunk(buffer, bytesRead, isLast))
                 {
                     return false;
