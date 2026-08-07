@@ -96,7 +96,7 @@ dotnet_style_readonly_field = true:warning
 dotnet_code_quality_unused_parameters = all:warning
 
 # Suppression preferences
-dotnet_remove_unnecessary_suppression_exclusions = all:warning
+dotnet_remove_unnecessary_suppression_exclusions = none
 
 # Whitespace options
 dotnet_style_allow_multiple_blank_lines_experimental = false:warning

@@ -1,6 +1,6 @@
 <Solution>
   <Folder Name="/Example/">
-    <Project Path="Example/Example.csproj" />
+    <Project Path="Example/Example.csproj" DefaultStartup="true" />
   </Folder>
   <Folder Name="/Library/">
     <Project Path="TuringSmartScreenLib.Helpers.GdiPlus/TuringSmartScreenLib.Helpers.GdiPlus.csproj" />
