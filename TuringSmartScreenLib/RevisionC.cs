@@ -23,9 +23,9 @@ public sealed class TuringSmartScreenRevisionC : IDisposable
 
     private readonly SerialPort port;
 
-    private byte[] writeBuffer;
+    private byte[] writeBuffer = [];
 
-    private byte[] readBuffer;
+    private byte[] readBuffer = [];
 
     private int writeOffset;
 
@@ -53,14 +53,45 @@ public sealed class TuringSmartScreenRevisionC : IDisposable
             StopBits = StopBits.One,
             Parity = Parity.None
         };
-        writeBuffer = ArrayPool<byte>.Shared.Rent(WriteSize);
-        readBuffer = ArrayPool<byte>.Shared.Rent(ReadSize);
     }
 
     public void Dispose()
     {
         Close();
+        DisposePort();
+        ReturnBuffers();
+    }
 
+    private void DisposePort()
+    {
+        try
+        {
+            port.Dispose();
+        }
+        catch (IOException)
+        {
+            // Ignore
+        }
+        catch (TargetInvocationException)
+        {
+            // Ignore
+        }
+    }
+
+    private void RentBuffers()
+    {
+        if (writeBuffer.Length == 0)
+        {
+            writeBuffer = ArrayPool<byte>.Shared.Rent(WriteSize);
+        }
+        if (readBuffer.Length == 0)
+        {
+            readBuffer = ArrayPool<byte>.Shared.Rent(ReadSize);
+        }
+    }
+
+    private void ReturnBuffers()
+    {
         if (writeBuffer.Length > 0)
         {
             ArrayPool<byte>.Shared.Return(writeBuffer);
@@ -94,17 +125,27 @@ public sealed class TuringSmartScreenRevisionC : IDisposable
 
     public void Open()
     {
-        port.Open();
-        port.DiscardInBuffer();
-        port.DiscardOutBuffer();
-
-        Write(CommandHello);
-        Flush();
-
-        var response = ReadTo();
-        if (!response.StartsWith("chs_5inch"u8))
+        RentBuffers();
+        try
         {
-            throw new IOException($"Unknown response. response=[{Convert.ToHexString(response)}]");
+            port.Open();
+            port.DiscardInBuffer();
+            port.DiscardOutBuffer();
+
+            Write(CommandHello);
+            Flush();
+
+            var response = ReadTo();
+            if (!response.StartsWith("chs_5inch"u8))
+            {
+                throw new IOException($"Unknown response. response=[{Convert.ToHexString(response)}]");
+            }
+        }
+        catch (Exception)
+        {
+            Close();
+            ReturnBuffers();
+            throw;
         }
     }
 

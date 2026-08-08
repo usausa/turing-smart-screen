@@ -16,7 +16,7 @@ public sealed class TuringSmartScreenRevisionA : IDisposable
 
     private readonly SerialPort port;
 
-    private byte[] writeBuffer;
+    private byte[] writeBuffer = [];
 
 #pragma warning disable CA1822
     public int Width => 320;
@@ -36,13 +36,41 @@ public sealed class TuringSmartScreenRevisionA : IDisposable
             StopBits = StopBits.One,
             Parity = Parity.None
         };
-        writeBuffer = ArrayPool<byte>.Shared.Rent(16);
     }
 
     public void Dispose()
     {
         Close();
+        DisposePort();
+        ReturnBuffers();
+    }
 
+    private void DisposePort()
+    {
+        try
+        {
+            port.Dispose();
+        }
+        catch (IOException)
+        {
+            // Ignore
+        }
+        catch (TargetInvocationException)
+        {
+            // Ignore
+        }
+    }
+
+    private void RentBuffers()
+    {
+        if (writeBuffer.Length == 0)
+        {
+            writeBuffer = ArrayPool<byte>.Shared.Rent(16);
+        }
+    }
+
+    private void ReturnBuffers()
+    {
         if (writeBuffer.Length > 0)
         {
             ArrayPool<byte>.Shared.Return(writeBuffer);
@@ -71,9 +99,19 @@ public sealed class TuringSmartScreenRevisionA : IDisposable
 
     public void Open()
     {
-        port.Open();
-        port.DiscardInBuffer();
-        port.DiscardOutBuffer();
+        RentBuffers();
+        try
+        {
+            port.Open();
+            port.DiscardInBuffer();
+            port.DiscardOutBuffer();
+        }
+        catch (Exception)
+        {
+            Close();
+            ReturnBuffers();
+            throw;
+        }
     }
 
     private void WriteCommand(byte command)

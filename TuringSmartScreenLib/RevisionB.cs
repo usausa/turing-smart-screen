@@ -17,9 +17,9 @@ public sealed class TuringSmartScreenRevisionB : IDisposable
 
     private readonly SerialPort port;
 
-    private byte[] writeBuffer;
+    private byte[] writeBuffer = [];
 
-    private byte[] readBuffer;
+    private byte[] readBuffer = [];
 
     public byte Version { get; private set; }
 
@@ -41,14 +41,45 @@ public sealed class TuringSmartScreenRevisionB : IDisposable
             StopBits = StopBits.One,
             Parity = Parity.None
         };
-        writeBuffer = ArrayPool<byte>.Shared.Rent(16);
-        readBuffer = ArrayPool<byte>.Shared.Rent(16);
     }
 
     public void Dispose()
     {
         Close();
+        DisposePort();
+        ReturnBuffers();
+    }
 
+    private void DisposePort()
+    {
+        try
+        {
+            port.Dispose();
+        }
+        catch (IOException)
+        {
+            // Ignore
+        }
+        catch (TargetInvocationException)
+        {
+            // Ignore
+        }
+    }
+
+    private void RentBuffers()
+    {
+        if (writeBuffer.Length == 0)
+        {
+            writeBuffer = ArrayPool<byte>.Shared.Rent(16);
+        }
+        if (readBuffer.Length == 0)
+        {
+            readBuffer = ArrayPool<byte>.Shared.Rent(16);
+        }
+    }
+
+    private void ReturnBuffers()
+    {
         if (writeBuffer.Length > 0)
         {
             ArrayPool<byte>.Shared.Return(writeBuffer);
@@ -82,29 +113,39 @@ public sealed class TuringSmartScreenRevisionB : IDisposable
 
     public void Open()
     {
-        port.Open();
-        port.DiscardInBuffer();
-        port.DiscardOutBuffer();
-
-        port.Write(CommandHello, 0, CommandHello.Length);
-
-        var response = ReadResponse(10);
-        if ((response.Length == 10) &&
-            (response[0] == 0xCA) &&
-            (response[1] == (byte)'H') &&
-            (response[2] == (byte)'E') &&
-            (response[3] == (byte)'L') &&
-            (response[4] == (byte)'L') &&
-            (response[5] == (byte)'O') &&
-            (response[9] == 0xCA))
+        RentBuffers();
+        try
         {
-            if (response[6] == 0x0A)
-            {
-                Version = response[7];
-            }
-        }
+            port.Open();
+            port.DiscardInBuffer();
+            port.DiscardOutBuffer();
 
-        port.DiscardInBuffer();
+            port.Write(CommandHello, 0, CommandHello.Length);
+
+            var response = ReadResponse(10);
+            if ((response.Length == 10) &&
+                (response[0] == 0xCA) &&
+                (response[1] == (byte)'H') &&
+                (response[2] == (byte)'E') &&
+                (response[3] == (byte)'L') &&
+                (response[4] == (byte)'L') &&
+                (response[5] == (byte)'O') &&
+                (response[9] == 0xCA))
+            {
+                if (response[6] == 0x0A)
+                {
+                    Version = response[7];
+                }
+            }
+
+            port.DiscardInBuffer();
+        }
+        catch (Exception)
+        {
+            Close();
+            ReturnBuffers();
+            throw;
+        }
     }
 
     private ReadOnlySpan<byte> ReadResponse(int length)
