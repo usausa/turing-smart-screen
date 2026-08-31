@@ -5,6 +5,7 @@ using System.Buffers;
 using System.IO.Ports;
 using System.Reflection;
 
+#pragma warning disable CA1028
 public sealed class TuringSmartScreenRevisionB : IDisposable
 {
     private static readonly byte[] CommandHello = [0xCA, (byte)'H', (byte)'E', (byte)'L', (byte)'L', (byte)'O', 0, 0, 0, 0xCA];
@@ -219,3 +220,4 @@ public sealed class TuringSmartScreenRevisionB : IDisposable
         return true;
     }
 }
+#pragma warning restore CA1028

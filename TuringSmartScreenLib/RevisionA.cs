@@ -4,6 +4,7 @@ using System.Buffers;
 using System.IO.Ports;
 using System.Reflection;
 
+#pragma warning disable CA1028
 public sealed class TuringSmartScreenRevisionA : IDisposable
 {
     public enum Orientation : byte
@@ -185,3 +186,4 @@ public sealed class TuringSmartScreenRevisionA : IDisposable
         return true;
     }
 }
+#pragma warning restore CA1028

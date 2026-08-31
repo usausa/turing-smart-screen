@@ -111,10 +111,10 @@ internal static class Tss8UsbCommandHelper
     public static string? ResolvePath(string fileName)
     {
         // Only a bare file name is allowed. Reject directory components and traversal.
-        if (string.IsNullOrEmpty(fileName) ||
+        if (String.IsNullOrEmpty(fileName) ||
             fileName.Contains('/', StringComparison.Ordinal) ||
             fileName.Contains('\\', StringComparison.Ordinal) ||
-            fileName is "." or "..")
+            (fileName is "." or ".."))
         {
             return null;
         }
@@ -457,7 +457,7 @@ public sealed class Tss8Command : ICommandHandler
 
         using var bitmap = SKBitmap.Decode("image-1280x480.jpg");
         using var bitmap2 = SKBitmap.Decode("image-logo.png");
-        if (bitmap is null || bitmap2 is null)
+        if ((bitmap is null) || (bitmap2 is null))
         {
             Console.WriteLine("Cannot load image.");
             return;
@@ -501,7 +501,7 @@ public sealed class Tss5Command : ICommandHandler
 
         using var bitmap1 = SKBitmap.Decode("image-800x480.png");
         using var bitmap2 = SKBitmap.Decode("image-logo.png");
-        if (bitmap1 is null || bitmap2 is null)
+        if ((bitmap1 is null) || (bitmap2 is null))
         {
             Console.WriteLine("Cannot load image.");
             return;

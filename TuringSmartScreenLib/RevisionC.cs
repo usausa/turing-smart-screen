@@ -309,9 +309,9 @@ public sealed class TuringSmartScreenRevisionC : IDisposable
     {
         if (option is RotateOption.None or RotateOption.Rotate180)
         {
-            return width == Width && height == Height;
+            return (width == Width) && (height == Height);
         }
-        return width == Height && height == Width;
+        return (width == Height) && (height == Width);
     }
 
     public bool DisplayBitmap(int x, int y, byte[] bitmap, int width, int height, RotateOption option = RotateOption.None)

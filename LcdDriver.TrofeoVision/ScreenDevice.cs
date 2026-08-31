@@ -15,12 +15,12 @@ public sealed class ScreenDevice : IDisposable
     private const int HeaderSize = 20;
     private const byte ReportId = 0x00;
 
-    // Protocol header magic bytes
-    private static readonly byte[] HeaderMagic = [0xDA, 0xDB, 0xDC, 0xDD];
-
     // Protocol command/compression type
     private const byte CommandImage = 0x02;
     private const byte CompressionJpeg = 0x02;
+
+    // Protocol header magic bytes
+    private static readonly byte[] HeaderMagic = [0xDA, 0xDB, 0xDC, 0xDD];
 
     private readonly HidStream stream;
 

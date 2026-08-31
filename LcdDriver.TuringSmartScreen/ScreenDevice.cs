@@ -543,7 +543,7 @@ public sealed class ScreenDevice : IDisposable
 
                 if (queueDepth > 2)
                 {
-                    while (!cancel.IsCancellationRequested && GetStreamStatus(out var depth) && depth > 2)
+                    while (!cancel.IsCancellationRequested && GetStreamStatus(out var depth) && (depth > 2))
                     {
                         await Task.Delay(10, cancel).ConfigureAwait(false);
                     }

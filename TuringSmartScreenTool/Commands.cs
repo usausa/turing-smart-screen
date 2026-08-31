@@ -79,7 +79,7 @@ public sealed class BrightCommand : CommandBase, ICommandHandler
     private readonly IScreenResolver screenResolver;
 
     [Option<byte>("--level", "-l", Description = "Level", Required = true)]
-    public byte Level { get; set; } = default!;
+    public byte Level { get; set; } = default;
 
     public BrightCommand(IScreenResolver screenResolver)
     {
