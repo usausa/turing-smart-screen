@@ -13,7 +13,9 @@
     <Rule Id="SA1121" Action="Hidden" />
     <Rule Id="SA1201" Action="Hidden" />
     <Rule Id="SA1202" Action="Hidden" />
+    <Rule Id="SA1203" Action="Hidden" />
     <Rule Id="SA1204" Action="Hidden" />
+    <Rule Id="SA1214" Action="Hidden" />
     <Rule Id="SA1402" Action="Hidden" />
     <Rule Id="SA1413" Action="Hidden" />
     <Rule Id="SA1512" Action="Hidden" />
