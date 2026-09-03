@@ -21,7 +21,9 @@ public sealed class ScreenDevice : IDisposable
 
     private const int MaxFileChunkSize = 65536;
 
+#pragma warning disable IDE0028
     private static readonly byte[] KeyIv = "slv3tuzx"u8.ToArray();
+#pragma warning restore IDE0028
 
     private readonly UsbDevice usbDevice;
 
