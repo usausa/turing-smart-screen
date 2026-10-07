@@ -263,8 +263,9 @@ internal static class HudRenderer
         var temps = simulator.TyreTemps;
         for (var i = 0; i < temps.Length; i++)
         {
+            var row = i / 2;
             var bx = (i % 2) == 0 ? left : right;
-            var by = y + 14f + ((i / 2) * 42f);
+            var by = y + 14f + (row * 42f);
             var temp = temps[i];
             var color = temp < 85f ? HudColors.Azure : temp < 105f ? HudColors.Green : temp < 115f ? HudColors.Amber : HudColors.Red;
             var rect = new SKRect(bx, by, bx + boxWidth, by + boxHeight);
