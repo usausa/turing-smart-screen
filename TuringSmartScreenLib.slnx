@@ -4,6 +4,9 @@
     <Project Path="Example.Telemetry/Example.Telemetry.csproj" />
   </Folder>
   <Folder Name="/Library/">
+    <Project Path="LcdDriver.TrofeoVision/LcdDriver.TrofeoVision.csproj" />
+    <Project Path="LcdDriver.TrofeoVisionLy/LcdDriver.TrofeoVisionLy.csproj" />
+    <Project Path="LcdDriver.TuringSmartScreen/LcdDriver.TuringSmartScreen.csproj" />
     <Project Path="TuringSmartScreenLib.Helpers.GdiPlus/TuringSmartScreenLib.Helpers.GdiPlus.csproj" />
     <Project Path="TuringSmartScreenLib.Helpers.SkiaSharp/TuringSmartScreenLib.Helpers.SkiaSharp.csproj" />
     <Project Path="TuringSmartScreenLib/TuringSmartScreenLib.csproj" />
@@ -23,7 +26,4 @@
   <Folder Name="/Tool/">
     <Project Path="TuringSmartScreenTool/TuringSmartScreenTool.csproj" />
   </Folder>
-  <Project Path="LcdDriver.TrofeoVision/LcdDriver.TrofeoVision.csproj" />
-  <Project Path="LcdDriver.TrofeoVisionLy/LcdDriver.TrofeoVisionLy.csproj" />
-  <Project Path="LcdDriver.TuringSmartScreen/LcdDriver.TuringSmartScreen.csproj" />
 </Solution>
