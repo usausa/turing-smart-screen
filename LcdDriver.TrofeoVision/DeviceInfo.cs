@@ -4,10 +4,14 @@ public readonly record struct DeviceInfo(
     PanelType Pm,
     byte Sub)
 {
-    public RotateOption RotateOption => Pm switch
+    public RotateOption GetRotateOption(ScreenOrientation orientation)
     {
-        // 1280x480
-        PanelType.TrofeoVision686 => Sub == 2 ? RotateOption.Rotate90 : RotateOption.None,
-        _ => RotateOption.None
-    };
+        var rotate = Pm switch
+        {
+            // 1280x480
+            PanelType.TrofeoVision686 => Sub == 2 ? RotateOption.Rotate90 : RotateOption.None,
+            _ => RotateOption.None
+        };
+        return (RotateOption)(((int)rotate - (int)orientation + 4) % 4);
+    }
 }

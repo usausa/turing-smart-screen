@@ -61,11 +61,56 @@ internal static class DeviceHelper
 }
 
 //--------------------------------------------------------------------------------
+// Image
+//--------------------------------------------------------------------------------
+internal static class ImageHelper
+{
+    public static SKBitmap? LoadBitmap(string path, int width, int height)
+    {
+        using var bitmap = SKBitmap.Decode(path);
+        return bitmap?.Resize(new SKImageInfo(width, height), new SKSamplingOptions(SKFilterMode.Linear));
+    }
+
+    public static byte[] CreateJpeg(SKBitmap source, int quarterTurns, int maxSize = 450_000)
+    {
+        var swap = (quarterTurns % 2) != 0;
+        var width = swap ? source.Height : source.Width;
+        var height = swap ? source.Width : source.Height;
+
+        using var surface = SKSurface.Create(new SKImageInfo(width, height));
+        var canvas = surface.Canvas;
+        canvas.Translate(width / 2f, height / 2f);
+        canvas.RotateDegrees(quarterTurns * 90);
+        canvas.Translate(-source.Width / 2f, -source.Height / 2f);
+        canvas.DrawBitmap(source, 0, 0, SKSamplingOptions.Default);
+        using var image = surface.Snapshot();
+
+        var quality = 95;
+        while (true)
+        {
+            using var data = image.Encode(SKEncodedImageFormat.Jpeg, quality);
+            if ((data.Size < maxSize) || (quality <= 50))
+            {
+                return data.ToArray();
+            }
+
+            quality -= 5;
+        }
+    }
+}
+
+//--------------------------------------------------------------------------------
 // Trofeo Vision
 //--------------------------------------------------------------------------------
 [Command("trofeo", "Trofeo Vision")]
 public sealed class TrofeoCommand : ICommandHandler
 {
+    private const int Width = 1280;
+    private const int Height = 480;
+
+    [Option<LcdDriver.TrofeoVision.ScreenOrientation>("--orientation", "-o", Description = "Orientation", DefaultValue = LcdDriver.TrofeoVision.ScreenOrientation.Landscape)]
+    public LcdDriver.TrofeoVision.ScreenOrientation Orientation { get; set; }
+
     public async ValueTask ExecuteAsync(CommandContext context)
     {
         var device = DeviceHelper.FindHidDevice(LcdDriver.TrofeoVision.UsbIds.VendorId, LcdDriver.TrofeoVision.UsbIds.ProductId);
@@ -84,9 +129,20 @@ public sealed class TrofeoCommand : ICommandHandler
             return;
         }
 
-        Console.WriteLine($"PM={info.Value.Pm}, SUB={info.Value.Sub}, Rotate={info.Value.RotateOption}");
+        var rotateOption = info.Value.GetRotateOption(Orientation);
+        Console.WriteLine($"PM={info.Value.Pm}, SUB={info.Value.Sub}, Rotate={rotateOption}");
 
-        var jpegBytes = await File.ReadAllBytesAsync("image-1920x480.jpg");
+        var portrait = Orientation is LcdDriver.TrofeoVision.ScreenOrientation.Portrait or LcdDriver.TrofeoVision.ScreenOrientation.ReversePortrait;
+        using var bitmap = portrait
+            ? ImageHelper.LoadBitmap("image-480x1920.jpg", Height, Width)
+            : ImageHelper.LoadBitmap("image-1920x480.jpg", Width, Height);
+        if (bitmap is null)
+        {
+            Console.WriteLine("Cannot load image.");
+            return;
+        }
+
+        var jpegBytes = ImageHelper.CreateJpeg(bitmap, (int)rotateOption);
 
         var interval = TimeSpan.FromSeconds(1);
         using var cts = new CancellationTokenSource();
@@ -121,7 +177,9 @@ public sealed class TrofeoLyCommand : ICommandHandler
 {
     private const int Width = 1920;
     private const int Height = 480;
-    private const int MaxJpegSize = 450_000;
+
+    [Option<LcdDriver.TrofeoVisionLy.ScreenOrientation>("--orientation", "-o", Description = "Orientation", DefaultValue = LcdDriver.TrofeoVisionLy.ScreenOrientation.Landscape)]
+    public LcdDriver.TrofeoVisionLy.ScreenOrientation Orientation { get; set; }
 
     public async ValueTask ExecuteAsync(CommandContext context)
     {
@@ -142,14 +200,20 @@ public sealed class TrofeoLyCommand : ICommandHandler
             return;
         }
 
-        Console.WriteLine($"PM={info.Value.Pm}, SUB={info.Value.Sub}, Rotate={info.Value.RotateOption}");
+        var rotateOption = info.Value.GetRotateOption(Orientation);
+        Console.WriteLine($"PM={info.Value.Pm}, SUB={info.Value.Sub}, Rotate={rotateOption}");
 
-        var jpegBytes = CreateJpeg("image-1920x480.jpg", info.Value.RotateOption);
-        if (jpegBytes is null)
+        var portrait = Orientation is LcdDriver.TrofeoVisionLy.ScreenOrientation.Portrait or LcdDriver.TrofeoVisionLy.ScreenOrientation.ReversePortrait;
+        using var bitmap = portrait
+            ? ImageHelper.LoadBitmap("image-480x1920.jpg", Height, Width)
+            : ImageHelper.LoadBitmap("image-1920x480.jpg", Width, Height);
+        if (bitmap is null)
         {
             Console.WriteLine("Cannot load image.");
             return;
         }
+
+        var jpegBytes = ImageHelper.CreateJpeg(bitmap, (int)rotateOption);
 
         // Panel returns to the logo a few seconds after the last frame
         var interval = TimeSpan.FromMilliseconds(500);
@@ -176,39 +240,6 @@ public sealed class TrofeoLyCommand : ICommandHandler
             {
                 break;
             }
-        }
-    }
-
-    private static byte[]? CreateJpeg(string path, LcdDriver.TrofeoVisionLy.RotateOption rotateOption)
-    {
-        using var bitmap = SKBitmap.Decode(path);
-        if (bitmap is null)
-        {
-            return null;
-        }
-
-        using var surface = SKSurface.Create(new SKImageInfo(Width, Height));
-        var canvas = surface.Canvas;
-        if (rotateOption == LcdDriver.TrofeoVisionLy.RotateOption.Rotate180)
-        {
-            canvas.RotateDegrees(180, Width / 2f, Height / 2f);
-        }
-        using (var source = SKImage.FromBitmap(bitmap))
-        {
-            canvas.DrawImage(source, new SKRect(0, 0, Width, Height), new SKSamplingOptions(SKFilterMode.Linear));
-        }
-        using var image = surface.Snapshot();
-
-        var quality = 95;
-        while (true)
-        {
-            using var data = image.Encode(SKEncodedImageFormat.Jpeg, quality);
-            if ((data.Size < MaxJpegSize) || (quality <= 50))
-            {
-                return data.ToArray();
-            }
-
-            quality -= 5;
         }
     }
 }
