@@ -57,7 +57,8 @@ Thermalright Trofeo Vision USB HID LCD controller.
 |-|-|-|-|-|
 | [Trofeo Vision LCD](https://www.thermalright.com/product/trofeo-vision-lcd-white/) | 6.86 inch | 1280x480 | 0x0416 / 0x5302 | ✅ |
 
-<img src="Images/trofeo.jpg" width="50%" title="image">
+<img src="Images/trofeo6.jpg" width="50%" title="image">
+<img src="Images/trofeo9.jpg" width="50%" title="image">
 
 ### 🧩Usage
 
