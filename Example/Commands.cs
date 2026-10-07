@@ -31,6 +31,32 @@ public static class CommandBuilderExtensions
             sub.AddSubCommand<Tss8UsbStreamCommand>();
         });
         commands.AddCommand<TrofeoCommand>();
+        commands.AddCommand<TrofeoLyCommand>();
+    }
+}
+
+//--------------------------------------------------------------------------------
+// Device
+//--------------------------------------------------------------------------------
+internal static class DeviceHelper
+{
+    public static HidDevice? FindHidDevice(int vendorId, int productId) =>
+        DeviceList.Local.GetHidDevices(vendorId, productId).FirstOrDefault();
+
+    public static UsbDevice? OpenUsbDevice(UsbContext usbContext, int vendorId, int productId)
+    {
+        var finder = new UsbDeviceFinder
+        {
+            Vid = vendorId,
+            Pid = productId
+        };
+        if (usbContext.Find(finder) is not UsbDevice device)
+        {
+            return null;
+        }
+
+        device.Open();
+        return device;
     }
 }
 
@@ -42,9 +68,7 @@ public sealed class TrofeoCommand : ICommandHandler
 {
     public async ValueTask ExecuteAsync(CommandContext context)
     {
-        var device = DeviceList.Local
-            .GetHidDevices(LcdDriver.TrofeoVision.ScreenDevice.VendorId, LcdDriver.TrofeoVision.ScreenDevice.ProductId)
-            .FirstOrDefault();
+        var device = DeviceHelper.FindHidDevice(LcdDriver.TrofeoVision.UsbIds.VendorId, LcdDriver.TrofeoVision.UsbIds.ProductId);
         if (device is null)
         {
             Console.WriteLine("Device not found.");
@@ -53,7 +77,16 @@ public sealed class TrofeoCommand : ICommandHandler
 
         using var screen = new LcdDriver.TrofeoVision.ScreenDevice(device);
 
-        var jpegBytes = await File.ReadAllBytesAsync("image-1280x480.jpg");
+        var info = screen.Handshake();
+        if (info is null)
+        {
+            Console.WriteLine("Handshake failed.");
+            return;
+        }
+
+        Console.WriteLine($"PM={info.Value.Pm}, SUB={info.Value.Sub}, Rotate={info.Value.RotateOption}");
+
+        var jpegBytes = await File.ReadAllBytesAsync("image-1920x480.jpg");
 
         var interval = TimeSpan.FromSeconds(1);
         using var cts = new CancellationTokenSource();
@@ -81,32 +114,114 @@ public sealed class TrofeoCommand : ICommandHandler
 }
 
 //--------------------------------------------------------------------------------
-// Turing Smart Screen 8.8 USB revision
+// Trofeo Vision LY (9.16)
 //--------------------------------------------------------------------------------
-internal static class Tss8UsbCommandHelper
+[Command("trofeoly", "Trofeo Vision LY")]
+public sealed class TrofeoLyCommand : ICommandHandler
 {
-    private const int VendorId = 0x1CBE;
-    private const int ProductId = 0x0088;
-    private const string RootPath = "/tmp/sdcard/mmcblk0p1";
+    private const int Width = 1920;
+    private const int Height = 480;
+    private const int MaxJpegSize = 450_000;
 
-    public static UsbDevice? OpenDevice(UsbContext usbContext)
+    public async ValueTask ExecuteAsync(CommandContext context)
     {
-        ArgumentNullException.ThrowIfNull(usbContext);
-
-        var finder = new UsbDeviceFinder
+        using var usbContext = new UsbContext();
+        using var device = DeviceHelper.OpenUsbDevice(usbContext, LcdDriver.TrofeoVisionLy.UsbIds.VendorId, LcdDriver.TrofeoVisionLy.UsbIds.ProductId);
+        if (device is null)
         {
-            Vid = VendorId,
-            Pid = ProductId
+            Console.WriteLine("Device not found.");
+            return;
+        }
+
+        using var screen = new LcdDriver.TrofeoVisionLy.ScreenDevice(device);
+
+        var info = screen.Handshake();
+        if (info is null)
+        {
+            Console.WriteLine("Handshake failed.");
+            return;
+        }
+
+        Console.WriteLine($"PM={info.Value.Pm}, SUB={info.Value.Sub}, Rotate={info.Value.RotateOption}");
+
+        var jpegBytes = CreateJpeg("image-1920x480.jpg", info.Value.RotateOption);
+        if (jpegBytes is null)
+        {
+            Console.WriteLine("Cannot load image.");
+            return;
+        }
+
+        // Panel returns to the logo a few seconds after the last frame
+        var interval = TimeSpan.FromMilliseconds(500);
+        using var cts = new CancellationTokenSource();
+        Console.CancelKeyPress += (_, e) =>
+        {
+            e.Cancel = true;
+            // ReSharper disable once AccessToDisposedClosure
+            cts.Cancel();
         };
 
-        if (usbContext.Find(finder) is not UsbDevice device)
+        while (!cts.Token.IsCancellationRequested)
+        {
+            if (!screen.DrawJpeg(jpegBytes))
+            {
+                Console.WriteLine("Draw jpeg failed.");
+            }
+
+            try
+            {
+                await Task.Delay(interval, cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+        }
+    }
+
+    private static byte[]? CreateJpeg(string path, LcdDriver.TrofeoVisionLy.RotateOption rotateOption)
+    {
+        using var bitmap = SKBitmap.Decode(path);
+        if (bitmap is null)
         {
             return null;
         }
 
-        device.Open();
-        return device;
+        using var surface = SKSurface.Create(new SKImageInfo(Width, Height));
+        var canvas = surface.Canvas;
+        if (rotateOption == LcdDriver.TrofeoVisionLy.RotateOption.Rotate180)
+        {
+            canvas.RotateDegrees(180, Width / 2f, Height / 2f);
+        }
+        using (var source = SKImage.FromBitmap(bitmap))
+        {
+            canvas.DrawImage(source, new SKRect(0, 0, Width, Height), new SKSamplingOptions(SKFilterMode.Linear));
+        }
+        using var image = surface.Snapshot();
+
+        var quality = 95;
+        while (true)
+        {
+            using var data = image.Encode(SKEncodedImageFormat.Jpeg, quality);
+            if ((data.Size < MaxJpegSize) || (quality <= 50))
+            {
+                return data.ToArray();
+            }
+
+            quality -= 5;
+        }
     }
+}
+
+//--------------------------------------------------------------------------------
+// Turing Smart Screen 8.8 USB revision
+//--------------------------------------------------------------------------------
+internal static class Tss8UsbCommandHelper
+{
+    private const string RootPath = "/tmp/sdcard/mmcblk0p1";
+
+    public static UsbDevice? OpenDevice(UsbContext usbContext) =>
+        DeviceHelper.OpenUsbDevice(usbContext, LcdDriver.TuringSmartScreen.UsbIds.VendorId, LcdDriver.TuringSmartScreen.UsbIds.ProductId88);
 
     public static string? ResolvePath(string fileName)
     {
@@ -455,7 +570,7 @@ public sealed class Tss8Command : ICommandHandler
         screen.Clear();
         screen.SetBrightness(100);
 
-        using var bitmap = SKBitmap.Decode("image-1280x480.jpg");
+        using var bitmap = SKBitmap.Decode("image-1920x480.jpg");
         using var bitmap2 = SKBitmap.Decode("image-logo.png");
         if ((bitmap is null) || (bitmap2 is null))
         {

@@ -8,16 +8,17 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LcdDriver.TrofeoVision\LcdDriver.TrofeoVision.csproj" />
+    <ProjectReference Include="..\LcdDriver.TrofeoVisionLy\LcdDriver.TrofeoVisionLy.csproj" />
     <ProjectReference Include="..\LcdDriver.TuringSmartScreen\LcdDriver.TuringSmartScreen.csproj" />
     <ProjectReference Include="..\TuringSmartScreenLib.Helpers.SkiaSharp\TuringSmartScreenLib.Helpers.SkiaSharp.csproj" />
     <ProjectReference Include="..\TuringSmartScreenLib\TuringSmartScreenLib.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="SkiaSharp" Version="4.151.1" />
-    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.151.1" />
-    <PackageReference Include="System.CommandLine" Version="2.0.11" />
-    <PackageReference Include="Usa.Smart.CommandLine.Hosting" Version="2.12.0" />
+    <PackageReference Include="SkiaSharp" Version="4.153.1" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.153.1" />
+    <PackageReference Include="System.CommandLine" Version="2.0.12" />
+    <PackageReference Include="Usa.Smart.CommandLine.Hosting" Version="2.19.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -27,7 +28,7 @@
     <None Update="video-480x1920.h264">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="image-1280x480.jpg">
+    <None Update="image-1920x480.jpg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="image-480x1920.jpg">

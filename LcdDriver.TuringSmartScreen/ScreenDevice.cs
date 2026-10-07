@@ -149,9 +149,9 @@ public sealed class ScreenDevice : IDisposable
         }
     }
 
-    private bool SendData(byte[] data)
+    private bool SendData(ReadOnlySpan<byte> data)
     {
-        writer.Write(data.AsSpan(), WriteTimeout, out var transferLength);
+        writer.Write(data, WriteTimeout, out var transferLength);
         return transferLength == data.Length;
     }
 
@@ -211,14 +211,14 @@ public sealed class ScreenDevice : IDisposable
         return SendCommand() && ReceiveResponse();
     }
 
-    public bool DrawPng(byte[] imageBytes)
+    public bool DrawPng(ReadOnlySpan<byte> imageBytes)
     {
         PrepareCommandHeader(102);
         BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(8, 4), imageBytes.Length);
         return SendCommand() && SendData(imageBytes) && ReceiveResponse();
     }
 
-    public bool DrawJpeg(byte[] imageBytes)
+    public bool DrawJpeg(ReadOnlySpan<byte> imageBytes)
     {
         PrepareCommandHeader(101);
         BinaryPrimitives.WriteInt32BigEndian(commandBuffer.AsSpan(8, 4), imageBytes.Length);

@@ -6,6 +6,7 @@
 | TuringSmartScreenLib.Helpers.SkiaSharp | [![NuGet](https://img.shields.io/nuget/v/TuringSmartScreenLib.Helpers.SkiaSharp.svg)](https://www.nuget.org/packages/TuringSmartScreenLib.Helpers.SkiaSharp/) | Helpers |
 | TuringSmartScreenLib.Helpers.GdiPlus | [![NuGet](https://img.shields.io/nuget/v/TuringSmartScreenLib.Helpers.GdiPlus.svg)](https://www.nuget.org/packages/TuringSmartScreenLib.Helpers.GdiPlus/) | Helpers (GDI+, Windows) |
 | LcdDriver.TrofeoVision | [![NuGet](https://img.shields.io/nuget/v/LcdDriver.TrofeoVision.svg)](https://www.nuget.org/packages/LcdDriver.TrofeoVision/) | Thermalright Trofeo Vision usb lcd controller |
+| LcdDriver.TrofeoVisionLy | [![NuGet](https://img.shields.io/nuget/v/LcdDriver.TrofeoVisionLy.svg)](https://www.nuget.org/packages/LcdDriver.TrofeoVisionLy/) | Thermalright Trofeo Vision 9.16 usb lcd controller |
 | LcdDriver.TuringSmartScreen | [![NuGet](https://img.shields.io/nuget/v/LcdDriver.TuringSmartScreen.svg)](https://www.nuget.org/packages/LcdDriver.TuringSmartScreen/) | Turing-Smart-Screen usb lcd controller |
 
 ## 👉What is this?
@@ -15,6 +16,7 @@ LCD controller libraries for the following devices:
 * [Turing Smart Screen](https://www.turzx.com/) 3.5 inch / 5 inch / 8 inch (Serial)
 * [Turing Smart Screen](https://www.turzx.com/) 8 inch USB Revision 1.1 (USB)
 * [Thermalright Trofeo Vision](https://www.thermalright.com/product/trofeo-vision-lcd-white/) (USB HID)
+* [Thermalright Trofeo Vision 9.16](https://www.thermalright.com/product/trofeo-vision-9-16-lcd-black/) (USB)
 
 ## 🔲TuringSmartScreenLib
 
@@ -66,10 +68,11 @@ using HidSharp;
 using LcdDriver.TrofeoVision;
 
 var device = DeviceList.Local
-    .GetHidDevices(ScreenDevice.VendorId, ScreenDevice.ProductId)
+    .GetHidDevices(UsbIds.VendorId, UsbIds.ProductId)
     .FirstOrDefault();
 
 using var screen = new ScreenDevice(device);
+var info = screen.Handshake();
 
 var jpegBytes = await File.ReadAllBytesAsync("image-1280x480.jpg");
 screen.DrawJpeg(jpegBytes);
@@ -78,6 +81,35 @@ screen.DrawJpeg(jpegBytes);
 ### 🌐Link
 
 - [MacStatDisplay](https://github.com/usausa/mac-stat-display) : macOS system monitor
+
+## 🔲LcdDriver.TrofeoVisionLy
+
+Thermalright Trofeo Vision 9.16 USB LCD controller (1920x480).
+
+| Item | Value |
+|-|-|
+| Connection | USB |
+| Resolution | 1920x480 |
+| VID / PID | 0x0416 / 0x5408 |
+
+### 🧩Usage
+
+```csharp
+using LibUsbDotNet.LibUsb;
+using LibUsbDotNet.Main;
+using LcdDriver.TrofeoVisionLy;
+
+using var usbContext = new UsbContext();
+var finder = new UsbDeviceFinder { Vid = UsbIds.VendorId, Pid = UsbIds.ProductId };
+using var device = usbContext.Find(finder) as UsbDevice;
+device?.Open();
+
+using var screen = new ScreenDevice(device);
+var info = screen.Handshake();
+
+var jpegBytes = await File.ReadAllBytesAsync("image-1920x480.jpg");
+screen.DrawJpeg(jpegBytes);
+```
 
 ## 🔲LcdDriver.TuringSmartScreen
 
@@ -99,7 +131,7 @@ using LibUsbDotNet.Main;
 using LcdDriver.TuringSmartScreen;
 
 using var usbContext = new UsbContext();
-var finder = new UsbDeviceFinder { Vid = 0x1CBE, Pid = 0x0088 };
+var finder = new UsbDeviceFinder { Vid = UsbIds.VendorId, Pid = UsbIds.ProductId88 };
 using var device = usbContext.Find(finder) as UsbDevice;
 device?.Open();
 
@@ -114,7 +146,7 @@ screen.DrawJpeg(jpegBytes);
 
 ### ⚙️Prerequisites
 
-`LcdDriver.TuringSmartScreen` requires the [libusb-1.0](https://libusb.info/) native library at runtime.  
+`LcdDriver.TuringSmartScreen` and `LcdDriver.TrofeoVisionLy` require the [libusb-1.0](https://libusb.info/) native library at runtime.  
 It must be installed separately for each platform.
 
 | OS | How to install |

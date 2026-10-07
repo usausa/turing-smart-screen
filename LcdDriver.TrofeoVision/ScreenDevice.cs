@@ -6,9 +6,6 @@ using HidSharp;
 
 public sealed class ScreenDevice : IDisposable
 {
-    public const ushort VendorId = 0x0416;
-    public const ushort ProductId = 0x5302;
-
     // HID report: Report ID (1 byte) + Data (512 bytes)
     private const int HidReportSize = 513;
     private const int DataPerPacket = 512;
@@ -16,8 +13,11 @@ public sealed class ScreenDevice : IDisposable
     private const byte ReportId = 0x00;
 
     // Protocol command/compression type
+    private const byte CommandHandshake = 0x01;
     private const byte CommandImage = 0x02;
     private const byte CompressionJpeg = 0x02;
+
+    private const int MaxResponseReports = 8;
 
     // Protocol header magic bytes
     private static readonly byte[] HeaderMagic = [0xDA, 0xDB, 0xDC, 0xDD];
@@ -36,6 +36,7 @@ public sealed class ScreenDevice : IDisposable
     {
         stream = hidDevice.Open();
         stream.WriteTimeout = 5000;
+        stream.ReadTimeout = 5000;
 
         Width = width;
         Height = height;
@@ -51,8 +52,46 @@ public sealed class ScreenDevice : IDisposable
     // Command
     // --------------------------------------------------------------------------------
 
-    public void DrawJpeg(ReadOnlySpan<byte> jpegData) =>
-        SendImageData(CompressionJpeg, jpegData);
+    public DeviceInfo? Handshake()
+    {
+        Span<byte> packet = stackalloc byte[HidReportSize];
+
+        packet.Clear();
+        packet[0] = ReportId;
+
+        var header = packet.Slice(1, HeaderSize);
+        HeaderMagic.CopyTo(header);
+        header[12] = CommandHandshake;
+
+        stream.Write(packet);
+
+        try
+        {
+            for (var i = 0; i < MaxResponseReports; i++)
+            {
+                var read = stream.Read(packet);
+                if (read <= HeaderSize)
+                {
+                    continue;
+                }
+
+                var response = packet[1..read];
+                if (response[..4].SequenceEqual(HeaderMagic) && (response[12] == CommandHandshake))
+                {
+                    return new DeviceInfo((PanelType)response[5], response[4]);
+                }
+            }
+        }
+        catch (TimeoutException)
+        {
+            return null;
+        }
+
+        return null;
+    }
+
+    public void DrawJpeg(ReadOnlySpan<byte> imageBytes) =>
+        SendImageData(CompressionJpeg, imageBytes);
 
     // --------------------------------------------------------------------------------
     // Helper
