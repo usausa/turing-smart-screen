@@ -19,6 +19,9 @@ public sealed class ScreenDevice : IDisposable
 
     private const int MaxResponseReports = 8;
 
+    private const int WriteTimeout = 3000;
+    private const int ReadTimeout = 3000;
+
     // Protocol header magic bytes
     private static readonly byte[] HeaderMagic = [0xDA, 0xDB, 0xDC, 0xDD];
 
@@ -35,8 +38,8 @@ public sealed class ScreenDevice : IDisposable
     public ScreenDevice(HidDevice hidDevice, int width = 1280, int height = 480)
     {
         stream = hidDevice.Open();
-        stream.WriteTimeout = 5000;
-        stream.ReadTimeout = 5000;
+        stream.WriteTimeout = WriteTimeout;
+        stream.ReadTimeout = ReadTimeout;
 
         Width = width;
         Height = height;
