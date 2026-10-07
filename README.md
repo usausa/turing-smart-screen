@@ -5,18 +5,18 @@
 | TuringSmartScreenLib | [![NuGet](https://img.shields.io/nuget/v/TuringSmartScreenLib.svg)](https://www.nuget.org/packages/TuringSmartScreenLib/) | Core |
 | TuringSmartScreenLib.Helpers.SkiaSharp | [![NuGet](https://img.shields.io/nuget/v/TuringSmartScreenLib.Helpers.SkiaSharp.svg)](https://www.nuget.org/packages/TuringSmartScreenLib.Helpers.SkiaSharp/) | Helpers |
 | TuringSmartScreenLib.Helpers.GdiPlus | [![NuGet](https://img.shields.io/nuget/v/TuringSmartScreenLib.Helpers.GdiPlus.svg)](https://www.nuget.org/packages/TuringSmartScreenLib.Helpers.GdiPlus/) | Helpers (GDI+, Windows) |
-| LcdDriver.TrofeoVision | [![NuGet](https://img.shields.io/nuget/v/LcdDriver.TrofeoVision.svg)](https://www.nuget.org/packages/LcdDriver.TrofeoVision/) | Thermalright Trofeo Vision usb lcd controller |
-| LcdDriver.TrofeoVisionLy | [![NuGet](https://img.shields.io/nuget/v/LcdDriver.TrofeoVisionLy.svg)](https://www.nuget.org/packages/LcdDriver.TrofeoVisionLy/) | Thermalright Trofeo Vision 9.16 usb lcd controller |
 | LcdDriver.TuringSmartScreen | [![NuGet](https://img.shields.io/nuget/v/LcdDriver.TuringSmartScreen.svg)](https://www.nuget.org/packages/LcdDriver.TuringSmartScreen/) | Turing-Smart-Screen usb lcd controller |
+| LcdDriver.TrofeoVision | [![NuGet](https://img.shields.io/nuget/v/LcdDriver.TrofeoVision.svg)](https://www.nuget.org/packages/LcdDriver.TrofeoVision/) | Thermalright Trofeo Vision usb lcd controller |
+| LcdDriver.TrofeoVisionLy | [![NuGet](https://img.shields.io/nuget/v/LcdDriver.TrofeoVisionLy.svg)](https://www.nuget.org/packages/LcdDriver.TrofeoVisionLy/) | Thermalright Trofeo Vision 9.16 / 11.3 usb lcd controller |
 
 ## 👉What is this?
 
 LCD controller libraries for the following devices:
 
 * [Turing Smart Screen](https://www.turzx.com/) 3.5 inch / 5 inch / 8 inch (Serial)
-* [Turing Smart Screen](https://www.turzx.com/) 8 inch USB Revision 1.1 (USB)
+* [Turing Smart Screen](https://www.turzx.com/) USB models (USB)
 * [Thermalright Trofeo Vision](https://www.thermalright.com/product/trofeo-vision-lcd-white/) (USB HID)
-* [Thermalright Trofeo Vision 9.16](https://www.thermalright.com/product/trofeo-vision-9-16-lcd-black/) (USB)
+* [Thermalright Trofeo Vision 9.16 / 11.3](https://www.thermalright.com/product/trofeo-vision-9-16-lcd-black/) (USB)
 
 ## 🔲TuringSmartScreenLib
 
@@ -51,13 +51,11 @@ screen.DisplayBuffer(0, 0, buffer);
 
 ## 🔲LcdDriver.TrofeoVision
 
-Thermalright Trofeo Vision USB HID LCD controller (1280x480).
+Thermalright Trofeo Vision USB HID LCD controller.
 
-| Item | Value |
-|-|-|
-| Connection | USB HID |
-| Resolution | 1280x480 |
-| VID / PID | 0x0416 / 0x5302 |
+| Model | Screen Size | Resolution | VID / PID | Status |
+|-|-|-|-|-|
+| [Trofeo Vision LCD](https://www.thermalright.com/product/trofeo-vision-lcd-white/) | 6.86 inch | 1280x480 | 0x0416 / 0x5302 | ✅ |
 
 <img src="Images/trofeo.jpg" width="50%" title="image">
 
@@ -84,13 +82,13 @@ screen.DrawJpeg(jpegBytes);
 
 ## 🔲LcdDriver.TrofeoVisionLy
 
-Thermalright Trofeo Vision 9.16 USB LCD controller (1920x480).
+Thermalright Trofeo Vision 9.16 / 11.3 USB LCD controller.
 
-| Item | Value |
-|-|-|
-| Connection | USB |
-| Resolution | 1920x480 |
-| VID / PID | 0x0416 / 0x5408 |
+| Model | Screen Size | Resolution | VID / PID | Status |
+|-|-|-|-|-|
+| [Trofeo Vision 9.16 LCD](https://www.thermalright.com/product/trofeo-vision-9-16-lcd-black/) | 9.16 inch | 1920x480 | 0x0416 / 0x5408 | ✅ |
+| [Trofeo Vision 9.16 ARGB LCD](https://www.thermalright.com/product/trofeo-vision-9-16-argb-lcd-black/) | 9.16 inch | 1920x480 | 0x0416 / 0x5408 | ❔ |
+| [Trofeo Vision 11.3 LCD](https://www.thermalright.com/product/trofeo-vision-11-3-lcd-black/) | 11.3 inch | 1920x400 | 0x0416 / 0x5408 | ❔ |
 
 ### 🧩Usage
 
@@ -113,13 +111,17 @@ screen.DrawJpeg(jpegBytes);
 
 ## 🔲LcdDriver.TuringSmartScreen
 
-Turing Smart Screen 8 inch USB Revision 1.1 LCD controller.
+Turing Smart Screen USB LCD controller.
 
-| Item | Value |
-|-|-|
-| Connection | USB |
-| Resolution | 480x1920 |
-| VID / PID | 0x1CBE / 0x0088 |
+| Model | Screen Size | Resolution | VID / PID | Status |
+|-|-|-|-|-|
+| Turing Smart Screen 2.8 (round) | 2.8 inch | 480x480 | 0x1CBE / 0x0028 | ❔ |
+| Turing Smart Screen 4.6 | 4.6 inch | 320x960 | 0x1CBE / 0x0046 | ❔ |
+| Turing Smart Screen 5.2 | 5.2 inch | 720x1280 | 0x1CBE / 0x0050 | ❔ |
+| Turing Smart Screen 8.0 | 8.0 inch | 800x1280 | 0x1CBE / 0x0080 | ❔ |
+| Turing Smart Screen 8.8 (Revision 1.1) | 8.8 inch | 480x1920 | 0x1CBE / 0x0088 | ✅ |
+| Turing Smart Screen 9.2 | 9.2 inch | 462x1920 | 0x1CBE / 0x0092 | ❔ |
+| Turing Smart Screen 12.3 | 12.3 inch | 720x1920 | 0x1CBE / 0x0123 | ❔ |
 
 <img src="Images/tss8usb.jpg" width="50%" title="image">
 
