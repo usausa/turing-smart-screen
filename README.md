@@ -18,36 +18,17 @@ LCD controller libraries for the following devices:
 * [Thermalright Trofeo Vision](https://www.thermalright.com/product/trofeo-vision-lcd-white/) (USB HID)
 * [Thermalright Trofeo Vision 9.16 / 11.3](https://www.thermalright.com/product/trofeo-vision-9-16-lcd-black/) (USB)
 
-## 🔲TuringSmartScreenLib
+## ⚙️Prerequisites
 
-Turing Smart Screen 3.5 inch, 5 inch, 8 inch serial connection models.
+`LcdDriver.TuringSmartScreen` and `LcdDriver.TrofeoVisionLy` require the [libusb-1.0](https://libusb.info/) native library at runtime.  
+It must be installed separately for each platform.
 
-| Revision | Screen Size | Resolution |
-|-|-|-|
-| RevisionA | 3.5 inch | 320x480 |
-| RevisionB | 3.5 inch | 320x480 |
-| RevisionC | 5 inch | 800x480 |
-| RevisionE | 8 inch | 480x1920 |
-
-<img src="Images/tss.jpg" width="50%" title="image">
-
-### 🧩Usage
-
-```csharp
-using SkiaSharp;
-
-using TuringSmartScreenLib;
-using TuringSmartScreenLib.Helpers.SkiaSharp;
-
-using var screen = ScreenFactory.Create(ScreenType.RevisionB, "COM10");
-screen.SetBrightness(100);
-screen.Orientation = ScreenOrientation.Landscape;
-
-using var bitmap = SKBitmap.Decode(File.OpenRead("genbaneko.png"));
-var buffer = screen.CreateBufferFrom(bitmap);
-
-screen.DisplayBuffer(0, 0, buffer);
-```
+| OS | How to install |
+|-|-|
+| Windows | Download `libusb-1.0.xx.7z` from [libusb releases](https://github.com/libusb/libusb/releases), then place `VS2022\MS64\dll\libusb-1.0.dll` in the same directory as the executable. |
+| Ubuntu / Debian | `sudo apt install libusb-1.0-0` |
+| Fedora / RHEL | `sudo dnf install libusb1` |
+| macOS | `brew install libusb` |
 
 ## 🔲LcdDriver.TrofeoVision
 
@@ -148,17 +129,36 @@ var jpegBytes = await File.ReadAllBytesAsync("image-480x1920.jpg");
 screen.DrawJpeg(jpegBytes);
 ```
 
-### ⚙️Prerequisites
+## 🔲TuringSmartScreenLib
 
-`LcdDriver.TuringSmartScreen` and `LcdDriver.TrofeoVisionLy` require the [libusb-1.0](https://libusb.info/) native library at runtime.  
-It must be installed separately for each platform.
+Turing Smart Screen 3.5 inch, 5 inch, 8 inch serial connection models.
 
-| OS | How to install |
-|-|-|
-| Windows | Download `libusb-1.0.xx.7z` from [libusb releases](https://github.com/libusb/libusb/releases), then place `VS2022\MS64\dll\libusb-1.0.dll` in the same directory as the executable. |
-| Ubuntu / Debian | `sudo apt install libusb-1.0-0` |
-| Fedora / RHEL | `sudo dnf install libusb1` |
-| macOS | `brew install libusb` |
+| Revision | Screen Size | Resolution |
+|-|-|-|
+| RevisionA | 3.5 inch | 320x480 |
+| RevisionB | 3.5 inch | 320x480 |
+| RevisionC | 5 inch | 800x480 |
+| RevisionE | 8 inch | 480x1920 |
+
+<img src="Images/tss.jpg" width="50%" title="image">
+
+### 🧩Usage
+
+```csharp
+using SkiaSharp;
+
+using TuringSmartScreenLib;
+using TuringSmartScreenLib.Helpers.SkiaSharp;
+
+using var screen = ScreenFactory.Create(ScreenType.RevisionB, "COM10");
+screen.SetBrightness(100);
+screen.Orientation = ScreenOrientation.Landscape;
+
+using var bitmap = SKBitmap.Decode(File.OpenRead("genbaneko.png"));
+var buffer = screen.CreateBufferFrom(bitmap);
+
+screen.DisplayBuffer(0, 0, buffer);
+```
 
 ## 🛠️TuringSmartScreenTool
 
