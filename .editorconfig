@@ -74,7 +74,7 @@ dotnet_style_require_accessibility_modifiers = for_non_interface_members:warning
 
 # Expression-level preferences
 dotnet_style_coalesce_expression = true
-dotnet_style_collection_initializer = true:warning
+dotnet_style_collection_initializer = true
 dotnet_style_explicit_tuple_names = true:warning
 dotnet_style_namespace_match_folder = true:warning
 dotnet_style_null_propagation = true:suggestion
@@ -382,7 +382,7 @@ dotnet_diagnostic.IDE0026.severity = warning
 dotnet_diagnostic.IDE0027.severity = warning
 
 # dotnet_style_collection_initializer
-dotnet_diagnostic.IDE0028.severity = warning
+#dotnet_diagnostic.IDE0028.severity = suggestion
 
 # dotnet_style_coalesce_expression
 dotnet_diagnostic.IDE0029.severity = warning
@@ -597,6 +597,7 @@ dotnet_diagnostic.IDE0302.severity = warning
 dotnet_diagnostic.IDE0303.severity = warning
 dotnet_diagnostic.IDE0304.severity = warning
 dotnet_diagnostic.IDE0305.severity = none
+#dotnet_diagnostic.IDE0306.severity = none
 
 # csharp_prefer_static_anonymous_function
 dotnet_diagnostic.IDE0320.severity = none
