@@ -2,7 +2,7 @@ namespace TuringSmartScreenLib;
 
 internal static class Helper
 {
-    public static void Fill(Span<byte> buffer, Span<byte> pattern)
+    public static void Fill(Span<byte> buffer, ReadOnlySpan<byte> pattern)
     {
         pattern.CopyTo(buffer);
         var length = pattern.Length;
