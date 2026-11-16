@@ -1,6 +1,6 @@
 namespace TuringSmartScreenLib;
 
-public static class Extensions
+public static class ScreenExtensions
 {
     public static IScreenBuffer CreateBuffer(this IScreen screen) =>
         screen.CreateBuffer(screen.Width, screen.Height);

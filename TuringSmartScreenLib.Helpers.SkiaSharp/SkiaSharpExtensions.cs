@@ -2,7 +2,7 @@ namespace TuringSmartScreenLib.Helpers.SkiaSharp;
 
 using global::SkiaSharp;
 
-public static class Extensions
+public static class SkiaSharpExtensions
 {
     public static IScreenBuffer CreateBufferFrom(this IScreen screen, SKBitmap bitmap)
     {

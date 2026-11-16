@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 [SupportedOSPlatform("windows")]
-public static class Extensions
+public static class GdiPlusExtensions
 {
     public static IScreenBuffer CreateBufferFrom(this IScreen screen, Bitmap bitmap)
     {
