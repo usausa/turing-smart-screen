@@ -18,7 +18,7 @@
   <ItemGroup>
     <PackageReference Include="SkiaSharp" Version="4.156.1" />
     <PackageReference Include="System.CommandLine" Version="3.0.0" />
-    <PackageReference Include="Usa.Smart.CommandLine.Hosting" Version="3.0.0" />
+    <PackageReference Include="Usa.Smart.CommandLine.Hosting" Version="3.1.0" />
   </ItemGroup>
 
   <ItemGroup>
